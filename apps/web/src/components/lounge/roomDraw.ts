@@ -40,11 +40,8 @@ function SHD(ctx: CanvasRenderingContext2D, wx: number, wy: number, w: number, d
 }
 
 export function drawRoom(ctx: CanvasRenderingContext2D, T: RoomTheme, themeName: string) {
+  // Clear to transparent — parent div provides the sky gradient background seamlessly
   ctx.clearRect(0, 0, 860, 500);
-
-  // Sky
-  ctx.fillStyle = LG(ctx, 430, 0, 430, 500, [[0, T.skyTop], [0.35, T.skyMid], [1, T.skyBot]]);
-  ctx.fillRect(0, 0, 860, 500);
 
   // Stars
   if (themeName === 'night' || themeName === 'dawn') {

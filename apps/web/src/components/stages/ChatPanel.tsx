@@ -9,7 +9,7 @@ import { CHARACTER_TEMPLATES } from '@squad/core';
 type HistMsg = { id: string; role: string; content: string; mood?: string };
 
 export function ChatPanel({ characterId }: { characterId: string }) {
-  const { stageState, activeMood, chunks, sendMessage } = useStageSocket(characterId);
+  const { stageState, activeMood, chunks, sendMessage, lastError } = useStageSocket(characterId);
   const [history, setHistory]     = useState<HistMsg[]>([]);
   const [input, setInput]         = useState('');
   const [streaming, setStreaming] = useState('');
@@ -83,6 +83,13 @@ export function ChatPanel({ characterId }: { characterId: string }) {
               {[0,1,2].map(i => (
                 <span key={i} className="w-1.5 h-1.5 rounded-full bg-[#c8a8e8] animate-bounce" style={{ animationDelay: `${i*0.2}s` }} />
               ))}
+            </div>
+          </div>
+        )}
+        {lastError && (
+          <div className="flex gap-2">
+            <div className="px-3.5 py-2 bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] rounded-2xl rounded-tl-sm text-[11px] text-red-400">
+              ⚠️ {lastError.includes('401') || lastError.includes('auth') ? 'API key ไม่ถูกต้อง — ตั้งค่า ANTHROPIC_API_KEY ใน apps/api/.env' : lastError}
             </div>
           </div>
         )}
