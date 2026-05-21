@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Final Design</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0f0a1e;
+    font-family: 'Segoe UI', sans-serif;
+    color: #e2d9f3;
+    padding: 28px 24px;
+    line-height: 1.6;
+  }
+  h1 { color: #f0abfc; font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+  .tagline { color: #7c6b99; font-size: 12px; margin-bottom: 28px; }
+
+  .section { margin-bottom: 24px; }
+  .section-title {
+    font-size: 10px; font-weight: 800; letter-spacing: 2px;
+    text-transform: uppercase; color: #64748b;
+    border-bottom: 1px solid #1e1535;
+    padding-bottom: 6px; margin-bottom: 12px;
+  }
+
+  /* Cards */
+  .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .card-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .card {
+    background: #160d2e;
+    border: 1px solid #1e1535;
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .card-title { font-size: 11px; font-weight: 700; margin-bottom: 6px; }
+  .card p { font-size: 10px; color: #7c6b99; line-height: 1.5; }
+  .card code {
+    font-size: 9px;
+    background: rgba(167,139,250,0.12);
+    color: #a78bfa;
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+
+  /* Chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .chip {
+    font-size: 9px; font-weight: 600; padding: 2px 7px;
+    border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;
+  }
+  .chip-purple { background: rgba(167,139,250,0.18); color: #a78bfa; }
+  .chip-green  { background: rgba(74,222,128,0.12); color: #4ade80; }
+  .chip-pink   { background: rgba(240,171,252,0.15); color: #f0abfc; }
+  .chip-orange { background: rgba(251,146,60,0.15); color: #fb923c; }
+  .chip-blue   { background: rgba(96,165,250,0.15); color: #60a5fa; }
+  .chip-yellow { background: rgba(253,224,71,0.15); color: #fde047; }
+
+  /* Ported badge */
+  .badge-port {
+    font-size: 8px; background: rgba(74,222,128,0.12); color: #4ade80;
+    border: 1px solid rgba(74,222,128,0.25); border-radius: 4px;
+    padding: 1px 5px; margin-left: 4px; vertical-align: middle;
+  }
+
+  /* Flow */
+  .flow { display: flex; flex-direction: column; gap: 0; }
+  .flow-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 8px 0;
+    border-left: 2px solid #1e1535;
+    padding-left: 14px;
+    position: relative;
+  }
+  .flow-item::before {
+    content: '';
+    position: absolute; left: -5px; top: 12px;
+    width: 8px; height: 8px;
+    border-radius: 50%; border: 2px solid #1e1535;
+    background: #0f0a1e;
+  }
+  .flow-item.highlight { border-left-color: #a78bfa; }
+  .flow-item.highlight::before { background: #a78bfa; border-color: #a78bfa; }
+  .flow-step-num {
+    font-size: 9px; color: #4a3d62; font-weight: 700;
+    min-width: 16px; text-align: right; flex-shrink: 0; padding-top: 1px;
+  }
+  .flow-text { font-size: 11px; color: #94a3b8; flex: 1; }
+  .flow-text strong { color: #e2d9f3; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  th {
+    background: #160d2e; padding: 6px 10px; text-align: left;
+    color: #4a3d62; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; font-size: 9px;
+    border-bottom: 1px solid #1e1535;
+  }
+  td { padding: 6px 10px; border-bottom: 1px solid #160d2e; color: #94a3b8; }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { color: #c8a8e8; font-weight: 600; }
+
+  /* Monorepo tree */
+  .tree { font-family: monospace; font-size: 10px; color: #64748b;
+          background: #160d2e; border-radius: 8px; padding: 12px 16px; line-height: 1.8; }
+  .tree .dir  { color: #a78bfa; }
+  .tree .file { color: #94a3b8; }
+  .tree .port { color: #4ade80; }
+  .tree .new  { color: #f0abfc; }
+
+  /* WS Protocol */
+  .ws-event {
+    background: #160d2e; border-radius: 6px; padding: 7px 10px;
+    margin-bottom: 6px; display: flex; align-items: flex-start; gap: 8px;
+  }
+  .ws-dir { font-size: 9px; font-weight: 700; min-width: 14px; }
+  .ws-dir.from-client { color: #a78bfa; }
+  .ws-dir.from-server { color: #4ade80; }
+  .ws-name { font-size: 10px; font-weight: 700; color: #f0abfc; min-width: 160px; flex-shrink: 0; }
+  .ws-desc { font-size: 10px; color: #64748b; }
+
+  hr { border: none; border-top: 1px solid #1e1535; margin: 20px 0; }
+</style>
+</head>
+<body>
+
+<h1>✦ Anime Agent Squad — Full Design ✧</h1>
+<p class="tagline">Next.js + Nest.js + Socket.io + PostgreSQL · behavior ported จาก PPetchDev/Anime-Agent-Squad</p>
+
+<!-- ===== MONOREPO STRUCTURE ===== -->
+<div class="section">
+  <div class="section-title">▸ Monorepo Structure</div>
+  <div class="tree">
+<span class="dir">anime-agent-squad/</span>
+├── <span class="dir">apps/</span>
+│   ├── <span class="dir">web/</span>               <span class="file"># Next.js 15 + Tailwind + anime.js</span>
+│   └── <span class="dir">api/</span>               <span class="file"># Nest.js + Socket.io + Prisma</span>
+├── <span class="dir">packages/</span>
+│   └── <span class="dir">core/</span>              <span class="file"># shared types + character logic</span>
+│       ├── <span class="port">character.ts</span>       <span class="file"># ← PORT จาก repo (emotion catalog, resolveCharacterEmotion)</span>
+│       ├── <span class="port">agentState.ts</span>     <span class="file"># ← PORT AgentStateTracker class</span>
+│       └── <span class="new">types.ts</span>           <span class="file"># WebSocket event types ใหม่</span>
+└── <span class="dir">characters/</span>            <span class="file"># รูปภาพ (ย้ายมาใน apps/web/public/)</span>
+  </div>
+</div>
+
+<!-- ===== CHARACTERS ===== -->
+<div class="section">
+  <div class="section-title">▸ Characters — ported + extended</div>
+  <table>
+    <tr><th>Character</th><th>Role</th><th>System Prompt Style</th><th>Unique Emotions</th></tr>
+    <tr><td>Mai</td><td>Frontend Sorcerer</td><td>พลังงานสูง UI-focused</td><td>idle, victory, crying, thinking, happy, angry, sleepy, excited, surprised</td></tr>
+    <tr><td>Ren</td><td>Backend Samurai</td><td>ใจเย็น precise, data-first</td><td>idle, victory, crying, thinking, happy, angry, sleepy, excited, surprised</td></tr>
+    <tr><td>Yui</td><td>Code Reviewer</td><td>ละเอียด risk-aware</td><td>idle, victory, crying, thinking, happy, angry, sleepy, excited, surprised</td></tr>
+    <tr><td>Aki</td><td>DevOps Mechanic</td><td>ดูจาก evidence, ชอบ logs</td><td>idle, victory, crying, thinking, happy, angry, sleepy, excited, surprised</td></tr>
+    <tr><td>Mika</td><td>UI Designer</td><td>สวยงาม accessibility-first</td><td>idle, victory, crying, thinking, happy, angry, sleepy, excited, surprised</td></tr>
+    <tr><td>Senko</td><td>Support Fox</td><td>ใจดี อบอุ่น ช่วยเหลือดี</td><td>happy, thinking, angry, crying, love, idle, sleepy, excited, surprised</td></tr>
+    <tr><td>Shinobu</td><td>Strategist</td><td>ฉลาด มีกลยุทธ์</td><td>thinking, happy, excited, angry, crying, done, sleepy, snack, listening</td></tr>
+  </table>
+</div>
+
+<!-- ===== AGENT STATE MACHINE ===== -->
+<div class="section">
+  <div class="section-title">▸ Agent State Machine <span class="badge-port">PORTED</span></div>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-title" style="color:#4ade80;">AgentRuntimeState</div>
+      <div class="chips">
+        <span class="chip chip-green">processing</span>
+        <span class="chip chip-green">idle</span>
+      </div>
+      <p style="margin-top:8px;">ใช้ <code>AgentStateTracker</code> จาก repo โดยตรง — ตรวจจากการ stream Claude API chunks แทน PTY output</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#f59e0b;">Idle Tier System</div>
+      <div class="chips">
+        <span class="chip chip-yellow">fresh (0–30s)</span>
+        <span class="chip chip-orange">lingering (30–90s)</span>
+        <span class="chip chip-orange">deep (90s+)</span>
+      </div>
+      <p style="margin-top:8px;">interval timer เหมือน repo — fresh=idle, lingering=sleepy, deep=sleepy animation ช้าลง</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#f0abfc;">resolveCharacterEmotion()</div>
+      <p>Port ตรงๆ จาก repo — map <code>agentState + idleTier → CharacterEmotion</code> per character</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#a78bfa;">Emotion Override</div>
+      <p>เพิ่มใหม่ — Claude ใส่ <code>[emotion:excited]</code> ใน response → override อารมณ์ชั่วคราว 3s แล้วกลับ resolved emotion</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== WEBSOCKET PROTOCOL ===== -->
+<div class="section">
+  <div class="section-title">▸ Socket.io Event Protocol</div>
+  <div class="ws-event">
+    <span class="ws-dir from-client">C→S</span>
+    <span class="ws-name">send_message</span>
+    <span class="ws-desc"><code>{conversationId, content}</code> — user ส่ง message</span>
+  </div>
+  <div class="ws-event">
+    <span class="ws-dir from-server">S→C</span>
+    <span class="ws-name">agent_state</span>
+    <span class="ws-desc"><code>{characterId, state: 'processing'|'idle', idleTier?}</code> — เหมือน <code>type:"state"</code> ใน repo</span>
+  </div>
+  <div class="ws-event">
+    <span class="ws-dir from-server">S→C</span>
+    <span class="ws-name">message_chunk</span>
+    <span class="ws-desc"><code>{conversationId, chunk, messageId}</code> — streaming text chunk เหมือน <code>type:"output"</code></span>
+  </div>
+  <div class="ws-event">
+    <span class="ws-dir from-server">S→C</span>
+    <span class="ws-name">message_done</span>
+    <span class="ws-desc"><code>{conversationId, messageId, fullContent, emotion?}</code> — stream จบ</span>
+  </div>
+  <div class="ws-event">
+    <span class="ws-dir from-server">S→C</span>
+    <span class="ws-name">emotion_override</span>
+    <span class="ws-desc"><code>{characterId, emotion}</code> — Claude ระบุ emotion พิเศษ</span>
+  </div>
+  <div class="ws-event">
+    <span class="ws-dir from-client">C→S</span>
+    <span class="ws-name">join_conversation</span>
+    <span class="ws-desc"><code>{conversationId}</code> — subscribe เพื่อรับ events ของ conversation นั้น</span>
+  </div>
+</div>
+
+<!-- ===== DATA FLOW ===== -->
+<div class="section">
+  <div class="section-title">▸ Data Flow</div>
+  <div class="flow">
+    <div class="flow-item highlight">
+      <div class="flow-step-num">1</div>
+      <div class="flow-text">User ส่งข้อความ → <code>send_message</code> event → Nest.js บันทึก user message ใน PostgreSQL</div>
+    </div>
+    <div class="flow-item highlight">
+      <div class="flow-step-num">2</div>
+      <div class="flow-text">Nest.js emit <code>agent_state: processing</code> → frontend เปลี่ยน emotion → <strong>thinking</strong> + anime.js burst</div>
+    </div>
+    <div class="flow-item highlight">
+      <div class="flow-step-num">3</div>
+      <div class="flow-text">Nest.js เรียก Claude API พร้อม system prompt ของ character + conversation history → stream เริ่ม</div>
+    </div>
+    <div class="flow-item">
+      <div class="flow-step-num">4</div>
+      <div class="flow-text">แต่ละ chunk → emit <code>message_chunk</code> → frontend append text, scan หา <code>[emotion:X]</code></div>
+    </div>
+    <div class="flow-item">
+      <div class="flow-step-num">5</div>
+      <div class="flow-text">ถ้าเจอ <code>[emotion:X]</code> → emit <code>emotion_override</code> → anime.js burst + swap image ชั่วคราว 3s</div>
+    </div>
+    <div class="flow-item highlight">
+      <div class="flow-step-num">6</div>
+      <div class="flow-text">Stream จบ → บันทึก assistant message → emit <code>message_done</code> + <code>agent_state: idle</code></div>
+    </div>
+    <div class="flow-item">
+      <div class="flow-step-num">7</div>
+      <div class="flow-text">Frontend <code>AgentStateTracker</code> เริ่มนับ idle tier: 30s=lingering, 90s=deep → emotion เปลี่ยนไปเอง</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ANIMATION SYSTEM ===== -->
+<div class="section">
+  <div class="section-title">▸ anime.js Animation System</div>
+  <div class="card-grid-3">
+    <div class="card">
+      <div class="card-title" style="color:#f0abfc;">idle 😊</div>
+      <p>loop: float <code>translateY -6px</code> 3s ease-in-out</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#a78bfa;">thinking 🤔</div>
+      <p>loop: tilt <code>rotate ±3°</code> 2.5s + float</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#4ade80;">victory 🎉</div>
+      <p>burst: jump <code>-20px + scale 1.2 + rotate 5°</code> แล้ว loop bounce</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#f87171;">crying 😢</div>
+      <p>burst: shake X, loop: droop <code>+4px</code> 4s ช้า</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#fde047;">excited ✨</div>
+      <p>burst: glow + jump, loop: fast bounce 0.6s</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#64748b;">sleepy 😴</div>
+      <p>loop: slow sway <code>±2°</code> 5–7s (deeper = slower)</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DATABASE ===== -->
+<div class="section">
+  <div class="section-title">▸ Database Schema (Prisma + PostgreSQL)</div>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-title" style="color:#60a5fa;">Conversation</div>
+      <p><code>id</code> · <code>characterId</code> · <code>title</code> · <code>createdAt</code> · <code>messages[]</code></p>
+      <p style="margin-top:6px;">1 character = หลาย conversations (เหมือน repo ที่มีหลาย sessions)</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#60a5fa;">Message</div>
+      <p><code>id</code> · <code>conversationId</code> · <code>role</code> (user/assistant) · <code>content</code> · <code>emotion?</code> · <code>createdAt</code></p>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

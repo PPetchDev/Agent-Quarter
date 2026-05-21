@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>The Lounge v4</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#07041a; font-family:'Segoe UI',sans-serif; display:flex; justify-content:center; }
+.app { width:860px; }
+.topbar {
+  display:flex; align-items:center; gap:14px; padding:10px 22px;
+  background:rgba(7,4,26,0.95); border-bottom:1px solid rgba(240,171,252,0.1);
+  backdrop-filter:blur(10px);
+}
+.logo { font-size:13px; font-weight:800; letter-spacing:3px; color:#f0abfc; text-transform:uppercase; }
+.logo em { color:#c8a8e8; font-style:normal; }
+.nav { flex:1; display:flex; justify-content:center; gap:2px; }
+.tab { font-size:10px; font-weight:600; padding:4px 14px; border-radius:7px; color:#4a3d62; cursor:pointer; transition:all .15s; }
+.tab:hover:not(.on) { color:#7c6b99; }
+.tab.on { background:rgba(240,171,252,0.12); color:#f0abfc; border:1px solid rgba(240,171,252,0.2); }
+.lpill { font-size:9px; font-weight:700; padding:3px 10px; border-radius:99px; background:rgba(74,222,128,0.1); color:#4ade80; border:1px solid rgba(74,222,128,0.2); display:flex; align-items:center; gap:5px; }
+.ldot { width:6px; height:6px; border-radius:50%; background:#4ade80; animation:lpulse 2s ease-in-out infinite; }
+@keyframes lpulse { 0%,100%{box-shadow:0 0 4px #4ade80} 50%{box-shadow:0 0 10px #4ade80;opacity:.6} }
+
+.scene { position:relative; width:860px; height:500px; overflow:hidden; }
+canvas { position:absolute; top:0; left:0; display:block; }
+#hud { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
+
+/* Characters */
+.ch {
+  position:absolute; display:flex; flex-direction:column; align-items:center; gap:3px;
+  pointer-events:all; cursor:pointer;
+  transform:translateX(-50%) translateY(-100%);
+}
+.ch:hover .ct { opacity:1; transform:translateY(0) scale(1); }
+.ch:hover .cr { transform:scale(1.2); opacity:1; }
+.cr {
+  position:absolute; border-radius:50%; opacity:0;
+  border:2px solid var(--rc,rgba(240,171,252,0.6));
+  box-shadow:0 0 12px var(--rc,rgba(240,171,252,0.4));
+  transition:all .2s; pointer-events:none;
+}
+.ca {
+  border-radius:50%; border:var(--bw,3px) solid var(--bc,rgba(240,171,252,0.6));
+  display:flex; align-items:center; justify-content:center; font-size:var(--fs,22px);
+  background:var(--bg); position:relative; overflow:hidden;
+  box-shadow:0 6px 20px rgba(0,0,0,.65), 0 0 var(--gs,0px) var(--gc,transparent),
+             inset 0 1px 0 rgba(255,255,255,.15);
+  transition:transform .2s;
+}
+.ca::before {
+  content:''; position:absolute; top:-30%; left:-15%; width:55%; height:55%;
+  background:radial-gradient(ellipse,rgba(255,255,255,.2) 0%,transparent 70%); border-radius:50%;
+}
+.ch:hover .ca { transform:translateY(-4px) scale(1.05); }
+.cst {
+  position:absolute; bottom:1px; right:1px; width:14px; height:14px; border-radius:50%;
+  border:2px solid #07041a; display:flex; align-items:center; justify-content:center;
+  font-size:6px; font-weight:900;
+}
+.ct {
+  background:rgba(5,2,18,.92); border:1px solid rgba(240,171,252,.2); border-radius:8px;
+  padding:3px 10px; font-size:9px; font-weight:700; color:#f0abfc; white-space:nowrap;
+  opacity:0; transform:translateY(6px) scale(.9); transition:all .2s cubic-bezier(.34,1.56,.64,1);
+  backdrop-filter:blur(6px); text-align:center; line-height:1.5;
+}
+.ct small { color:#7c6b99; font-size:8px; font-weight:400; display:block; }
+
+.fw { animation:cfw 2.5s ease-in-out infinite; }
+.fi { animation:cfi 3.8s ease-in-out infinite; }
+.fl { animation:cfl 3s ease-in-out infinite; }
+.fs { animation:cfs 6s ease-in-out infinite; }
+@keyframes cfw { 0%,100%{transform:translateX(-50%) translateY(-100%)} 50%{transform:translateX(-50%) translateY(calc(-100% - 10px))} }
+@keyframes cfi { 0%,100%{transform:translateX(-50%) translateY(-100%)} 50%{transform:translateX(-50%) translateY(calc(-100% - 6px))} }
+@keyframes cfl { 0%,100%{transform:translateX(-50%) translateY(-100%)} 50%{transform:translateX(-50%) translateY(calc(-100% - 12px))} }
+@keyframes cfs { 0%,100%{transform:translateX(-50%) translateY(-100%) rotate(-3deg)} 50%{transform:translateX(-50%) translateY(-100%) rotate(3deg)} }
+
+.statusbar {
+  display:flex; align-items:center; justify-content:space-between; padding:9px 22px;
+  background:rgba(7,4,26,.95); border-top:1px solid rgba(240,171,252,.07);
+}
+.pills { display:flex; gap:5px; }
+.pi { font-size:9px; font-weight:700; padding:2px 9px; border-radius:99px; }
+.pi-g { background:rgba(74,222,128,.1); color:#4ade80; border:1px solid rgba(74,222,128,.2); }
+.pi-p { background:rgba(240,171,252,.1); color:#f0abfc; border:1px solid rgba(240,171,252,.2); }
+.pi-s { background:rgba(148,163,184,.1); color:#94a3b8; border:1px solid rgba(148,163,184,.2); }
+.hint { font-size:9px; color:#2d1f4a; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="logo">✦ <em>Squad</em> ✧</div>
+    <div class="nav">
+      <div class="tab on">🏠 Lounge</div>
+      <div class="tab">💬 Stages</div>
+      <div class="tab">📋 Projects</div>
+      <div class="tab">⚙️ Settings</div>
+    </div>
+    <div class="lpill"><div class="ldot"></div>3 active</div>
+  </div>
+
+  <div class="scene">
+    <canvas id="c" width="860" height="500"></canvas>
+    <div id="hud"></div>
+  </div>
+
+  <div class="statusbar">
+    <div class="pills">
+      <span class="pi pi-g">● 3 active</span>
+      <span class="pi pi-p">★ 1 lead</span>
+      <span class="pi pi-s">○ 2 idle &nbsp;💤 2 sleeping</span>
+    </div>
+    <span class="hint">hover ตัวละคร · คลิกเพื่อเปิด Stage</span>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+//  PROJECTION  (cavalier axonometric)
+//  p(wx, wy, wz) → [screen_x, screen_y]
+//  wx = room width (right +)
+//  wy = room depth (back +)
+//  wz = height (up +)
+// ════════════════════════════════════════════
+const S=40, OX=188, OY=445;
+const cv=document.getElementById('c'), X=cv.getContext('2d');
+function p(wx,wy,wz){ return [OX+wx*S+wy*S*.5, OY-wy*S*.5-wz*S]; }
+
+// ── Drawing helpers ──────────────────────────
+function poly(pts,fill,stroke,lw=.6){
+  X.beginPath(); X.moveTo(pts[0][0],pts[0][1]);
+  for(let i=1;i<pts.length;i++) X.lineTo(pts[i][0],pts[i][1]);
+  X.closePath();
+  if(fill){X.fillStyle=fill;X.fill();}
+  if(stroke){X.strokeStyle=stroke;X.lineWidth=lw;X.stroke();}
+}
+function lgrad(x0,y0,x1,y1,...stops){
+  const g=X.createLinearGradient(x0,y0,x1,y1);
+  stops.forEach(([o,c])=>g.addColorStop(o,c)); return g;
+}
+function rgrad(x,y,r0,r1,...stops){
+  const g=X.createRadialGradient(x,y,r0,x,y,r1);
+  stops.forEach(([o,c])=>g.addColorStop(o,c)); return g;
+}
+
+// Draw isometric box – top + front + right faces
+// pos: (wx,wy,wz) = bottom-near-left corner, dim: (w,d,h)
+function box(wx,wy,wz, w,d,h, cT,cF,cR, stroke='rgba(0,0,0,.12)'){
+  if(cT){ // top face
+    poly([p(wx,wy,wz+h),p(wx+w,wy,wz+h),p(wx+w,wy+d,wz+h),p(wx,wy+d,wz+h)],cT,stroke);
+  }
+  if(cF){ // front face (wy=const, facing viewer directly)
+    poly([p(wx,wy,wz),p(wx+w,wy,wz),p(wx+w,wy,wz+h),p(wx,wy,wz+h)],cF,stroke);
+  }
+  if(cR){ // right face (wx+w = const)
+    poly([p(wx+w,wy,wz),p(wx+w,wy+d,wz),p(wx+w,wy+d,wz+h),p(wx+w,wy,wz+h)],cR,stroke);
+  }
+}
+
+// Shadow on floor
+function shadow(wx,wy, w,d, alpha=.18){
+  X.save(); X.globalAlpha=alpha;
+  poly([p(wx,wy,0),p(wx+w,wy,0),p(wx+w,wy+d,0),p(wx,wy+d,0)],'rgba(40,20,80,.6)',null);
+  X.restore();
+}
+
+// ════════════════════════════════════════════
+//  MAIN DRAW
+// ════════════════════════════════════════════
+function draw(){
+  X.clearRect(0,0,860,500);
+
+  // ── 1. Sky background ──────────────────
+  const skyG=lgrad(0,0,0,500,[0,'#060418'],[.35,'#0e0628'],[.7,'#160c38'],[1,'#1a1040']);
+  X.fillStyle=skyG; X.fillRect(0,0,860,500);
+
+  // Stars
+  [[55,22,1.1],[88,12,.9],[160,30,1.2],[240,16,.8],[330,28,1],[420,8,1.3],[520,22,.9],[610,14,1.1],[690,30,1],[760,12,.8],[810,24,1.2],[830,8,.7]].forEach(([sx,sy,sr])=>{
+    const a=.5+Math.random()*.5;
+    X.beginPath(); X.arc(sx,sy,sr,0,Math.PI*2);
+    X.fillStyle=`rgba(255,255,255,${a})`; X.fill();
+  });
+
+  // Moon (upper right, above window area)
+  const mx=670,my=40;
+  const moonG=rgrad(mx-6,my-5,2,mx,my,22,[0,'#fff8e0'],[.5,'#fde68a'],[1,'#f4a020']);
+  X.beginPath(); X.arc(mx,my,22,0,Math.PI*2); X.fillStyle=moonG; X.fill();
+  // moon crater
+  X.beginPath(); X.arc(mx+7,my-4,8,0,Math.PI*2); X.fillStyle='rgba(240,160,10,.25)'; X.fill();
+  // Moon halo
+  const mhG=rgrad(mx,my,20,mx,my,50,[0,'rgba(253,230,138,.15)'],[1,'transparent']);
+  X.fillStyle=mhG; X.fillRect(mx-55,my-55,110,110);
+
+  // ── 2. Back wall ──────────────────────────
+  const bwPts=[p(0,7,0),p(9,7,0),p(9,7,4.6),p(0,7,4.6)];
+  const bwG=lgrad(p(0,7,4.6)[0],p(0,7,4.6)[1],p(0,7,0)[0],p(0,7,0)[1],
+    [0,'#e8e0f8'],[.5,'#dfd6f4'],[1,'#d2c8ec']);
+  poly(bwPts,bwG,'rgba(160,140,210,.3)',.5);
+  // Subtle wall texture
+  X.strokeStyle='rgba(200,190,230,.12)'; X.lineWidth=1;
+  for(let i=1;i<9;i++){ const a=p(i,7,0),b=p(i,7,4.6); X.beginPath();X.moveTo(a[0],a[1]);X.lineTo(b[0],b[1]);X.stroke(); }
+  // Baseboard
+  poly([p(0,7,0),p(9,7,0),p(9,7,.14),p(0,7,.14)],'#c4b8e8',null);
+
+  // ── 3. Left wall ──────────────────────────
+  const lwPts=[p(0,0,0),p(0,7,0),p(0,7,4.6),p(0,0,4.6)];
+  const lwG=lgrad(p(0,0,4.6)[0],p(0,0,4.6)[1],p(0,7,0)[0],p(0,7,0)[1],
+    [0,'#f8f4ff'],[.6,'#f0eaff'],[1,'#e6defc']);
+  poly(lwPts,lwG,'rgba(180,160,230,.25)',.5);
+  // Texture
+  X.strokeStyle='rgba(200,190,230,.1)'; X.lineWidth=.8;
+  for(let j=1;j<7;j++){ const a=p(0,j,0),b=p(0,j,4.6); X.beginPath();X.moveTo(a[0],a[1]);X.lineTo(b[0],b[1]);X.stroke(); }
+  // Baseboard
+  poly([p(0,0,0),p(0,7,0),p(0,7,.14),p(0,0,.14)],'#d8d0f0',null);
+
+  // ── 4. Floor ──────────────────────────────
+  const flPts=[p(0,0,0),p(9,0,0),p(9,7,0),p(0,7,0)];
+  const flG=lgrad(p(0,0,0)[0],p(0,0,0)[1],p(9,7,0)[0],p(9,7,0)[1],
+    [0,'#cfc0f0'],[.4,'#c4b4ec'],[.8,'#b8a8e4'],[1,'#aca0dc']);
+  poly(flPts,flG,'rgba(150,130,200,.2)',.5);
+  // Floor grid
+  X.strokeStyle='rgba(255,255,255,.055)'; X.lineWidth=.7;
+  for(let i=1;i<9;i++){ const a=p(i,0,0),b=p(i,7,0); X.beginPath();X.moveTo(a[0],a[1]);X.lineTo(b[0],b[1]);X.stroke(); }
+  for(let j=1;j<7;j++){ const a=p(0,j,0),b=p(9,j,0); X.beginPath();X.moveTo(a[0],a[1]);X.lineTo(b[0],b[1]);X.stroke(); }
+
+  // Rug
+  X.save(); X.globalAlpha=.55;
+  poly([p(2.4,1.8,0),p(6.8,1.8,0),p(6.8,6.2,0),p(2.4,6.2,0)],
+    'rgba(139,92,246,.22)','rgba(167,139,250,.4)',1.5);
+  X.restore();
+  // Rug border
+  X.strokeStyle='rgba(196,167,253,.35)'; X.lineWidth=.8;
+  poly([p(2.55,1.95,0),p(6.65,1.95,0),p(6.65,6.05,0),p(2.55,6.05,0)],null,'rgba(196,167,253,.3)',1);
+
+  // ── 5. Window ──────────────────────────────
+  // Window frame
+  const wfO=.06; // offset from wall
+  poly([p(0,1.1,.8),p(0,5.6,.8),p(0,5.6,3.9),p(0,1.1,3.9)],'#e8e4f8','rgba(190,175,230,.6)',3);
+
+  // Night sky in window
+  const wpts=[p(0,1.22,.94),p(0,5.48,.94),p(0,5.48,3.76),p(0,1.22,3.76)];
+  const wGrad=lgrad(p(0,1.22,3.76)[0],p(0,1.22,3.76)[1],p(0,1.22,.94)[0],p(0,1.22,.94)[1],
+    [0,'#0c0530'],[.4,'#12084a'],[.8,'#180c5a'],[1,'#1e1060']);
+  poly(wpts,wGrad,null);
+
+  // City skyline silhouette
+  X.save(); X.fillStyle='#160840';
+  const bldgs=[
+    {y:1.4,w:.3,h:1.1},{y:1.75,w:.25,h:.8},{y:2.1,w:.35,h:1.4},
+    {y:2.5,w:.28,h:1.0},{y:2.82,w:.32,h:1.6},{y:3.18,w:.26,h:1.1},
+    {y:3.48,w:.38,h:1.5},{y:3.9,w:.24,h:.9},{y:4.18,w:.3,h:1.2},
+    {y:4.52,w:.28,h:1.0},{y:4.84,w:.2,h:.7},
+  ];
+  bldgs.forEach(({y,w,h})=>{
+    const bl=p(0,y,1), br=p(0,y+w,1), tr=p(0,y+w,1+h*.7), tl=p(0,y,1+h*.7);
+    poly([bl,br,tr,tl],'#0e0638',null);
+    // Lit windows
+    [[.3,.5],[.5,.7],[.2,.8]].forEach(([ty,oy])=>{
+      if(Math.random()>.5) return;
+      const lp=p(0, y+w*oy, 1+h*ty*.7);
+      X.fillStyle=Math.random()>.5?'rgba(253,230,138,.55)':'rgba(147,197,253,.5)';
+      X.fillRect(lp[0]+.5,lp[1]-2.5,3.5,2.5);
+    });
+  });
+  X.restore();
+
+  // Moon reflection in window
+  const wMx=p(0,3.5,3.1); X.beginPath(); X.arc(wMx[0]+1,wMx[1],8,0,Math.PI*2);
+  const wmG=rgrad(wMx[0]-2,wMx[1]-2,1,wMx[0]+1,wMx[1],8,[0,'#fff8e0'],[.6,'#fde68a'],[1,'rgba(253,200,50,.3)']);
+  X.fillStyle=wmG; X.fill();
+  // Star dots in window
+  [[1.8,3.2],[2.2,2.5],[2.9,3.5],[3.8,2.8],[4.6,3.0],[5.0,2.3],[5.3,3.4]].forEach(([wy,wz])=>{
+    const sp=p(0,wy,wz); X.beginPath(); X.arc(sp[0]+.5,sp[1],.8,0,Math.PI*2);
+    X.fillStyle='rgba(255,255,255,.7)'; X.fill();
+  });
+
+  // Window curtains
+  const curtainL=[p(0,.95,.75),p(0,1.45,.75),p(0,1.3,3.95),p(0,.95,3.95)];
+  const curtainR=[p(0,5.3,.75),p(0,5.75,.75),p(0,5.75,3.95),p(0,5.45,3.95)];
+  poly(curtainL,'rgba(245,240,255,.85)','rgba(210,200,240,.5)',1);
+  poly(curtainR,'rgba(245,240,255,.85)','rgba(210,200,240,.5)',1);
+  // Curtain folds
+  X.strokeStyle='rgba(200,185,230,.4)'; X.lineWidth=1;
+  [.15,.3,.45,.6,.75,.9].forEach(t=>{
+    const a=p(0,.95+t*.5,.75), b=p(0,.95+t*.5,3.95);
+    X.beginPath();X.moveTo(a[0],a[1]);X.lineTo(b[0],b[1]);X.stroke();
+  });
+
+  // Window dividers
+  X.strokeStyle='#d8d0f4'; X.lineWidth=4;
+  const wdM=p(0,3.35,.8), wdT=p(0,3.35,3.95);
+  X.beginPath();X.moveTo(wdM[0],wdM[1]);X.lineTo(wdT[0],wdT[1]);X.stroke();
+  const whA=p(0,1.1,2.35), whB=p(0,5.6,2.35);
+  X.beginPath();X.moveTo(whA[0],whA[1]);X.lineTo(whB[0],whB[1]);X.stroke();
+
+  // Window ambient light on floor
+  const waG=rgrad(p(0,3.3,0)[0],p(0,3.3,0)[1],10,p(0,3.3,0)[0],p(0,3.3,0)[1],130,
+    [0,'rgba(180,160,255,.09)'],[1,'transparent']);
+  X.fillStyle=waG; X.fillRect(150,300,300,160);
+
+  // ── 6. Art frame on back wall ──────────────
+  // Frame
+  poly([p(.9,7,2.3),p(2.7,7,2.3),p(2.7,7,3.9),p(.9,7,3.9)],'#f0ecff','rgba(180,160,230,.5)',2);
+  // Inner mat
+  poly([p(1.05,7,2.45),p(2.55,7,2.45),p(2.55,7,3.75),p(1.05,7,3.75)],'#e8e0ff',null);
+  // Painting (abstract)
+  const pG=lgrad(p(1.1,7,3.65)[0],p(1.1,7,3.65)[1],p(1.1,7,2.5)[0],p(1.1,7,2.5)[1],
+    [0,'#c4b5fd'],[.5,'#818cf8'],[1,'#60a5fa']);
+  poly([p(1.1,7,2.5),p(2.5,7,2.5),p(2.5,7,3.65),p(1.1,7,3.65)],pG,null);
+  X.fillStyle='rgba(249,115,22,.75)'; X.beginPath();
+  X.arc(p(1.6,7,3.05)[0]+1,p(1.6,7,3.05)[1],10,0,Math.PI*2); X.fill();
+  poly([p(1.85,7,2.8),p(2.35,7,2.8),p(2.35,7,3.45),p(1.85,7,3.45)],'rgba(253,224,71,.7)',null);
+
+  // Clock
+  const clkC=p(7.8,7,2.9);
+  X.beginPath(); X.arc(clkC[0]+.5,clkC[1],17,0,Math.PI*2);
+  X.fillStyle='#f5f0ff'; X.fill();
+  X.strokeStyle='#a894dc'; X.lineWidth=2; X.stroke();
+  // Rim
+  X.beginPath(); X.arc(clkC[0]+.5,clkC[1],14,0,Math.PI*2);
+  X.strokeStyle='rgba(168,148,220,.3)'; X.lineWidth=1.5; X.stroke();
+  // Hands
+  X.strokeStyle='#5040a0'; X.lineWidth=2;
+  X.beginPath(); X.moveTo(clkC[0]+.5,clkC[1]); X.lineTo(clkC[0]+7,clkC[1]-8); X.stroke();
+  X.lineWidth=1.5;
+  X.beginPath(); X.moveTo(clkC[0]+.5,clkC[1]); X.lineTo(clkC[0]+11,clkC[1]+2); X.stroke();
+  X.fillStyle='#7060c0'; X.beginPath(); X.arc(clkC[0]+.5,clkC[1],2,0,Math.PI*2); X.fill();
+
+  // Floating shelf on back wall
+  poly([p(6.2,7,.8),p(8.6,7,.8),p(8.6,7,.95),p(6.2,7,.95)],'#c49870','rgba(0,0,0,.15)',.5);
+  // Items on shelf
+  box(6.3,6.85,.95,.4,.1,.5, '#e86c54','#c85040',null); // small book red
+  box(6.75,6.85,.95,.3,.1,.6, '#3b82f6','#2563eb',null); // blue book
+  box(7.1,6.85,.95,.5,.1,.4, '#10b981','#059669',null); // green book
+  box(7.65,6.85,.95,.3,.1,.55,'#f59e0b','#d97706',null);
+  box(8.0,6.85,.95,.2,.1,.35,'#8b5cf6','#7c3aed',null);
+  // Small pot
+  box(8.3,6.85,.95, .22,.12,.22,'#a0522d','#7a3c18',null);
+
+  // ── 7. BOOKSHELF ──────────────────────────
+  shadow(2.7,6.6, 3.6,.4,.25);
+  // Back panel
+  poly([p(2.7,7,0),p(6.3,7,0),p(6.3,7,4.1),p(2.7,7,4.1)],
+    '#6b4820','rgba(0,0,0,.3)',.5);
+  // Main box (3 faces)
+  const shT=lgrad(p(2.7,6.6,4.1)[0],p(2.7,6.6,4.1)[1],p(6.3,7,4.1)[0],p(6.3,7,4.1)[1],
+    [0,'#8b6030'],[1,'#7a5025']);
+  box(2.7,6.6,0, 3.6,.4,4.1, shT,'#6b4820','#5a3818','rgba(0,0,0,.2)');
+
+  // Shelves (4 levels)
+  [.75,1.5,2.3,3.1].forEach(sz=>{
+    poly([p(2.75,6.6,sz),p(6.25,6.6,sz),p(6.25,7,sz),p(2.75,7,sz)],
+      '#7a5425','rgba(0,0,0,.25)',.5);
+    poly([p(2.75,6.6,sz),p(6.25,6.6,sz),p(6.25,6.6,sz-.08),p(2.75,6.6,sz-.08)],
+      '#8b6030',null);
+  });
+
+  // Books (4 rows)
+  const bCols=['#ef4444','#3b82f6','#10b981','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f97316','#6366f1','#14b8a6','#e11d48'];
+  [0,.75,1.5,2.3].forEach((sz,ri)=>{
+    let bx=2.78;
+    for(let bi=0;bi<11;bi++){
+      const bw=.22+Math.sin(ri*3+bi)*.08;
+      const bh=.52+Math.cos(ri+bi)*.1;
+      const bc=bCols[(ri*5+bi)%bCols.length];
+      const bTop=sz+.08+bh;
+      // Spine (front)
+      poly([p(bx,6.6,sz+.08),p(bx+bw,6.6,sz+.08),p(bx+bw,6.6,bTop),p(bx,6.6,bTop)],bc,null);
+      // Side shadow
+      poly([p(bx+bw,6.6,sz+.08),p(bx+bw,7,sz+.08),p(bx+bw,7,bTop),p(bx+bw,6.6,bTop)],
+        'rgba(0,0,0,.25)',null);
+      // Top
+      poly([p(bx,6.6,bTop),p(bx+bw,6.6,bTop),p(bx+bw,7,bTop),p(bx,7,bTop)],
+        shadeColor(bc,.3),null);
+      bx+=bw+.03;
+      if(bx>6.2) break;
+    }
+  });
+
+  // Bookshelf top deco
+  poly([p(2.7,6.6,4.1),p(6.3,6.6,4.1),p(6.3,7,4.1),p(2.7,7,4.1)],
+    lgrad(p(2.7,6.6,4.1)[0],p(2.7,6.6,4.1)[1],p(6.3,7,4.1)[0],p(6.3,7,4.1)[1],[0,'#9b7038'],[1,'#8a6030']),null);
+  // Small deco items on top
+  box(2.8,6.7,4.1,.3,.25,.55,'#4ade80','#22c55e','#16a34a'); // mini plant
+  box(5.8,6.7,4.1,.3,.25,.6,'#f0abfc','#d888e8','#b060c0'); // figurine
+  box(4.2,6.75,4.1,.5,.2,.08,'rgba(200,180,255,.6)',null,null); // small book on top
+
+  // ── 8. BED ────────────────────────────────
+  shadow(5.7,.3, 3.1,4.9,.2);
+  // Headboard
+  const hdG=lgrad(p(5.7,.3,0)[0],p(5.7,.3,0)[1],p(8.8,.3,0)[0],p(8.8,.3,0)[1],
+    [0,'#c49060'],[1,'#a07040']);
+  box(5.7,.3,0, 3.1,.15,1.3, hdG,'#8a5e28',null,'rgba(0,0,0,.15)');
+  // Headboard detail
+  X.strokeStyle='rgba(255,220,160,.2)'; X.lineWidth=1;
+  [1.2,2,2.8].forEach(dx=>{
+    const a=p(5.7+dx,.3,.2), b=p(5.7+dx,.3,1.1);
+    X.beginPath();X.moveTo(a[0],a[1]);X.lineTo(b[0],b[1]);X.stroke();
+  });
+  // Bed frame
+  box(5.7,.45,0, 3.1,4.7,.32,
+    lgrad(p(5.7,.45,.32)[0],p(5.7,.45,.32)[1],p(8.8,5.15,.32)[0],p(8.8,5.15,.32)[1],[0,'#b09050'],[1,'#9a7a40']),
+    '#7a5830','#6a4820','rgba(0,0,0,.2)');
+  // Footboard
+  box(5.7,5.0,0, 3.1,.15,.75,
+    lgrad(p(5.7,5,0)[0],p(5.7,5,0)[1],p(8.8,5,0)[0],p(8.8,5,0)[1],[0,'#c49060'],[1,'#a07040']),
+    '#8a5e28',null);
+  // Mattress
+  const matG=lgrad(p(5.72,.47,.32)[0],p(5.72,.47,.32)[1],p(8.78,4.98,.32)[0],p(8.78,4.98,.32)[1],
+    [0,'#f0ecff'],[1,'#e4dff8']);
+  box(5.72,.47,.32, 3.06,4.51,.38, matG,'#ddd8f4','#d0caf0');
+  // Blanket (folded back upper half)
+  const blkG=lgrad(p(5.73,2.4,.7)[0],p(5.73,2.4,.7)[1],p(8.77,4.97,.7)[0],p(8.77,4.97,.7)[1],
+    [0,'#c4b5fd'],[.5,'#b39be8'],[1,'#a085d0']);
+  box(5.73,2.4,.7, 3.04,2.57,.14, blkG,'#a890d8','#9880c8');
+  // Blanket fold edge
+  poly([p(5.73,2.4,.84),p(8.77,2.4,.84),p(8.77,2.4,.7),p(5.73,2.4,.7)],'#b8a4e8',null);
+  // Pillows (2)
+  box(5.75,.5,.7, 1.15,1.0,.24,'#fafaff','#eeebff','#e0dbf5');
+  box(7.0,.5,.7, 1.1,1.0,.24,'#fafaff','#eeebff','#e0dbf5');
+  // Pillow stitching
+  X.strokeStyle='rgba(200,190,230,.4)'; X.lineWidth=.6;
+  [[5.75+.15,.5+.15,.94,.64,.94],[7.0+.1,.5+.15,.64,.64,.94]].forEach(([bx,by,w,d,tz])=>{
+    poly([p(bx,by,tz),p(bx+w,by,tz),p(bx+w,by+d,tz),p(bx,by+d,tz)],null,'rgba(200,190,230,.35)',.6);
+  });
+  // Bedside table
+  shadow(5.55,.32, .9,.55,.18);
+  box(5.55,.32,0, .9,.55,.72,
+    '#b09050','#8a6a30','#7a5a28','rgba(0,0,0,.2)');
+  // Table drawer
+  X.strokeStyle='rgba(255,220,150,.25)'; X.lineWidth=.8;
+  const td1=p(5.55,.32,.36), td2=p(6.45,.32,.36);
+  X.beginPath();X.moveTo(td1[0],td1[1]);X.lineTo(td2[0],td2[1]);X.stroke();
+  // Lamp on bedside
+  const lbBase=p(5.82,.46,.72);
+  box(5.78,.42,.72,.28,.18,.05,'#c8973a','#a07828',null);
+  X.strokeStyle='#9a7020'; X.lineWidth=2.5;
+  X.beginPath();X.moveTo(lbBase[0]+2,lbBase[1]-4);X.lineTo(lbBase[0]+1,lbBase[1]-22);X.stroke();
+  X.fillStyle='#fde68a';
+  X.beginPath();X.moveTo(lbBase[0]-7,lbBase[1]-22);X.lineTo(lbBase[0]+10,lbBase[1]-22);
+  X.lineTo(lbBase[0]+7,lbBase[1]-33);X.lineTo(lbBase[0]-4,lbBase[1]-33);X.closePath();X.fill();
+  X.strokeStyle='rgba(200,150,30,.4)';X.lineWidth=1;X.stroke();
+  // Lamp glow
+  const lgG=rgrad(lbBase[0],lbBase[1]-18,2,lbBase[0],lbBase[1]-18,45,
+    [0,'rgba(255,200,80,.14)'],[1,'transparent']);
+  X.fillStyle=lgG; X.fillRect(lbBase[0]-50,lbBase[1]-65,100,70);
+
+  // ── 9. ARMCHAIRS ─────────────────────────
+  function armchair(wx,wy){
+    shadow(wx,wy, 1.7,1.9,.22);
+    // Legs
+    [[.15,.15],[1.4,.15],[.15,1.6],[1.4,1.6]].forEach(([lx,ly])=>{
+      box(wx+lx,wy+ly,0,.08,.08,.3,'#8b3020','#6b2010',null,'rgba(0,0,0,.2)');
+    });
+    // Seat cushion (rounded feel via face gradient)
+    const sG=lgrad(p(wx,wy,.3)[0],p(wx,wy,.3)[1],p(wx+1.7,wy+1.9,.3)[0],p(wx+1.7,wy+1.9,.3)[1],
+      [0,'#f08060'],[1,'#e06848']);
+    box(wx,wy,.3, 1.7,1.9,.32, sG,'#d05038','#b83a28','rgba(0,0,0,.15)');
+    // Back rest
+    const brG=lgrad(p(wx,wy,.62)[0],p(wx,wy,.62)[1],p(wx,wy+.25,1.45)[0],p(wx,wy+.25,1.45)[1],
+      [0,'#e07050'],[1,'#c85c3c']);
+    box(wx,wy,.62, 1.7,.28,.95, brG,'#c85c3c','#a84428','rgba(0,0,0,.15)');
+    // Armrests
+    const arG=lgrad(0,0,10,10,[0,'#d06040'],[1,'#b84c30']);
+    box(wx,wy,.62, .18,1.9,.36,'#d06040','#b84c30',null,'rgba(0,0,0,.15)');
+    box(wx+1.52,wy,.62,.18,1.9,.36,'#d06040','#b84c30',null,'rgba(0,0,0,.15)');
+    // Cushion highlight
+    poly([p(wx+.1,wy+.1,.62),p(wx+1.6,wy+.1,.62),p(wx+1.6,wy+.5,.62),p(wx+.1,wy+.5,.62)],
+      'rgba(255,200,160,.15)',null);
+  }
+  armchair(2.4,1.8);
+  armchair(4.9,3.2);
+
+  // Coffee table
+  shadow(3.5,2.7, 1.9,1.5,.2);
+  // Table top
+  const ctG=lgrad(p(3.5,2.7,.55)[0],p(3.5,2.7,.55)[1],p(5.4,4.2,.55)[0],p(5.4,4.2,.55)[1],
+    [0,'#c8a870'],[1,'#b09054']);
+  box(3.5,2.7,.08, 1.9,1.5,.47, ctG,'#9a7840','#886830','rgba(0,0,0,.2)');
+  // Table legs
+  [[.12,.12],[1.66,.12],[.12,1.26],[1.66,1.26]].forEach(([lx,ly])=>{
+    box(3.5+lx,2.7+ly,0,.08,.08,.1,'#9a7840','#7a5c28',null);
+  });
+  // Items on table
+  // Mug 1
+  box(3.75,2.95,.55,.22,.22,.28,'#f0abfc','#d888e8',null);
+  poly([p(3.75,2.95,.55),p(3.97,2.95,.55),p(3.97,3.17,.55),p(3.75,3.17,.55)],'rgba(240,171,252,.15)',null);
+  // Mug 2
+  box(4.6,3.4,.55,.22,.22,.28,'#a5f3fc','#7adce8',null);
+  // Small plant
+  box(4.05,3.15,.55,.28,.18,.06,'#a0522d','#7a3a1a',null);
+  box(4.06,3.16,.6,.12,.12,.28,'#22c55e','#16a34a',null);
+
+  // ── 10. DESK ──────────────────────────────
+  shadow(.3,.3, 3.4,3.2,.22);
+  // Desk surface
+  const dkG=lgrad(p(.3,.3,1.1)[0],p(.3,.3,1.1)[1],p(3.7,3.5,1.1)[0],p(3.7,3.5,1.1)[1],
+    [0,'#d4aa72'],[.5,'#c49860'],[1,'#b08048']);
+  box(.3,.3,0, 3.4,3.2,1.1, dkG,'#a07840','#8a6428','rgba(0,0,0,.18)');
+  // Desk side panel detail
+  X.strokeStyle='rgba(180,130,60,.3)'; X.lineWidth=.7;
+  const dp1=p(.3,.3,.55), dp2=p(3.7,.3,.55);
+  X.beginPath();X.moveTo(dp1[0],dp1[1]);X.lineTo(dp2[0],dp2[1]);X.stroke();
+  // Drawer handles
+  [.8,2.4].forEach(dx=>{
+    const dh=p(.3+dx,.3,.75);
+    X.fillStyle='rgba(200,160,80,.5)';
+    X.fillRect(dh[0]-5,dh[1]-2,10,3.5);
+    X.strokeStyle='rgba(140,100,30,.4)'; X.lineWidth=.5; X.strokeRect(dh[0]-5,dh[1]-2,10,3.5);
+  });
+
+  // ── Monitor ────────────────────────────────
+  // Stand base
+  box(.95,2.1,1.1, .7,.14,.06,'#1e293b','#151e2e',null);
+  box(1.1,2.12,1.16,.4,.1,.04,'#1e293b',null,null);
+  box(1.15,2.14,1.2,.3,.06,.3,'#1e293b','#0f1520',null);
+
+  // Screen frame
+  box(.7,2.05,1.5, 1.6,.12,1.4,'#141d2e','#0e1522','#0a1018','rgba(0,0,0,.2)');
+
+  // Screen (glowing)
+  const scG=lgrad(p(.72,2.05,2.88)[0],p(.72,2.05,2.88)[1],p(.72,2.05,1.52)[0],p(.72,2.05,1.52)[1],
+    [0,'#1a3560'],[.3,'#1e2d58'],[.6,'#16204a'],[1,'#0d1430']);
+  poly([p(.72,2.05,1.52),p(2.28,2.05,1.52),p(2.28,2.05,2.88),p(.72,2.05,2.88)],scG,null);
+
+  // Screen content (code-like)
+  X.save();
+  const scClip=[p(.72,2.05,1.52),p(2.28,2.05,1.52),p(2.28,2.05,2.88),p(.72,2.05,2.88)];
+  X.beginPath(); scClip.forEach((pt,i)=>i?X.lineTo(pt[0],pt[1]):X.moveTo(pt[0],pt[1]));
+  X.clip();
+  // Code lines
+  const codeColors=['#7dd3fc','#c084fc','#86efac','#fde68a','#7dd3fc','#f9a8d4'];
+  [0,.2,.38,.56,.74,.88].forEach((t,i)=>{
+    const wz=1.6+t*1.1;
+    const lp=p(.78,2.05,wz); const rp=p(2.22-Math.random()*.5,2.05,wz);
+    X.strokeStyle=codeColors[i]; X.lineWidth=1.2;
+    X.beginPath();X.moveTo(lp[0],lp[1]);X.lineTo(rp[0],rp[1]);X.stroke();
+  });
+  X.restore();
+
+  // Screen glow on desk
+  const monGlowG=rgrad(p(1.5,2.05,2.2)[0],p(1.5,2.05,2.2)[1]+30,5,p(1.5,2.05,2.2)[0],p(1.5,2.05,2.2)[1]+30,80,
+    [0,'rgba(96,165,250,.1)'],[1,'transparent']);
+  X.fillStyle=monGlowG; X.fillRect(p(.6,2.05,1.1)[0]-20,p(.6,2.05,1.1)[1],200,100);
+
+  // ── Keyboard ──────────────────────────────
+  const kbT=lgrad(p(.5,1.2,1.1)[0],p(.5,1.2,1.1)[1],p(2.3,1.85,1.1)[0],p(2.3,1.85,1.1)[1],
+    [0,'#1e2d42'],[1,'#141f30']);
+  box(.5,1.2,1.1, 1.8,.65,.09, kbT,'#0f1820','#0a1018');
+  // Key grid
+  X.fillStyle='rgba(100,150,255,.2)';
+  for(let kr=0;kr<3;kr++) for(let kc=0;kc<9;kc++){
+    const kp=p(.58+kc*.18, 1.25+kr*.18, 1.19);
+    X.fillRect(kp[0]-2.5,kp[1]-1.8,5,3.5);
+  }
+
+  // ── Desk lamp ─────────────────────────────
+  const dlB=p(2.9,.55,1.1);
+  box(2.85,.5,1.1,.2,.18,.06,'#c8973a','#a07828',null);
+  X.strokeStyle='#9a7828'; X.lineWidth=2.5;
+  X.beginPath();X.moveTo(dlB[0]+2,dlB[1]-3);X.lineTo(dlB[0]+5,dlB[1]-22);X.lineTo(dlB[0]-4,dlB[1]-34);X.stroke();
+  X.fillStyle='#f5c040';
+  X.beginPath();X.moveTo(dlB[0]-14,dlB[1]-30);X.lineTo(dlB[0]+6,dlB[1]-30);X.lineTo(dlB[0]+2,dlB[1]-42);X.lineTo(dlB[0]-10,dlB[1]-42);X.closePath();X.fill();
+  X.strokeStyle='rgba(200,150,20,.35)'; X.lineWidth=.8; X.stroke();
+  // Lamp glow
+  const dlgG=rgrad(dlB[0]-4,dlB[1]-22,3,dlB[0]-4,dlB[1]-22,55,
+    [0,'rgba(255,220,80,.14)'],[1,'transparent']);
+  X.fillStyle=dlgG; X.fillRect(dlB[0]-65,dlB[1]-76,130,80);
+
+  // ── Mug on desk ───────────────────────────
+  box(2.5,.52,1.1,.26,.26,.3,'#f0abfc','#d880e4',null);
+  poly([p(2.5,.52,1.1),p(2.76,.52,1.1),p(2.76,.78,1.1),p(2.5,.78,1.1)],'rgba(240,171,252,.12)',null);
+
+  // ── Papers on desk ────────────────────────
+  box(.45,.38,1.1,.9,.55,.06,'#fafaff','#f0eeff',null);
+  box(.48,.4,1.16,.8,.48,.04,'#fff8f0','#fde8dc',null);
+  // Text lines on paper
+  X.strokeStyle='rgba(150,130,200,.3)'; X.lineWidth=.6;
+  [.22,.32,.42].forEach(dz=>{
+    const la=p(.52,.38,1.1+dz), lb=p(1.2,.38,1.1+dz);
+    X.beginPath();X.moveTo(la[0],la[1]);X.lineTo(lb[0],lb[1]);X.stroke();
+  });
+
+  // ── 11. PLANT ─────────────────────────────
+  shadow(.1,.12, .7,.6,.18);
+  // Pot
+  const ptG=lgrad(p(.1,.12,0)[0],p(.1,.12,0)[1],p(.8,.72,0)[0],p(.8,.72,0)[1],
+    [0,'#b05828'],[1,'#8a4018']);
+  box(.1,.12,0, .7,.6,.6, ptG,'#7a3818','#6a3010');
+  // Pot rim
+  poly([p(.08,.1,.6),p(.82,.1,.6),p(.82,.72,.6),p(.08,.72,.6)],null,'rgba(160,90,40,.4)',1);
+  poly([p(.08,.1,.62),p(.82,.1,.62),p(.82,.72,.62),p(.08,.72,.62)],'#c06030',null);
+  // Soil
+  poly([p(.1,.12,.62),p(.8,.12,.62),p(.8,.72,.62),p(.1,.72,.62)],'#2a1408',null);
+  // Stem
+  const stemBase=p(.45,.42,.62);
+  X.strokeStyle='#15803d'; X.lineWidth=2.5;
+  X.beginPath();X.moveTo(stemBase[0],stemBase[1]);X.lineTo(stemBase[0]-3,stemBase[1]-35);X.stroke();
+  // Leaves
+  function drawLeaf(cx2,cy2,angle,size,col){
+    X.save(); X.translate(cx2,cy2); X.rotate(angle);
+    X.fillStyle=col;
+    X.beginPath(); X.ellipse(0,-size*.5,size*.35,size*.65,0,0,Math.PI*2);
+    X.fill();
+    // Vein
+    X.strokeStyle='rgba(0,80,0,.3)'; X.lineWidth=.8;
+    X.beginPath(); X.moveTo(0,0); X.lineTo(0,-size); X.stroke();
+    X.restore();
+  }
+  drawLeaf(stemBase[0]-3,stemBase[1]-35, -.4, 20, '#22c55e');
+  drawLeaf(stemBase[0]-3,stemBase[1]-35, .5, 17, '#16a34a');
+  drawLeaf(stemBase[0]-3,stemBase[1]-25, -.6, 15, '#4ade80');
+  drawLeaf(stemBase[0]-3,stemBase[1]-25, .8, 14, '#22c55e');
+  drawLeaf(stemBase[0]-3,stemBase[1]-42, .2, 16, '#15803d');
+
+  // ── 12. Fairy lights (wall top) ────────────
+  const flC=['#fde68a','#f9a8d4','#a5f3fc','#c4b5fd','#bbf7d0','#fde68a','#f9a8d4'];
+  // Left wall top
+  for(let i=0;i<=8;i++){
+    const t=i/8, wy=t*6.8+.1;
+    const fc=p(0,wy,4.35);
+    X.beginPath(); X.arc(fc[0],fc[1],2.5,0,Math.PI*2);
+    X.fillStyle=flC[i%flC.length]; X.fill();
+    const hG=rgrad(fc[0],fc[1],1,fc[0],fc[1],8,[0,flC[i%flC.length].replace(')',',0.4)').replace('rgb','rgba')],[1,'transparent']);
+    X.fillStyle=hG; X.beginPath(); X.arc(fc[0],fc[1],9,0,Math.PI*2); X.fill();
+  }
+  // Back wall top
+  for(let i=0;i<=10;i++){
+    const t=i/10, wx=t*8.7+.1;
+    const fc=p(wx,7,4.35);
+    X.beginPath(); X.arc(fc[0],fc[1],2.5,0,Math.PI*2);
+    X.fillStyle=flC[(i+3)%flC.length]; X.fill();
+    const hG=rgrad(fc[0],fc[1],1,fc[0],fc[1],8,[0,flC[(i+3)%flC.length].replace(')',',0.4)').replace('rgb','rgba')],[1,'transparent']);
+    X.fillStyle=hG; X.beginPath(); X.arc(fc[0],fc[1],9,0,Math.PI*2); X.fill();
+  }
+
+  // ── 13. Ambient atmosphere ────────────────
+  // Room corner ambient (where walls meet)
+  const caG=rgrad(p(0,7,0)[0],p(0,7,0)[1],5,p(0,7,0)[0],p(0,7,0)[1],200,
+    [0,'rgba(139,92,246,.06)'],[1,'transparent']);
+  X.fillStyle=caG; X.fillRect(200,100,400,300);
+
+  // Monitor screen light reflection on near objects
+  const mrG=rgrad(p(1.5,2.0,2.2)[0],p(1.5,2.0,2.2)[1]+15,3,p(1.5,2.0,2.2)[0],p(1.5,2.0,2.2)[1]+15,100,
+    [0,'rgba(96,165,250,.06)'],[1,'transparent']);
+  X.fillStyle=mrG; X.fillRect(180,260,260,180);
+}
+
+// Utility: lighten/darken hex color
+function shadeColor(hex,factor){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  const nr=Math.min(255,Math.round(r*(1+factor))), ng=Math.min(255,Math.round(g*(1+factor))), nb=Math.min(255,Math.round(b*(1+factor)));
+  return `rgb(${nr},${ng},${nb})`;
+}
+
+// ════════════════════════════════════════════
+//  CHARACTERS
+// ════════════════════════════════════════════
+const chars=[
+  {id:'mai', wx:1.5,wy:.2,wz:1.3, em:'🐱', bg:'linear-gradient(135deg,#ffd8ec 0%,#e9b8f0 50%,#c8a8e8 100%)', bc:'#f0abfc', gc:'rgba(240,171,252,.5)', gs:22, fs:24, sz:58, anim:'fw', dotBg:'#4ade80', dotFg:'#052e16', dotT:'●', name:'Mai', role:'Frontend · 🤔 thinking'},
+  {id:'ren', wx:8.2,wy:.2,wz:1.1, em:'⚔️', bg:'linear-gradient(135deg,#a8f0c8,#6ee7b7,#60a5fa)', bc:'#4ade80', gc:'rgba(74,222,128,.4)', gs:18, fs:22, sz:52, anim:'fw', dotBg:'#4ade80', dotFg:'#052e16', dotT:'●', name:'Ren', role:'Backend · 💪 focused'},
+  {id:'yui', wx:3.9,wy:2.9,wz:1.5, em:'📖', bg:'linear-gradient(135deg,#fef9c3,#fde68a,#f59e0b)', bc:'#fde047', gc:'rgba(253,224,71,.45)', gs:24, fs:28, sz:66, anim:'fl', dotBg:'#fde047', dotFg:'#713f12', dotT:'★', name:'Yui', role:'Lead · 👑 coordinating'},
+  {id:'mika',wx:2.6,wy:2.3,wz:1.1, em:'🌸', bg:'linear-gradient(135deg,#ede9fe,#ddd6fe,#a78bfa)', bc:'#a78bfa', gc:'rgba(167,139,250,.3)', gs:14, fs:18, sz:46, anim:'fi', dotBg:'#94a3b8', dotFg:'#0f172a', dotT:'○', name:'Mika', role:'UI · 😊 idle'},
+  {id:'aki', wx:6.6,wy:2.0,wz:1.0, em:'🔧', bg:'linear-gradient(135deg,#fed7aa,#fdba74,#fb923c)', bc:'#fb923c', gc:'rgba(251,146,60,.28)', gs:14, fs:18, sz:46, anim:'fi', dotBg:'#94a3b8', dotFg:'#0f172a', dotT:'○', name:'Aki', role:'DevOps · 😊 idle'},
+  {id:'senko',wx:6.9,wy:3.6,wz:1.3,em:'🦊', bg:'linear-gradient(135deg,#fde68a,#fcd34d,#fca5a5)', bc:'rgba(148,163,184,.25)', gc:'transparent', gs:0, fs:16, sz:42, anim:'fs', dotBg:'#334155', dotFg:'#64748b', dotT:'z', name:'Senko', role:'Support · 😴 sleeping'},
+  {id:'shin',wx:8.1,wy:4.6,wz:1.3, em:'🗡️', bg:'linear-gradient(135deg,#ddd6fe,#c4b5fd,#8b5cf6)', bc:'rgba(148,163,184,.25)', gc:'transparent', gs:0, fs:16, sz:42, anim:'fs', dotBg:'#334155', dotFg:'#64748b', dotT:'z', name:'Shinobu', role:'Strategist · 😴 sleeping'},
+];
+
+function placeChars(){
+  const hud=document.getElementById('hud');
+  chars.forEach(ch=>{
+    const [sx,sy]=p(ch.wx,ch.wy,ch.wz);
+    const el=document.createElement('div');
+    el.className='ch '+ch.anim;
+    el.style.cssText=`left:${sx}px;top:${sy}px;`;
+    el.innerHTML=`
+      <div class="cr" style="width:${ch.sz+14}px;height:${ch.sz+14}px;top:${-7}px;left:${-7}px;--rc:${ch.bc};"></div>
+      <div class="ca" style="width:${ch.sz}px;height:${ch.sz}px;--bg:${ch.bg};--bc:${ch.bc};--gc:${ch.gc};--gs:${ch.gs}px;--fs:${ch.fs}px;--bw:${ch.anim==='fs'?'2px':'3px'};">
+        ${ch.em}
+        <div class="cst" style="background:${ch.dotBg};color:${ch.dotFg};">${ch.dotT}</div>
+      </div>
+      <div class="ct">${ch.name}<small>${ch.role}</small></div>`;
+    hud.appendChild(el);
+  });
+}
+
+draw();
+placeChars();
+</script>
+</body>
+</html>
