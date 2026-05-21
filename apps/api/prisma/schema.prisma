@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Free chat — 1 conversation per character
+model Conversation {
+  id          String    @id @default(cuid())
+  characterId String    @unique
+  title       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  messages    Message[]
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String
+  content        String
+  mood           String?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+// Orchestration
+model Project {
+  id              String         @id @default(cuid())
+  title           String
+  context         String
+  leadCharacterId String
+  status          String         @default("active")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  todos           TodoItem[]
+  stages          ProjectStage[]
+}
+
+model TodoItem {
+  id             String    @id @default(cuid())
+  projectId      String
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  text           String
+  status         String    @default("pending")
+  assignedCharId String?
+  memberStageId  String?
+  position       Int
+
+  @@index([projectId, position])
+}
+
+model ProjectStage {
+  id            String         @id @default(cuid())
+  projectId     String
+  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  characterId   String
+  parentStageId String?
+  role          String
+  state         String         @default("idle")
+  createdAt     DateTime       @default(now())
+  messages      StageMessage[]
+  relaysTo      Relay[]        @relation("RelayTarget")
+  relaysFrom    Relay[]        @relation("RelaySource")
+
+  @@index([projectId])
+}
+
+model StageMessage {
+  id        String       @id @default(cuid())
+  stageId   String
+  stage     ProjectStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  role      String
+  content   String
+  mood      String?
+  createdAt DateTime     @default(now())
+
+  @@index([stageId, createdAt])
+}
+
+model Relay {
+  id          String       @id @default(cuid())
+  fromStageId String
+  fromStage   ProjectStage @relation("RelaySource", fields: [fromStageId], references: [id])
+  toStageId   String
+  toStage     ProjectStage @relation("RelayTarget", fields: [toStageId], references: [id])
+  content     String
+  delivered   Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+}
