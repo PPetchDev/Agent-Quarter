@@ -5,3 +5,6 @@ dist
 .studio
 *.log
 .pnpm-store
+.DS_Store
+*.swp
+*.swo
