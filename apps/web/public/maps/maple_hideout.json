@@ -1,0 +1,234 @@
+{
+  "version": "1.10",
+  "tiledversion": "1.10.2",
+  "name": "Maple Hideout",
+  "orientation": "isometric",
+  "renderorder": "right-down",
+  "tilewidth": 40,
+  "tileheight": 20,
+  "type": "map",
+  "nextlayerid": 3,
+  "nextobjectid": 14,
+  "layers": [
+    {
+      "id": 1,
+      "name": "Furniture",
+      "type": "objectgroup",
+      "draworder": "topdown",
+      "visible": true,
+      "opacity": 1,
+      "x": 0,
+      "y": 0,
+      "objects": [
+        {
+          "id": 1,
+          "name": "hanging_scroll",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 7.0 },
+            { "name": "wy",          "type": "float",  "value": 6.9 },
+            { "name": "wz",          "type": "float",  "value": 2.5 },
+            { "name": "label",       "type": "string", "value": "Autumn Fox Scroll" },
+            { "name": "description", "type": "string", "value": "A delicate hanging scroll with an autumn fox painting" },
+            { "name": "happiness",   "type": "int",    "value": 6 },
+            { "name": "draggable",   "type": "bool",   "value": false }
+          ]
+        },
+        {
+          "id": 2,
+          "name": "wall_shelf",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 6.4 },
+            { "name": "wy",          "type": "float",  "value": 6.9 },
+            { "name": "wz",          "type": "float",  "value": 2.1 },
+            { "name": "label",       "type": "string", "value": "Wall Shelf" },
+            { "name": "description", "type": "string", "value": "Wooden wall shelf with books and a glowing lantern" },
+            { "name": "happiness",   "type": "int",    "value": 5 },
+            { "name": "draggable",   "type": "bool",   "value": false }
+          ]
+        },
+        {
+          "id": 3,
+          "name": "bookcase",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 4.3 },
+            { "name": "wy",          "type": "float",  "value": 6.0 },
+            { "name": "wz",          "type": "float",  "value": 0 },
+            { "name": "label",       "type": "string", "value": "Bookcase" },
+            { "name": "description", "type": "string", "value": "A tall bookcase packed with colorful books and a small plant on top" },
+            { "name": "happiness",   "type": "int",    "value": 10 },
+            { "name": "draggable",   "type": "bool",   "value": true }
+          ]
+        },
+        {
+          "id": 4,
+          "name": "tv_stand",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 0.3 },
+            { "name": "wy",          "type": "float",  "value": 6.0 },
+            { "name": "wz",          "type": "float",  "value": 0 },
+            { "name": "label",       "type": "string", "value": "TV Stand" },
+            { "name": "description", "type": "string", "value": "Dark wood TV stand with drawers and a game controller" },
+            { "name": "happiness",   "type": "int",    "value": 8 },
+            { "name": "draggable",   "type": "bool",   "value": true }
+          ]
+        },
+        {
+          "id": 5,
+          "name": "tv",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 0.4 },
+            { "name": "wy",          "type": "float",  "value": 5.9 },
+            { "name": "wz",          "type": "float",  "value": 0.97 },
+            { "name": "label",       "type": "string", "value": "Flat Screen TV" },
+            { "name": "description", "type": "string", "value": "A large flat screen TV for movies and gaming" },
+            { "name": "happiness",   "type": "int",    "value": 12 },
+            { "name": "draggable",   "type": "bool",   "value": false }
+          ]
+        },
+        {
+          "id": 6,
+          "name": "bed",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 5.4 },
+            { "name": "wy",          "type": "float",  "value": 0.38 },
+            { "name": "wz",          "type": "float",  "value": 0 },
+            { "name": "label",       "type": "string", "value": "Wooden Bed" },
+            { "name": "description", "type": "string", "value": "A cozy bed with dark wood frame, blue bedding and floral pillows" },
+            { "name": "happiness",   "type": "int",    "value": 15 },
+            { "name": "draggable",   "type": "bool",   "value": true }
+          ]
+        },
+        {
+          "id": 7,
+          "name": "nightstand",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 8.85 },
+            { "name": "wy",          "type": "float",  "value": 0.42 },
+            { "name": "wz",          "type": "float",  "value": 0 },
+            { "name": "label",       "type": "string", "value": "Nightstand" },
+            { "name": "description", "type": "string", "value": "A small wooden nightstand with a glowing lantern" },
+            { "name": "happiness",   "type": "int",    "value": 5 },
+            { "name": "draggable",   "type": "bool",   "value": true }
+          ]
+        },
+        {
+          "id": 8,
+          "name": "pool_table",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 1.2 },
+            { "name": "wy",          "type": "float",  "value": 1.7 },
+            { "name": "wz",          "type": "float",  "value": 0 },
+            { "name": "label",       "type": "string", "value": "Pool Table" },
+            { "name": "description", "type": "string", "value": "A full-size billiards table with green felt and a rack of balls" },
+            { "name": "happiness",   "type": "int",    "value": 20 },
+            { "name": "draggable",   "type": "bool",   "value": true }
+          ]
+        },
+        {
+          "id": 9,
+          "name": "low_table",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 2.7 },
+            { "name": "wy",          "type": "float",  "value": 3.8 },
+            { "name": "wz",          "type": "float",  "value": 0 },
+            { "name": "label",       "type": "string", "value": "Tea Table" },
+            { "name": "description", "type": "string", "value": "A low Japanese tea table with teapot and cups" },
+            { "name": "happiness",   "type": "int",    "value": 8 },
+            { "name": "draggable",   "type": "bool",   "value": true }
+          ]
+        },
+        {
+          "id": 10,
+          "name": "zabuton",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 2.7 },
+            { "name": "wy",          "type": "float",  "value": 5.85 },
+            { "name": "wz",          "type": "float",  "value": 0 },
+            { "name": "label",       "type": "string", "value": "Floor Cushion" },
+            { "name": "description", "type": "string", "value": "A soft Japanese zabuton floor cushion" },
+            { "name": "happiness",   "type": "int",    "value": 4 },
+            { "name": "draggable",   "type": "bool",   "value": true }
+          ]
+        },
+        {
+          "id": 11,
+          "name": "zabuton",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 1.35 },
+            { "name": "wy",          "type": "float",  "value": 3.8 },
+            { "name": "wz",          "type": "float",  "value": 0 },
+            { "name": "label",       "type": "string", "value": "Floor Cushion" },
+            { "name": "description", "type": "string", "value": "A soft Japanese zabuton floor cushion" },
+            { "name": "happiness",   "type": "int",    "value": 4 },
+            { "name": "draggable",   "type": "bool",   "value": true }
+          ]
+        },
+        {
+          "id": 12,
+          "name": "zabuton",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 5.6 },
+            { "name": "wy",          "type": "float",  "value": 3.8 },
+            { "name": "wz",          "type": "float",  "value": 0 },
+            { "name": "label",       "type": "string", "value": "Floor Cushion" },
+            { "name": "description", "type": "string", "value": "A soft Japanese zabuton floor cushion" },
+            { "name": "happiness",   "type": "int",    "value": 4 },
+            { "name": "draggable",   "type": "bool",   "value": true }
+          ]
+        },
+        {
+          "id": 13,
+          "name": "plant",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 8.2 },
+            { "name": "wy",          "type": "float",  "value": 5.7 },
+            { "name": "wz",          "type": "float",  "value": 0 },
+            { "name": "label",       "type": "string", "value": "Tropical Plant" },
+            { "name": "description", "type": "string", "value": "A lush tropical plant in a terracotta pot" },
+            { "name": "happiness",   "type": "int",    "value": 7 },
+            { "name": "draggable",   "type": "bool",   "value": true }
+          ]
+        }
+      ]
+    }
+  ]
+}
