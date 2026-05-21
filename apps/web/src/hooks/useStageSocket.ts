@@ -1,0 +1,62 @@
+'use client';
+import { useEffect, useState, useCallback } from 'react';
+import { useSocket } from './useSocket';
+import { readCharacterMood, type CharacterMood, type StageRuntimeState, type IdleTier } from '@squad/core';
+
+type StageState = {
+  state: StageRuntimeState;
+  idleTier: IdleTier;
+  mood: CharacterMood;
+};
+
+type MessageChunk = { messageId: string; chunk: string };
+
+export function useStageSocket(characterId: string) {
+  const socket = useSocket();
+  const [stageState, setStageState] = useState<StageState>({
+    state: 'idle', idleTier: 'ready', mood: 'idle',
+  });
+  const [chunks, setChunks] = useState<MessageChunk[]>([]);
+  const [moodOverride, setMoodOverride] = useState<CharacterMood | null>(null);
+
+  useEffect(() => {
+    socket.emit('join_stage', { characterId });
+
+    const onStageState = (data: { characterId: string; state: StageRuntimeState; idleTier?: IdleTier; mood: CharacterMood }) => {
+      if (data.characterId !== characterId) return;
+      setStageState({ state: data.state, idleTier: data.idleTier ?? 'ready', mood: data.mood });
+    };
+    const onChunk = (data: { characterId: string } & MessageChunk) => {
+      if (data.characterId !== characterId) return;
+      setChunks(prev => [...prev, { messageId: data.messageId, chunk: data.chunk }]);
+    };
+    const onMoodOverride = (data: { characterId: string; mood: CharacterMood }) => {
+      if (data.characterId !== characterId) return;
+      setMoodOverride(data.mood);
+      setTimeout(() => setMoodOverride(null), 3_000);
+    };
+    const onDone = (data: { characterId: string }) => {
+      if (data.characterId !== characterId) return;
+      setChunks([]);
+    };
+
+    socket.on('stage_state',   onStageState);
+    socket.on('message_chunk', onChunk);
+    socket.on('mood_override', onMoodOverride);
+    socket.on('message_done',  onDone);
+
+    return () => {
+      socket.off('stage_state',   onStageState);
+      socket.off('message_chunk', onChunk);
+      socket.off('mood_override', onMoodOverride);
+      socket.off('message_done',  onDone);
+    };
+  }, [socket, characterId]);
+
+  const sendMessage = useCallback((content: string) => {
+    socket.emit('send_message', { characterId, content });
+  }, [socket, characterId]);
+
+  const activeMood = moodOverride ?? stageState.mood;
+  return { stageState, activeMood, chunks, sendMessage };
+}
