@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background: #07041a;
+  color: #e2d9f3;
+}
+
+/* Character animations */
+.fw { animation: cfw 2.5s ease-in-out infinite; }
+.fi { animation: cfi 3.8s ease-in-out infinite; }
+.fl { animation: cfl 3s ease-in-out infinite; }
+.fs { animation: cfs 6s ease-in-out infinite; }
+@keyframes cfw { 0%,100%{transform:translateX(-50%) translateY(-100%)} 50%{transform:translateX(-50%) translateY(calc(-100% - 10px))} }
+@keyframes cfi { 0%,100%{transform:translateX(-50%) translateY(-100%)} 50%{transform:translateX(-50%) translateY(calc(-100% - 6px))} }
+@keyframes cfl { 0%,100%{transform:translateX(-50%) translateY(-100%)} 50%{transform:translateX(-50%) translateY(calc(-100% - 13px))} }
+@keyframes cfs { 0%,100%{transform:translateX(-50%) translateY(-100%) rotate(-2.5deg)} 50%{transform:translateX(-50%) translateY(-100%) rotate(2.5deg)} }
