@@ -18,6 +18,7 @@ export function useStageSocket(characterId: string) {
   });
   const [chunks, setChunks] = useState<MessageChunk[]>([]);
   const [moodOverride, setMoodOverride] = useState<CharacterMood | null>(null);
+  const [lastError, setLastError] = useState<string | null>(null);
 
   useEffect(() => {
     socket.emit('join_stage', { characterId });
@@ -38,25 +39,34 @@ export function useStageSocket(characterId: string) {
     const onDone = (data: { characterId: string }) => {
       if (data.characterId !== characterId) return;
       setChunks([]);
+      setLastError(null);
+    };
+    const onError = (data: { characterId: string; error: string }) => {
+      if (data.characterId !== characterId) return;
+      setChunks([]);
+      setLastError(data.error);
     };
 
     socket.on('stage_state',   onStageState);
     socket.on('message_chunk', onChunk);
     socket.on('mood_override', onMoodOverride);
     socket.on('message_done',  onDone);
+    socket.on('message_error', onError);
 
     return () => {
       socket.off('stage_state',   onStageState);
       socket.off('message_chunk', onChunk);
       socket.off('mood_override', onMoodOverride);
       socket.off('message_done',  onDone);
+      socket.off('message_error', onError);
     };
   }, [socket, characterId]);
 
   const sendMessage = useCallback((content: string) => {
+    setLastError(null);
     socket.emit('send_message', { characterId, content });
   }, [socket, characterId]);
 
   const activeMood = moodOverride ?? stageState.mood;
-  return { stageState, activeMood, chunks, sendMessage };
+  return { stageState, activeMood, chunks, sendMessage, lastError };
 }
