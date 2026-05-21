@@ -10,9 +10,11 @@ function StagesContent() {
   const [activeId, setActiveId] = useState(initial);
 
   return (
-    <main className="flex h-[538px] bg-[rgba(7,4,26,0.8)] border-t border-white/5">
-      <CharacterSidebar activeId={activeId} onSelect={setActiveId} />
-      <ChatPanel characterId={activeId} />
+    <main className="flex-1 flex flex-col items-center bg-[rgba(7,4,26,0.8)]">
+      <div className="w-full max-w-[860px] flex flex-1 border-x border-white/5">
+        <CharacterSidebar activeId={activeId} onSelect={setActiveId} />
+        <ChatPanel characterId={activeId} />
+      </div>
     </main>
   );
 }
