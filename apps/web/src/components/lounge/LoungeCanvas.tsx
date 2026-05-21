@@ -29,16 +29,25 @@ export function LoungeCanvas() {
   }, [theme, themeName]);
 
   return (
-    <div className="relative w-[860px] h-[500px] overflow-hidden">
-      <canvas ref={canvasRef} width={860} height={500} className="absolute inset-0" />
-      <div className="absolute inset-0 pointer-events-none">
-        {CHARACTERS.map(ch => (
-          <CharacterSpot
-            key={ch.id}
-            {...ch}
-            onClick={() => router.push(`/stages?character=${ch.id}`)}
-          />
-        ))}
+    <div
+      className="flex-1 w-full flex items-center justify-center overflow-hidden"
+      style={{
+        minHeight: 500,
+        background: `linear-gradient(180deg, ${theme.skyTop} 0%, ${theme.skyMid} 35%, ${theme.skyBot} 100%)`,
+      }}
+    >
+      {/* Room: fixed 860×500, centered */}
+      <div className="relative flex-shrink-0" style={{ width: 860, height: 500 }}>
+        <canvas ref={canvasRef} width={860} height={500} className="absolute inset-0" />
+        <div className="absolute inset-0 pointer-events-none">
+          {CHARACTERS.map(ch => (
+            <CharacterSpot
+              key={ch.id}
+              {...ch}
+              onClick={() => router.push(`/stages?character=${ch.id}`)}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
