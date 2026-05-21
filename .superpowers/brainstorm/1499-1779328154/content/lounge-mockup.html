@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lounge Mockup</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0616;
+    font-family: 'Segoe UI', sans-serif;
+    color: #e2d9f3;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px 30px;
+    gap: 14px;
+  }
+
+  h2 { color: #f0abfc; font-size: 17px; font-weight: 800; text-align: center; }
+  .sub { color: #4a3d62; font-size: 11px; text-align: center; }
+
+  /* ──────── APP CHROME ──────── */
+  .app-frame {
+    width: 100%; max-width: 860px;
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid rgba(240,171,252,0.15);
+    box-shadow: 0 0 60px rgba(167,139,250,0.1);
+    background: #0f0a1e;
+  }
+
+  /* Top nav */
+  .top-nav {
+    background: rgba(240,171,252,0.04);
+    border-bottom: 1px solid rgba(240,171,252,0.08);
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .nav-logo { font-size: 12px; font-weight: 800; color: #f0abfc; letter-spacing: 1.5px; }
+  .nav-logo span { color: #c8a8e8; }
+  .nav-tabs { display: flex; gap: 4px; flex: 1; justify-content: center; }
+  .nav-tab {
+    font-size: 10px; font-weight: 600; padding: 4px 12px;
+    border-radius: 6px; cursor: pointer; color: #4a3d62;
+    transition: all 0.15s;
+  }
+  .nav-tab.active { background: rgba(240,171,252,0.12); color: #f0abfc; }
+  .nav-tab:hover:not(.active) { color: #94a3b8; background: rgba(255,255,255,0.04); }
+  .nav-status { font-size: 9px; color: #4a3d62; display: flex; align-items: center; gap: 4px; }
+  .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; animation: pulse 2s ease-in-out infinite; }
+
+  /* ──────── ISOMETRIC ROOM ──────── */
+  .room-wrap {
+    position: relative;
+    width: 100%;
+    height: 420px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #1a0d3a 0%, #2d1f4a 40%, #0f0a1e 100%);
+  }
+
+  /* City sky */
+  .city-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 50% 0%, rgba(167,139,250,0.12) 0%, transparent 70%),
+      linear-gradient(180deg, #1a0d3a 0%, #2d1f4a 35%, #1a1030 65%, #0f0a1e 100%);
+  }
+
+  /* City buildings silhouette */
+  .city-buildings {
+    position: absolute;
+    bottom: 50%;
+    left: 0; right: 0;
+    height: 120px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 3px;
+    padding: 0 60px;
+    opacity: 0.25;
+  }
+  .building {
+    background: #2d1f4a;
+    border-radius: 2px 2px 0 0;
+    flex-shrink: 0;
+  }
+
+  /* Window frame */
+  .window-frame {
+    position: absolute;
+    top: 18px; left: 50%; transform: translateX(-50%);
+    width: 220px; height: 170px;
+    border: 6px solid #3d2a5a;
+    border-radius: 4px;
+    background: linear-gradient(180deg, #1a0d3a 0%, #2d1f4a 60%, #1a1030 100%);
+    box-shadow: inset 0 0 30px rgba(167,139,250,0.15), 0 0 0 3px #2a1e45;
+    overflow: hidden;
+  }
+  .window-cross-h {
+    position: absolute; left: 0; right: 0;
+    top: 50%; height: 5px; background: #3d2a5a; transform: translateY(-50%);
+  }
+  .window-cross-v {
+    position: absolute; top: 0; bottom: 0;
+    left: 50%; width: 5px; background: #3d2a5a; transform: translateX(-50%);
+  }
+  .window-glow { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 80%, rgba(167,139,250,0.08) 0%, transparent 70%); }
+
+  /* City lights in window */
+  .city-light {
+    position: absolute;
+    border-radius: 1px;
+    animation: city-blink 3s ease-in-out infinite;
+  }
+
+  /* Isometric floor */
+  .iso-floor {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 260px;
+  }
+
+  /* Floor surface */
+  .floor-surface {
+    position: absolute;
+    bottom: 0; left: -10%; right: -10%;
+    height: 200px;
+    background: linear-gradient(180deg, #1e1535 0%, #160d2e 100%);
+    clip-path: polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%);
+  }
+
+  /* Floor grid lines */
+  .floor-grid {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 200px;
+    overflow: hidden;
+  }
+
+  /* Desk left */
+  .desk-l {
+    position: absolute;
+    bottom: 100px; left: 60px;
+    width: 200px; height: 80px;
+  }
+  .desk-l-top {
+    width: 100%; height: 24px;
+    background: linear-gradient(135deg, #3d2a1a, #5a3d22);
+    border-radius: 4px 4px 0 0;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.4);
+  }
+  .desk-l-front {
+    width: 100%; height: 20px;
+    background: linear-gradient(180deg, #2d1e10, #1a1008);
+    border-radius: 0 0 2px 2px;
+  }
+
+  /* Desk right */
+  .desk-r {
+    position: absolute;
+    bottom: 100px; right: 60px;
+    width: 200px; height: 80px;
+  }
+  .desk-r-top {
+    width: 100%; height: 24px;
+    background: linear-gradient(135deg, #3d2a1a, #5a3d22);
+    border-radius: 4px 4px 0 0;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.4);
+  }
+  .desk-r-front {
+    width: 100%; height: 20px;
+    background: linear-gradient(180deg, #2d1e10, #1a1008);
+  }
+
+  /* Monitor on desk */
+  .monitor {
+    position: absolute;
+    bottom: 132px;
+    width: 70px; height: 52px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .monitor-screen {
+    width: 66px; height: 44px;
+    background: linear-gradient(135deg, #1a2a4a, #0f1a30);
+    border: 2px solid #334155;
+    border-radius: 3px;
+    position: relative; overflow: hidden;
+  }
+  .monitor-screen::after {
+    content: ''; position: absolute; inset: 2px;
+    background: linear-gradient(135deg, rgba(96,165,250,0.3), rgba(167,139,250,0.2));
+    border-radius: 2px;
+    animation: screen-flicker 4s ease-in-out infinite;
+  }
+  .monitor-stand {
+    width: 14px; height: 6px;
+    background: #334155;
+    border-radius: 0 0 2px 2px;
+  }
+  .monitor-base {
+    width: 28px; height: 4px;
+    background: #1e293b;
+    border-radius: 2px;
+  }
+
+  /* Bookshelf */
+  .bookshelf {
+    position: absolute;
+    bottom: 155px;
+    left: 50%; transform: translateX(-50%);
+    width: 120px; height: 130px;
+    background: linear-gradient(180deg, #3d2a1a, #2d1e10);
+    border-radius: 4px;
+    padding: 6px 4px 0;
+    display: flex; flex-direction: column; gap: 3px;
+    box-shadow: 4px 4px 12px rgba(0,0,0,0.5);
+  }
+  .shelf-row { display: flex; gap: 2px; align-items: flex-end; height: 28px; padding: 0 2px; }
+  .book {
+    flex-shrink: 0;
+    border-radius: 1px 2px 2px 1px;
+    height: 100%;
+  }
+
+  /* Plants */
+  .plant {
+    position: absolute;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .plant-pot {
+    width: 18px; height: 14px;
+    background: linear-gradient(180deg, #8b5e3c, #5a3d22);
+    border-radius: 0 0 4px 4px;
+    border-top: 2px solid #a0713e;
+  }
+  .plant-leaves {
+    width: 28px; height: 24px;
+    background: radial-gradient(ellipse at 50% 70%, #15803d, #166534);
+    border-radius: 50% 50% 30% 30%;
+    margin-bottom: -4px;
+    position: relative;
+  }
+  .plant-leaves::before, .plant-leaves::after {
+    content: '';
+    position: absolute;
+    width: 18px; height: 16px;
+    background: radial-gradient(ellipse, #16a34a, #15803d);
+    border-radius: 50%;
+    top: -8px;
+  }
+  .plant-leaves::before { left: -6px; }
+  .plant-leaves::after { right: -6px; }
+
+  /* Lamp */
+  .lamp {
+    position: absolute;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .lamp-shade {
+    width: 28px; height: 18px;
+    background: linear-gradient(180deg, #c8a87a, #a0813a);
+    clip-path: polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%);
+    box-shadow: 0 0 20px rgba(255,200,100,0.4);
+  }
+  .lamp-glow {
+    position: absolute;
+    top: 18px;
+    width: 60px; height: 40px;
+    background: radial-gradient(ellipse, rgba(255,200,100,0.15) 0%, transparent 70%);
+    transform: translateX(-50%);
+    left: 14px;
+    pointer-events: none;
+  }
+  .lamp-base {
+    width: 4px; height: 16px;
+    background: #5a4a2a;
+  }
+  .lamp-foot {
+    width: 18px; height: 4px;
+    background: #3d3020;
+    border-radius: 2px;
+  }
+
+  /* ──────── CHARACTERS ──────── */
+  .char-spot {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: transform 0.2s;
+    z-index: 10;
+  }
+  .char-spot:hover { transform: translateY(-4px) scale(1.05); }
+  .char-spot:hover .char-name-tag { opacity: 1; transform: translateY(0); }
+
+  .char-portrait {
+    border-radius: 50%;
+    border: 3px solid rgba(240,171,252,0.4);
+    background: linear-gradient(135deg, #ffd8ec, #c8a8e8);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 20px rgba(240,171,252,0.2);
+    position: relative;
+  }
+  .char-portrait.live {
+    border-color: #f0abfc;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 24px rgba(240,171,252,0.4);
+    animation: char-float 3s ease-in-out infinite;
+  }
+  .char-portrait.idle {
+    border-color: rgba(148,163,184,0.4);
+    animation: char-float 4s ease-in-out infinite;
+  }
+  .char-portrait.sleeping {
+    border-color: rgba(148,163,184,0.2);
+    animation: char-sway 6s ease-in-out infinite;
+    filter: brightness(0.75);
+  }
+  .char-portrait.working {
+    border-color: #4ade80;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 24px rgba(74,222,128,0.3);
+    animation: char-float 2s ease-in-out infinite;
+  }
+
+  .state-badge {
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 2px solid #0f0a1e;
+    font-size: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .state-badge.live { background: #4ade80; }
+  .state-badge.idle { background: #94a3b8; }
+  .state-badge.sleep { background: #475569; }
+
+  .char-name-tag {
+    background: rgba(15,10,30,0.9);
+    border: 1px solid rgba(240,171,252,0.2);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 9px;
+    font-weight: 700;
+    color: #f0abfc;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: all 0.2s;
+    pointer-events: none;
+  }
+  .emotion-float {
+    position: absolute;
+    top: -16px; left: 50%; transform: translateX(-50%);
+    font-size: 9px;
+    background: rgba(15,10,30,0.8);
+    border-radius: 99px;
+    padding: 1px 5px;
+    color: #c8a8e8;
+    white-space: nowrap;
+    animation: emotion-pop 0.3s ease-out forwards;
+    pointer-events: none;
+  }
+
+  /* ──────── STATUS BAR ──────── */
+  .status-bar {
+    background: rgba(240,171,252,0.03);
+    border-top: 1px solid rgba(240,171,252,0.08);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .status-left {
+    display: flex; gap: 8px; align-items: center;
+  }
+  .status-pill {
+    font-size: 9px; font-weight: 600; padding: 3px 8px;
+    border-radius: 99px; display: flex; align-items: center; gap: 4px;
+  }
+  .pill-live { background: rgba(74,222,128,0.12); color: #4ade80; }
+  .pill-idle { background: rgba(148,163,184,0.1); color: #94a3b8; }
+  .pill-proj { background: rgba(240,171,252,0.1); color: #f0abfc; }
+  .status-right { font-size: 9px; color: #4a3d62; }
+
+  /* ──────── KEYFRAMES ──────── */
+  @keyframes char-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes char-sway {
+    0%, 100% { transform: rotate(-2deg); }
+    50% { transform: rotate(2deg); }
+  }
+  @keyframes screen-flicker {
+    0%, 90%, 100% { opacity: 1; }
+    95% { opacity: 0.7; }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 4px #4ade80; }
+    50% { opacity: 0.6; box-shadow: 0 0 8px #4ade80; }
+  }
+  @keyframes city-blink {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+  @keyframes emotion-pop {
+    from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<h2>✦ The Lounge — Home Page ✧</h2>
+<p class="sub">หน้าแรก · ตัวละครทุกตัวอยู่ในห้อง · react ตาม state จริง · คลิกเข้าหาเพื่อ chat</p>
+
+<div class="app-frame">
+
+  <!-- Top nav -->
+  <div class="top-nav">
+    <div class="nav-logo">✦ <span>SQUAD</span> ✧</div>
+    <div class="nav-tabs">
+      <div class="nav-tab active">🏠 Lounge</div>
+      <div class="nav-tab">💬 Stages</div>
+      <div class="nav-tab">📋 Projects</div>
+      <div class="nav-tab">⚙️ Settings</div>
+    </div>
+    <div class="nav-status">
+      <div class="nav-dot"></div>
+      3 active
+    </div>
+  </div>
+
+  <!-- Room -->
+  <div class="room-wrap">
+    <div class="city-bg"></div>
+
+    <!-- Window -->
+    <div class="window-frame">
+      <div class="window-cross-h"></div>
+      <div class="window-cross-v"></div>
+      <div class="window-glow"></div>
+      <!-- City lights -->
+      <div class="city-light" style="width:4px;height:8px;background:#fde68a;top:20px;left:18px;animation-delay:0.3s;"></div>
+      <div class="city-light" style="width:3px;height:5px;background:#93c5fd;top:35px;left:35px;animation-delay:1.1s;"></div>
+      <div class="city-light" style="width:5px;height:6px;background:#fca5a5;top:15px;right:22px;animation-delay:0.7s;"></div>
+      <div class="city-light" style="width:3px;height:10px;background:#fde68a;top:28px;right:40px;animation-delay:1.5s;"></div>
+      <div class="city-light" style="width:4px;height:4px;background:#c4b5fd;bottom:40px;left:25px;animation-delay:0.2s;"></div>
+      <div class="city-light" style="width:6px;height:6px;background:#6ee7b7;bottom:30px;right:30px;animation-delay:0.9s;"></div>
+    </div>
+
+    <!-- Floor -->
+    <div class="iso-floor">
+      <div class="floor-surface"></div>
+    </div>
+
+    <!-- Bookshelf -->
+    <div class="bookshelf">
+      <div class="shelf-row">
+        <div class="book" style="width:9px;background:linear-gradient(180deg,#ef4444,#dc2626);"></div>
+        <div class="book" style="width:7px;background:linear-gradient(180deg,#3b82f6,#2563eb);"></div>
+        <div class="book" style="width:11px;background:linear-gradient(180deg,#10b981,#059669);"></div>
+        <div class="book" style="width:8px;background:linear-gradient(180deg,#f59e0b,#d97706);"></div>
+        <div class="book" style="width:9px;background:linear-gradient(180deg,#8b5cf6,#7c3aed);"></div>
+        <div class="book" style="width:6px;background:linear-gradient(180deg,#ec4899,#db2777);"></div>
+        <div class="book" style="width:10px;background:linear-gradient(180deg,#06b6d4,#0891b2);"></div>
+      </div>
+      <div class="shelf-row">
+        <div class="book" style="width:13px;background:linear-gradient(180deg,#fcd34d,#fbbf24);"></div>
+        <div class="book" style="width:8px;background:linear-gradient(180deg,#f87171,#ef4444);"></div>
+        <div class="book" style="width:9px;background:linear-gradient(180deg,#34d399,#10b981);"></div>
+        <div class="book" style="width:7px;background:linear-gradient(180deg,#a78bfa,#8b5cf6);"></div>
+        <div class="book" style="width:11px;background:linear-gradient(180deg,#60a5fa,#3b82f6);"></div>
+      </div>
+      <div class="shelf-row">
+        <div class="book" style="width:8px;background:linear-gradient(180deg,#fb923c,#f97316);"></div>
+        <div class="book" style="width:10px;background:linear-gradient(180deg,#e879f9,#d946ef);"></div>
+        <div class="book" style="width:9px;background:linear-gradient(180deg,#4ade80,#22c55e);"></div>
+        <div class="book" style="width:7px;background:linear-gradient(180deg,#f472b6,#ec4899);"></div>
+        <div class="book" style="width:12px;background:linear-gradient(180deg,#38bdf8,#0ea5e9);"></div>
+        <div class="book" style="width:8px;background:linear-gradient(180deg,#c084fc,#a855f7);"></div>
+      </div>
+    </div>
+
+    <!-- Left desk -->
+    <div class="desk-l" style="bottom:88px; left:48px;">
+      <div class="desk-l-top"></div>
+      <div class="desk-l-front"></div>
+    </div>
+
+    <!-- Right desk -->
+    <div class="desk-r" style="bottom:88px; right:48px;">
+      <div class="desk-r-top"></div>
+      <div class="desk-r-front"></div>
+    </div>
+
+    <!-- Monitors left -->
+    <div class="monitor" style="bottom:120px; left:80px;">
+      <div class="monitor-screen"></div>
+      <div class="monitor-stand"></div>
+      <div class="monitor-base"></div>
+    </div>
+    <div class="monitor" style="bottom:120px; left:160px;">
+      <div class="monitor-screen"></div>
+      <div class="monitor-stand"></div>
+      <div class="monitor-base"></div>
+    </div>
+
+    <!-- Monitors right -->
+    <div class="monitor" style="bottom:120px; right:80px;">
+      <div class="monitor-screen"></div>
+      <div class="monitor-stand"></div>
+      <div class="monitor-base"></div>
+    </div>
+    <div class="monitor" style="bottom:120px; right:160px;">
+      <div class="monitor-screen"></div>
+      <div class="monitor-stand"></div>
+      <div class="monitor-base"></div>
+    </div>
+
+    <!-- Plants -->
+    <div class="plant" style="position:absolute;bottom:88px;left:32px;">
+      <div class="plant-leaves"></div>
+      <div class="plant-pot"></div>
+    </div>
+    <div class="plant" style="position:absolute;bottom:88px;right:32px;">
+      <div class="plant-leaves"></div>
+      <div class="plant-pot"></div>
+    </div>
+
+    <!-- Lamps -->
+    <div class="lamp" style="position:absolute;bottom:130px;left:125px;">
+      <div class="lamp-shade"></div>
+      <div class="lamp-glow"></div>
+      <div class="lamp-base"></div>
+      <div class="lamp-foot"></div>
+    </div>
+    <div class="lamp" style="position:absolute;bottom:130px;right:125px;">
+      <div class="lamp-shade"></div>
+      <div class="lamp-glow"></div>
+      <div class="lamp-base"></div>
+      <div class="lamp-foot"></div>
+    </div>
+
+    <!-- ── CHARACTERS ── -->
+
+    <!-- Mai — at left desk, working (live) -->
+    <div class="char-spot" style="bottom:148px; left:88px;" title="Mai">
+      <div class="char-portrait working" style="width:56px;height:56px;background:linear-gradient(135deg,#ffd8ec,#c8a8e8);">
+        🐱
+        <div class="state-badge live">●</div>
+      </div>
+      <span class="char-name-tag">Mai · 🤔 thinking</span>
+      <div class="emotion-float">🤔</div>
+    </div>
+
+    <!-- Ren — at right desk, working -->
+    <div class="char-spot" style="bottom:148px; right:88px;" title="Ren">
+      <div class="char-portrait working" style="width:52px;height:52px;background:linear-gradient(135deg,#a8f0c8,#60a5fa);">
+        ⚔️
+        <div class="state-badge live">●</div>
+      </div>
+      <span class="char-name-tag">Ren · 💪 focused</span>
+    </div>
+
+    <!-- Yui — center, coordinator, standing -->
+    <div class="char-spot" style="bottom:135px; left:50%; transform:translateX(-50%);" title="Yui">
+      <div class="char-portrait live" style="width:64px;height:64px;background:linear-gradient(135deg,#fef9c3,#fde68a);border-color:#fde68a;box-shadow:0 4px 20px rgba(0,0,0,0.5),0 0 30px rgba(253,224,71,0.3);">
+        📖
+        <div class="state-badge live" style="background:#fde047;">★</div>
+      </div>
+      <span class="char-name-tag">Yui · 👑 lead</span>
+    </div>
+
+    <!-- Mika — left area, idle -->
+    <div class="char-spot" style="bottom:115px; left:200px;" title="Mika">
+      <div class="char-portrait idle" style="width:44px;height:44px;background:linear-gradient(135deg,#e9d5ff,#a78bfa);">
+        🌸
+        <div class="state-badge idle">●</div>
+      </div>
+      <span class="char-name-tag">Mika · 😊 idle</span>
+    </div>
+
+    <!-- Aki — right area, idle -->
+    <div class="char-spot" style="bottom:115px; right:200px;" title="Aki">
+      <div class="char-portrait idle" style="width:44px;height:44px;background:linear-gradient(135deg,#fed7aa,#fb923c);">
+        🔧
+        <div class="state-badge idle">●</div>
+      </div>
+      <span class="char-name-tag">Aki · 😊 idle</span>
+    </div>
+
+    <!-- Senko — far left, sleeping -->
+    <div class="char-spot" style="bottom:100px; left:30px;" title="Senko">
+      <div class="char-portrait sleeping" style="width:40px;height:40px;background:linear-gradient(135deg,#fde68a,#fca5a5);">
+        🦊
+        <div class="state-badge sleep">z</div>
+      </div>
+      <span class="char-name-tag">Senko · 😴 sleeping</span>
+    </div>
+
+    <!-- Shinobu — far right, sleeping -->
+    <div class="char-spot" style="bottom:100px; right:30px;" title="Shinobu">
+      <div class="char-portrait sleeping" style="width:40px;height:40px;background:linear-gradient(135deg,#c4b5fd,#8b5cf6);">
+        🗡️
+        <div class="state-badge sleep">z</div>
+      </div>
+      <span class="char-name-tag">Shinobu · 😴 sleeping</span>
+    </div>
+
+  </div><!-- /room-wrap -->
+
+  <!-- Status bar -->
+  <div class="status-bar">
+    <div class="status-left">
+      <div class="status-pill pill-live">● 3 active</div>
+      <div class="status-pill pill-idle">● 2 idle</div>
+      <div class="status-pill pill-idle">💤 2 sleeping</div>
+      <div class="status-pill pill-proj">📋 2 projects running</div>
+    </div>
+    <div class="status-right">คลิกตัวละครเพื่อเปิด Stage · hover เพื่อดูชื่อ</div>
+  </div>
+
+</div>
+
+<div style="font-size:10px;color:#4a3d62;text-align:center;max-width:640px;line-height:1.7;">
+  ตัวละครขยับ (float/sway) ตามสถานะ · active = float เร็ว + glow · sleeping = sway ช้า + dim<br>
+  เมื่อ emotion เปลี่ยน → portrait สลับรูปจาก <code>characters/</code> folder พร้อม anime.js burst<br>
+  Yui (👑 lead) ใหญ่กว่า = กำลังเป็น coordinator ของ project อยู่
+</div>
+
+</body>
+</html>
