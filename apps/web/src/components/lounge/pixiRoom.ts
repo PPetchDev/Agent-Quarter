@@ -2,9 +2,11 @@ import * as PIXI from "pixi.js";
 import type { RoomObject } from "./roomDefs";
 import { FURNITURE_DIMS } from "./roomDefs";
 
-export const S = 40;
-export const OX = 190;
-export const OY = 446;
+export const S = 56;
+export const OX = 100;
+export const OY = 560;
+export const CANVAS_W = 1080;
+export const CANVAS_H = 620;
 
 export function proj(wx: number, wy: number, wz: number): [number, number] {
   return [OX + wx * S + wy * S * 0.5, OY - wy * S * 0.5 - wz * S];
