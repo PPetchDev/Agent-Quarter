@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import * as PIXI from "pixi.js";
-import { drawBackground, worldDeltaFromScreen, DEFAULT_OBJECTS } from "./pixiRoom";
+import { drawBackground, worldDeltaFromScreen, DEFAULT_OBJECTS, CANVAS_W, CANVAS_H } from "./pixiRoom";
 import { buildRoomScene, loadRoomJSON } from "./roomLoader";
 import type { RoomScene } from "./roomLoader";
 import type { RoomObject } from "./roomDefs";
@@ -97,7 +97,7 @@ export function LoungeCanvas() {
     let mounted = true;
     const app = new PIXI.Application();
 
-    app.init({ canvas, width: 860, height: 500, backgroundAlpha: 0, antialias: true }).then(async () => {
+    app.init({ canvas, width: CANVAS_W, height: CANVAS_H, backgroundAlpha: 0, antialias: true }).then(async () => {
       if (!mounted) { app.destroy(); return; }
       appRef.current = app;
 
@@ -188,10 +188,10 @@ export function LoungeCanvas() {
       const node = viewportRef.current;
       if (!node) return;
       const isMobile = node.clientWidth < 760;
-      const sw = (node.clientWidth - (isMobile ? 20 : 52)) / 860;
-      const sh = (node.clientHeight - (isMobile ? 68 : 160)) / 500;
-      setScale(isMobile ? Math.max(0.68, Math.min(sw, sh, 0.96)) : Math.max(0.94, Math.min(sw, sh, 1.18)));
-      setCameraY(isMobile ? 8 : 18);
+      const sw = (node.clientWidth - (isMobile ? 20 : 52)) / CANVAS_W;
+      const sh = (node.clientHeight - (isMobile ? 68 : 160)) / CANVAS_H;
+      setScale(isMobile ? Math.max(0.55, Math.min(sw, sh, 0.9)) : Math.max(0.8, Math.min(sw, sh, 1.3)));
+      setCameraY(isMobile ? 4 : 12);
     };
     updateScale();
     window.addEventListener("resize", updateScale);
@@ -345,8 +345,8 @@ export function LoungeCanvas() {
 
       {/* ── Room canvas ─────────────────────────────────────────────── */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="relative" style={{ width:860, height:500, transform:`translateY(${cameraY}px) scale(${scale})`, transformOrigin:"center center" }}>
-          <canvas ref={canvasRef} width={860} height={500} className="absolute inset-0" />
+        <div className="relative" style={{ width:CANVAS_W, height:CANVAS_H, transform:`translateY(${cameraY}px) scale(${scale})`, transformOrigin:"center center" }}>
+          <canvas ref={canvasRef} width={CANVAS_W} height={CANVAS_H} className="absolute inset-0" />
 
           <div className="absolute inset-0 z-30 pointer-events-none">
             {CHARACTERS.map(ch => {

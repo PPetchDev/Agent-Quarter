@@ -6,6 +6,8 @@ import {
   drawFurnitureByType,
   drawHighlight,
   furnitureHitRect,
+  CANVAS_W,
+  CANVAS_H,
 } from "./pixiRoom";
 
 export interface FurnitureHandlers {
@@ -100,7 +102,7 @@ export function buildRoomScene(
 
   // Make stage interactive so drag events propagate
   stage.eventMode = "static";
-  stage.hitArea = new PIXI.Rectangle(0, 0, 860, 500);
+  stage.hitArea = new PIXI.Rectangle(0, 0, CANVAS_W, CANVAS_H);
 
   const items = new Map<number, FurnitureItem>();
 
