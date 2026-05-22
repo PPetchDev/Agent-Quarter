@@ -2,19 +2,23 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import * as PIXI from "pixi.js";
-import { drawBackground, worldDeltaFromScreen, DEFAULT_OBJECTS, proj } from "./pixiRoom";
+import { drawBackground, worldDeltaFromScreen, DEFAULT_OBJECTS } from "./pixiRoom";
 import { buildRoomScene, loadRoomJSON } from "./roomLoader";
 import type { RoomScene } from "./roomLoader";
 import type { RoomObject } from "./roomDefs";
 import { FurnitureInspector } from "./FurnitureInspector";
+import { ShopModal } from "./ShopModal";
+import { getDefaultSpawnPosition, type CatalogItem } from "./furnitureCatalog";
 import { CharacterSpot } from "./CharacterSpot";
 import { resolveCharacterMoodImagePath } from "@squad/core";
 import { useLoungePresence } from "@/hooks/useLoungePresence";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "squad:lounge:v3";
+const STORAGE_KEY = "squad:lounge:v4";
 const ROOM_MAP_URL = "/maps/maple_hideout.json";
+const INITIAL_COINS = 500;
+const TRAIN_REWARD = 25;
 
 type Mode = "visit" | "move";
 
@@ -53,9 +57,11 @@ export function LoungeCanvas() {
   const viewportRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<PIXI.Application | null>(null);
   const sceneRef = useRef<RoomScene | null>(null);
-  // Drag state managed in refs for perf (no re-render during drag)
   const dragRef = useRef<{ id: number; screenX: number; screenY: number } | null>(null);
   const objectsRef = useRef<RoomObject[]>(DEFAULT_OBJECTS);
+  const nextIdRef = useRef<number>(1000);
+  const scaleRef = useRef<number>(1);
+  const modeRef = useRef<Mode>("visit");
 
   const router = useRouter();
   const { presence, counts } = useLoungePresence();
@@ -67,16 +73,21 @@ export function LoungeCanvas() {
   const [cameraY, setCameraY] = useState(20);
   const [roomName, setRoomName] = useState("Maple Hideout");
   const [happiness, setHappiness] = useState(128);
+  const [coins, setCoins] = useState(INITIAL_COINS);
   const [floor, setFloor] = useState(1);
-  const [trainCount] = useState(2);
+  const [trainCount, setTrainCount] = useState(2);
   const [trainMax] = useState(4);
   const [suppliesProgress] = useState(28640);
   const [suppliesMax] = useState(40000);
+  const [shopOpen, setShopOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const timer = useTimer();
   const suppliesTimer = useSuppliesTimer();
 
-  // Keep ref in sync with state (for use inside PixiJS callbacks)
+  // Keep refs in sync
   useEffect(() => { objectsRef.current = objects; }, [objects]);
+  useEffect(() => { scaleRef.current = scale; }, [scale]);
+  useEffect(() => { modeRef.current = mode; }, [mode]);
 
   // ── PixiJS init ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -90,35 +101,39 @@ export function LoungeCanvas() {
       if (!mounted) { app.destroy(); return; }
       appRef.current = app;
 
-      // Load room JSON, fall back to defaults if fetch fails
       let roomObjects = DEFAULT_OBJECTS;
       try {
         const loaded = await loadRoomJSON(ROOM_MAP_URL);
         if (loaded.length > 0) roomObjects = loaded;
       } catch { /* use defaults */ }
 
-      // Restore saved positions
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
-          const parsed = JSON.parse(saved) as { objects?: RoomObject[]; roomName?: string; happiness?: number; floor?: number };
+          const parsed = JSON.parse(saved) as { objects?: RoomObject[]; roomName?: string; happiness?: number; floor?: number; coins?: number; nextId?: number };
           if (parsed.objects?.length) roomObjects = parsed.objects;
           if (parsed.roomName) setRoomName(parsed.roomName);
           if (typeof parsed.happiness === "number") setHappiness(parsed.happiness);
           if (typeof parsed.floor === "number") setFloor(parsed.floor);
+          if (typeof parsed.coins === "number") setCoins(parsed.coins);
+          if (typeof parsed.nextId === "number") nextIdRef.current = parsed.nextId;
         }
       } catch { /* ignore */ }
+
+      // Ensure nextIdRef is greater than any existing id
+      const maxId = Math.max(...roomObjects.map(o => o.id), 999);
+      if (nextIdRef.current <= maxId) nextIdRef.current = maxId + 1;
 
       setObjects(roomObjects);
       objectsRef.current = roomObjects;
 
-      // Build scene
       const scene = buildRoomScene(app.stage, roomObjects, {
         onSelect: (id) => {
-          if (mode === "move") return; // don't open inspector while dragging
+          if (modeRef.current === "move") return;
           setSelectedId(prev => prev === id ? null : id);
         },
         onDragStart: (id, sx, sy) => {
+          if (modeRef.current !== "move") return;
           if (!dragRef.current) {
             dragRef.current = { id, screenX: sx, screenY: sy };
           }
@@ -127,12 +142,11 @@ export function LoungeCanvas() {
       sceneRef.current = scene;
       drawBackground(scene.backgroundGraphics);
 
-      // Stage-level pointer move/up for drag
       app.stage.on("pointermove", (e: PIXI.FederatedPointerEvent) => {
         const drag = dragRef.current;
         if (!drag) return;
-        const dx = (e.global.x - drag.screenX) / scale;
-        const dy = (e.global.y - drag.screenY) / scale;
+        const dx = (e.global.x - drag.screenX) / scaleRef.current;
+        const dy = (e.global.y - drag.screenY) / scaleRef.current;
         drag.screenX = e.global.x;
         drag.screenY = e.global.y;
         const [dwx, dwy] = worldDeltaFromScreen(dx, dy);
@@ -140,25 +154,19 @@ export function LoungeCanvas() {
         if (!item) return;
         const nx = Math.max(0.3, Math.min(8.7, item.wx + dwx));
         const ny = Math.max(0.3, Math.min(6.7, item.wy + dwy));
-        // Update in-memory ref without React re-render
         objectsRef.current = objectsRef.current.map(o =>
           o.id === drag.id ? { ...o, wx: nx, wy: ny } : o
         );
         scene.updateItem(drag.id, nx, ny, item.wz);
       });
 
-      app.stage.on("pointerup", () => {
-        if (!dragRef.current) return;
-        dragRef.current = null;
-        // Commit to React state (triggers persist)
-        setObjects([...objectsRef.current]);
-      });
-
-      app.stage.on("pointerupoutside", () => {
+      const endDrag = () => {
         if (!dragRef.current) return;
         dragRef.current = null;
         setObjects([...objectsRef.current]);
-      });
+      };
+      app.stage.on("pointerup", endDrag);
+      app.stage.on("pointerupoutside", endDrag);
     });
 
     return () => {
@@ -167,10 +175,9 @@ export function LoungeCanvas() {
       appRef.current = null;
       sceneRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Update highlight when selection changes ─────────────────────────────────
+  // ── Selection highlight ─────────────────────────────────────────────────────
   useEffect(() => {
     sceneRef.current?.setSelected(selectedId);
   }, [selectedId]);
@@ -193,12 +200,73 @@ export function LoungeCanvas() {
 
   // ── Persist ──────────────────────────────────────────────────────────────────
   useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ objects, roomName, happiness, floor })); }
-    catch { /* ignore */ }
-  }, [objects, roomName, happiness, floor]);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        objects, roomName, happiness, floor, coins, nextId: nextIdRef.current
+      }));
+    } catch { /* ignore */ }
+  }, [objects, roomName, happiness, floor, coins]);
 
-  // ── Helpers ──────────────────────────────────────────────────────────────────
-  const handleTrain = useCallback(() => setHappiness(h => h + 5), []);
+  // ── Toast helper ─────────────────────────────────────────────────────────────
+  const showToast = useCallback((text: string) => {
+    setToast(text);
+    setTimeout(() => setToast(null), 2000);
+  }, []);
+
+  // ── Actions ──────────────────────────────────────────────────────────────────
+  const handleTrain = useCallback(() => {
+    if (trainCount >= trainMax) {
+      showToast("Training complete! Wait for refresh.");
+      return;
+    }
+    setHappiness(h => h + 5);
+    setCoins(c => c + TRAIN_REWARD);
+    setTrainCount(t => t + 1);
+    showToast(`+${TRAIN_REWARD} 🪙  +5 😊`);
+  }, [trainCount, trainMax, showToast]);
+
+  const handlePurchase = useCallback((item: CatalogItem) => {
+    setCoins(c => c - item.cost);
+    const spawn = getDefaultSpawnPosition(item.type);
+    const newId = nextIdRef.current++;
+    const newObj: RoomObject = {
+      id: newId,
+      furnitureType: item.type,
+      label: item.label,
+      description: item.description,
+      wx: spawn.wx, wy: spawn.wy, wz: spawn.wz,
+      happiness: item.happiness,
+      draggable: item.draggable,
+    };
+    objectsRef.current = [...objectsRef.current, newObj];
+    sceneRef.current?.addItem(newObj);
+    setObjects([...objectsRef.current]);
+    setSelectedId(newId);
+  }, []);
+
+  const handleDelete = useCallback((id: number) => {
+    objectsRef.current = objectsRef.current.filter(o => o.id !== id);
+    sceneRef.current?.removeItem(id);
+    setObjects([...objectsRef.current]);
+    setSelectedId(null);
+    showToast("Item removed");
+  }, [showToast]);
+
+  const handleReset = useCallback(async () => {
+    if (!confirm("Reset room to default layout? Any custom items will be removed.")) return;
+    let defaults = DEFAULT_OBJECTS;
+    try {
+      const loaded = await loadRoomJSON(ROOM_MAP_URL);
+      if (loaded.length > 0) defaults = loaded;
+    } catch { /* keep default */ }
+    objectsRef.current = defaults;
+    sceneRef.current?.rebuild(defaults);
+    setObjects(defaults);
+    setSelectedId(null);
+    nextIdRef.current = Math.max(...defaults.map(o => o.id), 999) + 1;
+    showToast("Room reset");
+  }, [showToast]);
+
   const selectedObj = objects.find(o => o.id === selectedId) ?? null;
   const suppliesPct = Math.round((suppliesProgress / suppliesMax) * 100);
   const totalHappiness = happiness + objects.reduce((s, o) => s + o.happiness, 0);
@@ -226,12 +294,16 @@ export function LoungeCanvas() {
         </div>
       </div>
 
-      {/* ── Top-right: Happiness + Floor + Timer ─────────────────────── */}
+      {/* ── Top-right: Happiness + Coins + Floor + Timer ─────────────── */}
       <div className="absolute right-3 top-3 z-30 flex flex-col items-end gap-1.5">
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-3 py-1.5 shadow-md backdrop-blur-sm">
-            <span className="text-[12px] font-bold text-[#5a3c18]">Happiness: {totalHappiness}</span>
+            <span className="text-[12px] font-bold text-[#5a3c18]">{totalHappiness}</span>
             <span className="text-[14px]">😊</span>
+          </div>
+          <div className="flex items-center gap-1.5 rounded-xl border border-[#e8b800] bg-[#fde68a]/90 px-3 py-1.5 shadow-md backdrop-blur-sm">
+            <span className="text-[12px] font-black text-[#7a5000]">{coins.toLocaleString()}</span>
+            <span className="text-[14px]">🪙</span>
           </div>
           <button type="button" onClick={() => setFloor(f => f === 1 ? 2 : 1)}
             className="flex items-center gap-1 rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-2.5 py-1.5 shadow-md backdrop-blur-sm hover:bg-[#f0d8a8] transition">
@@ -246,26 +318,36 @@ export function LoungeCanvas() {
         </div>
       </div>
 
-      {/* ── Move-mode banner ────────────────────────────────────────────── */}
+      {/* ── Move-mode banner ────────────────────────────────────────── */}
       {mode === "move" && (
-        <div className="absolute left-1/2 top-3 z-30 -translate-x-1/2 rounded-full border border-[#e8b800] bg-[#fde68a] px-4 py-1.5 text-[11px] font-black text-[#7a5000] shadow-md">
-          ✋ Move Mode — drag furniture to reposition
+        <div className="absolute left-1/2 top-3 z-30 -translate-x-1/2 flex items-center gap-2 rounded-full border border-[#e8b800] bg-[#fde68a] px-4 py-1.5 shadow-md">
+          <span className="text-[11px] font-black text-[#7a5000]">✋ Move Mode — drag furniture to reposition</span>
+          <button type="button" onClick={handleReset}
+            className="rounded-full bg-[#e84040] px-2.5 py-0.5 text-[9px] font-black text-white hover:bg-[#d03030] active:scale-95 transition">
+            ↻ Reset
+          </button>
         </div>
       )}
 
-      {/* ── Online count ─────────────────────────────────────────────────── */}
+      {/* ── Toast ─────────────────────────────────────────────────────── */}
+      {toast && (
+        <div className="absolute left-1/2 top-16 z-40 -translate-x-1/2 rounded-full bg-[#fdf6e8] border border-[#c8a870] px-4 py-1.5 shadow-lg animate-pulse">
+          <span className="text-[11px] font-black text-[#5a3c18]">{toast}</span>
+        </div>
+      )}
+
+      {/* ── Online count ─────────────────────────────────────────────── */}
       {mode === "visit" && counts.active > 0 && (
-        <div className="absolute right-3 top-[88px] z-20 rounded-full border border-[#c8a870] bg-[#f5e4c0]/80 px-3 py-1 text-[10px] font-semibold text-[#5a3c18] backdrop-blur-sm shadow">
+        <div className="absolute right-3 top-[92px] z-20 rounded-full border border-[#c8a870] bg-[#f5e4c0]/80 px-3 py-1 text-[10px] font-semibold text-[#5a3c18] backdrop-blur-sm shadow">
           On stage {counts.active}
         </div>
       )}
 
-      {/* ── Room canvas ─────────────────────────────────────────────────── */}
+      {/* ── Room canvas ─────────────────────────────────────────────── */}
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="relative" style={{ width:860, height:500, transform:`translateY(${cameraY}px) scale(${scale})`, transformOrigin:"center center" }}>
           <canvas ref={canvasRef} width={860} height={500} className="absolute inset-0" />
 
-          {/* Character spots (React overlay) */}
           <div className="absolute inset-0 z-30 pointer-events-none">
             {CHARACTERS.map(ch => {
               const live = presence[ch.id];
@@ -284,20 +366,23 @@ export function LoungeCanvas() {
             })}
           </div>
 
-          {/* Furniture Inspector (positioned relative to room canvas) */}
           <FurnitureInspector
             object={selectedObj}
             onClose={() => setSelectedId(null)}
             onMoveMode={() => setMode("move")}
+            onDelete={handleDelete}
           />
         </div>
       </div>
 
-      {/* ── Bottom-left: Train + Supplies ───────────────────────────────── */}
+      {/* ── Bottom-left: Train + Supplies ───────────────────────────── */}
       <div className="absolute left-3 bottom-4 z-30 flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <button type="button" onClick={handleTrain}
-            className="flex items-center gap-1.5 rounded-full bg-[#e84040] px-4 py-2 text-white shadow-lg hover:bg-[#d03030] active:scale-95 transition">
+            disabled={trainCount >= trainMax}
+            className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-white shadow-lg active:scale-95 transition ${
+              trainCount >= trainMax ? "bg-[#a0a0a0] cursor-not-allowed" : "bg-[#e84040] hover:bg-[#d03030]"
+            }`}>
             <span className="text-[13px] font-black">Train</span>
           </button>
           <div className="flex items-center gap-1">
@@ -321,7 +406,7 @@ export function LoungeCanvas() {
         </div>
       </div>
 
-      {/* ── Bottom-right: Action buttons ────────────────────────────────── */}
+      {/* ── Bottom-right: Action buttons ────────────────────────────── */}
       <div className="absolute right-3 bottom-4 z-30 flex items-end gap-2">
         <div className="flex flex-col gap-2">
           <div className="flex gap-2">
@@ -330,7 +415,7 @@ export function LoungeCanvas() {
               <span className="text-[18px]">🪑</span>
               <span className="text-[9px] font-bold">{mode === "move" ? "Done" : "Move"}</span>
             </button>
-            <button type="button"
+            <button type="button" onClick={() => setShopOpen(true)}
               className="flex flex-col items-center justify-center gap-0.5 rounded-2xl border border-[#e89830] bg-[#fad090]/90 px-3 py-2 shadow-md hover:bg-[#fac070] active:scale-95 transition min-w-[56px]">
               <span className="text-[18px]">🏪</span>
               <span className="text-[9px] font-bold text-[#7a4000]">Shop</span>
@@ -348,6 +433,14 @@ export function LoungeCanvas() {
           <span className="text-[9px] font-bold text-[#5a3c18] text-center leading-tight">Change<br />Floors</span>
         </button>
       </div>
+
+      {/* ── Shop modal ─────────────────────────────────────────────── */}
+      <ShopModal
+        open={shopOpen}
+        coins={coins}
+        onClose={() => setShopOpen(false)}
+        onPurchase={(item) => handlePurchase(item)}
+      />
     </div>
   );
 }

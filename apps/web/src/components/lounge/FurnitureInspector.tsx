@@ -5,6 +5,7 @@ interface Props {
   object: RoomObject | null;
   onClose: () => void;
   onMoveMode: () => void;
+  onDelete: (id: number) => void;
 }
 
 const FURNITURE_ICONS: Record<string, string> = {
@@ -21,7 +22,7 @@ const FURNITURE_ICONS: Record<string, string> = {
   wall_shelf:     "📦",
 };
 
-export function FurnitureInspector({ object, onClose, onMoveMode }: Props) {
+export function FurnitureInspector({ object, onClose, onMoveMode, onDelete }: Props) {
   if (!object) return null;
 
   const icon = FURNITURE_ICONS[object.furnitureType] ?? "🪑";
@@ -72,17 +73,24 @@ export function FurnitureInspector({ object, onClose, onMoveMode }: Props) {
       </div>
 
       {/* Actions */}
-      {object.draggable && (
-        <div className="border-t border-[#e8d4a8] px-3 py-2">
+      <div className="border-t border-[#e8d4a8] px-3 py-2 flex gap-2">
+        {object.draggable && (
           <button
             type="button"
             onClick={() => { onMoveMode(); onClose(); }}
-            className="w-full rounded-xl bg-[#f5c518] py-1.5 text-[10px] font-black text-[#5a3c00] hover:bg-[#e8b800] active:scale-95 transition"
+            className="flex-1 rounded-xl bg-[#f5c518] py-1.5 text-[10px] font-black text-[#5a3c00] hover:bg-[#e8b800] active:scale-95 transition"
           >
-            Move Furniture
+            Move
           </button>
-        </div>
-      )}
+        )}
+        <button
+          type="button"
+          onClick={() => { onDelete(object.id); onClose(); }}
+          className="flex-1 rounded-xl border border-[#e84040] bg-[#fcd5d5] py-1.5 text-[10px] font-black text-[#9b1c1c] hover:bg-[#fab8b8] active:scale-95 transition"
+        >
+          🗑 Delete
+        </button>
+      </div>
     </div>
   );
 }

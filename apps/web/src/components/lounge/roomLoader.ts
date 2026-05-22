@@ -31,6 +31,10 @@ export interface RoomScene {
   setSelected: (id: number | null) => void;
   /** Replace all furniture objects (e.g. after loading saved state) */
   rebuild: (objects: RoomObject[]) => void;
+  /** Add a new furniture item to the scene */
+  addItem: (obj: RoomObject) => void;
+  /** Remove a furniture item from the scene */
+  removeItem: (id: number) => void;
 }
 
 // ─── Load room JSON from URL ──────────────────────────────────────────────────
@@ -143,5 +147,20 @@ export function buildRoomScene(
     highlightGraphics.clear();
   }
 
-  return { backgroundGraphics, furnitureLayer, highlightGraphics, items, updateItem, setSelected, rebuild };
+  function addItem(obj: RoomObject) {
+    const item = createFurnitureItem(obj, handlers);
+    furnitureLayer.addChild(item.container);
+    items.set(obj.id, item);
+  }
+
+  function removeItem(id: number) {
+    const item = items.get(id);
+    if (!item) return;
+    furnitureLayer.removeChild(item.container);
+    item.container.destroy({ children: true });
+    items.delete(id);
+    highlightGraphics.clear();
+  }
+
+  return { backgroundGraphics, furnitureLayer, highlightGraphics, items, updateItem, setSelected, rebuild, addItem, removeItem };
 }
