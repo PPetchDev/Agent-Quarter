@@ -10,6 +10,7 @@ type StageState = {
 };
 
 type MessageChunk = { messageId: string; chunk: string };
+type CompletedMessage = { messageId: string; fullContent: string; mood?: CharacterMood };
 
 export function useStageSocket(characterId: string) {
   const socket = useSocket();
@@ -17,6 +18,7 @@ export function useStageSocket(characterId: string) {
     state: 'idle', idleTier: 'ready', mood: 'idle',
   });
   const [chunks, setChunks] = useState<MessageChunk[]>([]);
+  const [completedMessage, setCompletedMessage] = useState<CompletedMessage | null>(null);
   const [moodOverride, setMoodOverride] = useState<CharacterMood | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
 
@@ -36,9 +38,10 @@ export function useStageSocket(characterId: string) {
       setMoodOverride(data.mood);
       setTimeout(() => setMoodOverride(null), 3_000);
     };
-    const onDone = (data: { characterId: string }) => {
+    const onDone = (data: { characterId: string; messageId: string; fullContent: string; mood?: CharacterMood }) => {
       if (data.characterId !== characterId) return;
       setChunks([]);
+      setCompletedMessage({ messageId: data.messageId, fullContent: data.fullContent, mood: data.mood });
       setLastError(null);
     };
     const onError = (data: { characterId: string; error: string }) => {
@@ -64,9 +67,10 @@ export function useStageSocket(characterId: string) {
 
   const sendMessage = useCallback((content: string) => {
     setLastError(null);
+    setCompletedMessage(null);
     socket.emit('send_message', { characterId, content });
   }, [socket, characterId]);
 
   const activeMood = moodOverride ?? stageState.mood;
-  return { stageState, activeMood, chunks, sendMessage, lastError };
+  return { stageState, activeMood, chunks, completedMessage, sendMessage, lastError };
 }

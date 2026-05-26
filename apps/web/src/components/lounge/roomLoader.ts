@@ -1,11 +1,13 @@
 import * as PIXI from "pixi.js";
 import type { RoomObject, TiledMap } from "./roomDefs";
-import { parseTiledMap, FURNITURE_DIMS } from "./roomDefs";
+import { parseTiledMap, FURNITURE_TILES } from "./roomDefs";
 import {
   proj,
   drawFurnitureByType,
   drawHighlight,
-  furnitureHitRect,
+  drawHighlightCollision,
+  drawTileGrid,
+  furnitureHitPolygon,
   CANVAS_W,
   CANVAS_H,
 } from "./pixiRoom";
@@ -24,6 +26,7 @@ export interface FurnitureItem {
 
 export interface RoomScene {
   backgroundGraphics: PIXI.Graphics;
+  tileGridGraphics: PIXI.Graphics;
   furnitureLayer: PIXI.Container;
   highlightGraphics: PIXI.Graphics;
   items: Map<number, FurnitureItem>;
@@ -37,6 +40,10 @@ export interface RoomScene {
   addItem: (obj: RoomObject) => void;
   /** Remove a furniture item from the scene */
   removeItem: (id: number) => void;
+  /** Show/hide tile grid overlay */
+  setEditMode: (active: boolean, cols?: number, rows?: number) => void;
+  /** Draw collision (red) or normal highlight on the dragged item */
+  setDragHighlight: (id: number, colliding: boolean) => void;
 }
 
 // ─── Load room JSON from URL ──────────────────────────────────────────────────
@@ -60,15 +67,15 @@ function createFurnitureItem(
 
   drawFurnitureByType(graphics, obj.furnitureType, obj.wx, obj.wy, obj.wz);
 
-  // Depth sort key: screen Y of furniture center
-  const d = FURNITURE_DIMS[obj.furnitureType] ?? { w: 1, d: 1, h: 0 };
-  const [, cy] = proj(obj.wx + d.w / 2, obj.wy + d.d / 2, obj.wz);
-  container.zIndex = cy;
+  // Depth sort key: screen Y of the footprint back edge
+  const fp = FURNITURE_TILES[obj.furnitureType] ?? { w: 1, d: 1 };
+  const [, backY] = proj(obj.wx + fp.w / 2, obj.wy + fp.d, obj.wz);
+  container.zIndex = -backY;
 
-  // Hit area: bounding rectangle covering all visible faces
-  container.hitArea = furnitureHitRect(obj.furnitureType, obj.wx, obj.wy, obj.wz);
+  // Hit area: floor footprint
+  container.hitArea = furnitureHitPolygon(obj.furnitureType, obj.wx, obj.wy, obj.wz);
   container.eventMode = "static";
-  container.cursor = "pointer";
+  container.cursor = obj.draggable ? "pointer" : "default";
 
   container.on("pointertap", (e: PIXI.FederatedPointerEvent) => {
     e.stopPropagation();
@@ -76,6 +83,12 @@ function createFurnitureItem(
   });
 
   if (obj.draggable) {
+    container.on("pointerover", () => {
+      container.alpha = 0.85;
+    });
+    container.on("pointerout", () => {
+      container.alpha = 1.0;
+    });
     container.on("pointerdown", (e: PIXI.FederatedPointerEvent) => {
       e.stopPropagation();
       handlers.onDragStart(obj.id, e.global.x, e.global.y);
@@ -90,13 +103,16 @@ export function buildRoomScene(
   objects: RoomObject[],
   handlers: FurnitureHandlers,
 ): RoomScene {
-  // Three layers in draw order
+  // Four layers in draw order
   const backgroundGraphics = new PIXI.Graphics();
+  const tileGridGraphics = new PIXI.Graphics();
   const furnitureLayer = new PIXI.Container();
   const highlightGraphics = new PIXI.Graphics();
 
+  tileGridGraphics.visible = false;
   furnitureLayer.sortableChildren = true;
   stage.addChild(backgroundGraphics);
+  stage.addChild(tileGridGraphics);
   stage.addChild(furnitureLayer);
   stage.addChild(highlightGraphics);
 
@@ -128,10 +144,10 @@ export function buildRoomScene(
     item.graphics.clear();
     drawFurnitureByType(item.graphics, item.obj.furnitureType, wx, wy, wz);
 
-    const d = FURNITURE_DIMS[item.obj.furnitureType] ?? { w: 1, d: 1, h: 0 };
-    const [, cy] = proj(wx + d.w / 2, wy + d.d / 2, wz);
-    item.container.zIndex = cy;
-    item.container.hitArea = furnitureHitRect(item.obj.furnitureType, wx, wy, wz);
+    const fp2 = FURNITURE_TILES[item.obj.furnitureType] ?? { w: 1, d: 1 };
+    const [, backY2] = proj(wx + fp2.w / 2, wy + fp2.d, wz);
+    item.container.zIndex = -backY2;
+    item.container.hitArea = furnitureHitPolygon(item.obj.furnitureType, wx, wy, wz);
   }
 
   function setSelected(id: number | null) {
@@ -164,5 +180,24 @@ export function buildRoomScene(
     highlightGraphics.clear();
   }
 
-  return { backgroundGraphics, furnitureLayer, highlightGraphics, items, updateItem, setSelected, rebuild, addItem, removeItem };
+  function setEditMode(active: boolean, cols?: number, rows?: number) {
+    if (active) {
+      drawTileGrid(tileGridGraphics, cols, rows);
+      tileGridGraphics.visible = true;
+    } else {
+      tileGridGraphics.visible = false;
+    }
+  }
+
+  function setDragHighlight(id: number, colliding: boolean) {
+    const item = items.get(id);
+    if (!item) return;
+    if (colliding) {
+      drawHighlightCollision(highlightGraphics, item.obj);
+    } else {
+      drawHighlight(highlightGraphics, item.obj);
+    }
+  }
+
+  return { backgroundGraphics, tileGridGraphics, furnitureLayer, highlightGraphics, items, updateItem, setSelected, rebuild, addItem, removeItem, setEditMode, setDragHighlight };
 }

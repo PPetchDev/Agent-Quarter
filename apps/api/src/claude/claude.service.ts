@@ -9,7 +9,13 @@ export type StreamChunkEvent = {
 
 @Injectable()
 export class ClaudeService {
-  private readonly client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  private readonly client: Anthropic;
+
+  constructor() {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not set');
+    this.client = new Anthropic({ apiKey });
+  }
 
   async *streamResponse(
     characterId: string,
