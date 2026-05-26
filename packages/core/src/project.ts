@@ -157,3 +157,62 @@ export function getProjectTaskSummary(
     inProgress: pts.filter((t) => t.status === 'in_progress').length,
   };
 }
+
+// ─── Run lifecycle helpers (pure, side-effect free) ───────────────────────────
+
+/** Returns the next actionable task for a project: in_progress first, then todo. */
+export function getNextTaskForProject(
+  tasks: Task[],
+  projectId: string,
+): Task | undefined {
+  const pts = getTasksByProjectId(tasks, projectId);
+  return (
+    pts.find((t) => t.status === 'in_progress') ??
+    pts.find((t) => t.status === 'todo')
+  );
+}
+
+/** A task can be started only when it is in todo status. */
+export function canStartTask(task: Task): boolean {
+  return task.status === 'todo';
+}
+
+/** A run can be started only when the task is in_progress and has no active run. */
+export function canStartRun(task: Task, runs: Run[]): boolean {
+  if (task.status !== 'in_progress') return false;
+  const taskRuns = getRunsByTaskId(runs, task.id);
+  return !taskRuns.some((r) => r.status === 'running' || r.status === 'pending');
+}
+
+export interface RunStartInput {
+  id: string;
+  projectId: string;
+  taskId: string;
+  startedAt?: string;
+}
+
+/** Builds a new Run value in running state. Does not mutate any collection. */
+export function buildRunStartPatch(input: RunStartInput): Run {
+  return {
+    id: input.id,
+    projectId: input.projectId,
+    taskId: input.taskId,
+    status: 'running',
+    startedAt: input.startedAt ?? new Date().toISOString(),
+  };
+}
+
+/** Returns a new Run with status success. */
+export function completeRun(run: Run, completedAt?: string): Run {
+  return { ...run, status: 'success', completedAt: completedAt ?? new Date().toISOString() };
+}
+
+/** Returns a new Run with status failed. */
+export function failRun(run: Run, completedAt?: string): Run {
+  return { ...run, status: 'failed', completedAt: completedAt ?? new Date().toISOString() };
+}
+
+/** Returns a new Run with status cancelled. */
+export function cancelRun(run: Run, completedAt?: string): Run {
+  return { ...run, status: 'cancelled', completedAt: completedAt ?? new Date().toISOString() };
+}
