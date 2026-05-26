@@ -5,15 +5,9 @@ import {
   Project,
   ProjectStatus,
   RunStatus,
-  PROJECTS,
-  TASKS,
-  RUNS,
-  getProjectByCharacterId,
   getProjectStatusLabel,
-  getProjectTaskSummary,
-  getTasksByProjectId,
-  getLatestRunForTask,
 } from "@squad/core";
+import { fetchProjects, fetchProjectTasks, fetchTaskRuns } from "@/lib/api";
 
 // ─── Project data ─────────────────────────────────────────────────────────────
 const STATUS_COLOR: Record<ProjectStatus, string> = {
@@ -40,7 +34,33 @@ const ROLE_COLOR: Record<string, string> = {
   strategy: "text-[#f0abfc] border-[#f0abfc]/30 bg-[#f0abfc]/10",
 };
 
-export default function ProjectsPage() {
+export default async function ProjectsPage() {
+  // Fetch all projects from API
+  const projects = await fetchProjects();
+
+  // Fetch tasks for every project in parallel
+  const taskEntries = await Promise.all(
+    projects.map((p) =>
+      fetchProjectTasks(p.id).then((tasks) => [p.id, tasks] as const),
+    ),
+  );
+  const tasksMap = new Map(taskEntries);
+
+  // Collect active tasks across all projects, then fetch their runs in parallel
+  const activeTasks = projects.flatMap((p) => {
+    const pts = tasksMap.get(p.id) ?? [];
+    const active =
+      pts.find((t) => t.status === "in_progress") ??
+      pts.find((t) => t.status === "todo");
+    return active ? [active] : [];
+  });
+  const runEntries = await Promise.all(
+    activeTasks.map((t) =>
+      fetchTaskRuns(t.id).then((runs) => [t.id, runs] as const),
+    ),
+  );
+  const runsMap = new Map(runEntries);
+
   return (
     <main className="flex-1 flex flex-col bg-[rgba(7,4,26,0.95)] px-6 py-8 overflow-y-auto">
       <div className="max-w-4xl mx-auto w-full">
@@ -58,19 +78,29 @@ export default function ProjectsPage() {
           {CHARACTER_TEMPLATES.map((t) => {
             const roleClass =
               ROLE_COLOR[t.role] ?? "text-white/50 border-white/20 bg-white/5";
-            const project = getProjectByCharacterId(PROJECTS, t.characterId);
-            const taskSummary = project
-              ? getProjectTaskSummary(TASKS, project.id)
-              : null;
+            const project = projects.find(
+              (p) => p.characterId === t.characterId,
+            );
             const projectTasks = project
-              ? getTasksByProjectId(TASKS, project.id)
+              ? (tasksMap.get(project.id) ?? [])
               : [];
+            const taskSummary = project
+              ? {
+                  total: projectTasks.length,
+                  done: projectTasks.filter((t) => t.status === "done").length,
+                  inProgress: projectTasks.filter(
+                    (t) => t.status === "in_progress",
+                  ).length,
+                }
+              : null;
             const activeTask =
               projectTasks.find((t) => t.status === "in_progress") ??
               projectTasks.find((t) => t.status === "todo");
-            const latestRun = activeTask
-              ? getLatestRunForTask(RUNS, activeTask.id)
-              : undefined;
+            const taskRuns = activeTask
+              ? (runsMap.get(activeTask.id) ?? [])
+              : [];
+            const latestRun =
+              taskRuns.length > 0 ? taskRuns[taskRuns.length - 1] : undefined;
             return (
               <div
                 key={t.characterId}
