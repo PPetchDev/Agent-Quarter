@@ -62,7 +62,7 @@ export class ClaudeGateway implements OnGatewayInit {
 
   private emitStageState(characterId: string, state: 'processing' | 'idle', idleTier?: IdleTier) {
     const mood = readCharacterMood(characterId, { stageState: state, idleTier });
-    this.server.emit('stage_state', { characterId, state, idleTier, mood });
+    this.server.to(`stage:${characterId}`).emit('stage_state', { characterId, state, idleTier, mood });
   }
 
   @SubscribeMessage('join_stage')
@@ -102,7 +102,7 @@ export class ClaudeGateway implements OnGatewayInit {
     try {
       const stream = this.claudeSvc.streamResponse(
         characterId,
-        history.slice(0, -1).map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+        history.slice(0, -1).map((m: { role: string; content: string }) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
         content,
       );
 

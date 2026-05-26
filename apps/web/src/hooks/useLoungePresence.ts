@@ -13,6 +13,7 @@ type PresenceEntry = {
   state: StageRuntimeState;
   idleTier: IdleTier;
   mood: CharacterMood;
+  activity: 'idle' | 'thinking' | 'typing';
 };
 
 type PresenceMap = Record<string, PresenceEntry>;
@@ -24,6 +25,7 @@ function buildInitialPresence(): PresenceMap {
       state: 'idle',
       idleTier: 'ready',
       mood: readCharacterMood(template.characterId, { stageState: 'idle', idleTier: 'ready' }),
+      activity: 'idle',
     };
   }
   return initial;
@@ -46,22 +48,62 @@ export function useLoungePresence() {
           state: data.state,
           idleTier: data.idleTier ?? 'ready',
           mood: data.mood,
+          activity: data.state === 'processing' ? 'thinking' : 'idle',
         },
       }));
     };
 
+    const onMessageChunk = (data: { characterId: string }) => {
+      if (!data.characterId) return;
+      setPresence((prev) => {
+        const current = prev[data.characterId];
+        if (!current) return prev;
+        return {
+          ...prev,
+          [data.characterId]: {
+            ...current,
+            state: 'processing',
+            activity: 'typing',
+          },
+        };
+      });
+    };
+
+    const onMessageDone = (data: { characterId: string }) => {
+      if (!data.characterId) return;
+      setPresence((prev) => {
+        const current = prev[data.characterId];
+        if (!current) return prev;
+        return {
+          ...prev,
+          [data.characterId]: {
+            ...current,
+            activity: current.state === 'processing' ? 'thinking' : 'idle',
+          },
+        };
+      });
+    };
+
     socket.on('stage_state', onStageState);
+    socket.on('message_chunk', onMessageChunk);
+    socket.on('message_done', onMessageDone);
+    socket.on('message_error', onMessageDone);
     return () => {
       socket.off('stage_state', onStageState);
+      socket.off('message_chunk', onMessageChunk);
+      socket.off('message_done', onMessageDone);
+      socket.off('message_error', onMessageDone);
     };
   }, [socket]);
 
   const counts = useMemo(() => {
     const list = Object.values(presence);
     const active = list.filter((item) => item.state === 'processing').length;
+    const typing = list.filter((item) => item.activity === 'typing').length;
+    const thinking = list.filter((item) => item.activity === 'thinking').length;
     const sleeping = list.filter((item) => item.state === 'idle' && (item.idleTier === 'resting' || item.idleTier === 'offline')).length;
     const idle = list.filter((item) => item.state === 'idle' && item.idleTier === 'ready').length;
-    return { active, idle, sleeping };
+    return { active, typing, thinking, idle, sleeping };
   }, [presence]);
 
   return { presence, counts };

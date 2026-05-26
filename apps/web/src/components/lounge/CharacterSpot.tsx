@@ -67,6 +67,9 @@ type Props = {
   name: string;
   role: string;
   sleep?: boolean;
+  priority?: boolean;
+  statusLabel?: string;
+  statusTone?: "idle" | "thinking" | "typing" | "sleeping";
   onClick?: () => void;
 };
 
@@ -87,6 +90,9 @@ export function CharacterSpot({
   name,
   role,
   sleep,
+  priority = false,
+  statusLabel,
+  statusTone = "idle",
   onClick,
 }: Props) {
   const [sx, sy] = proj(wx, wy, wz);
@@ -146,6 +152,7 @@ export function CharacterSpot({
           height={standeeH}
           className="h-full w-full object-contain object-bottom"
           unoptimized={cutoutSrc.startsWith("data:image")}
+          priority={priority && !cutoutSrc.startsWith("data:")}
           style={{ filter: "drop-shadow(0 2px 1px rgba(0,0,0,0.22))" }}
         />
         <span
@@ -164,10 +171,43 @@ export function CharacterSpot({
       </div>
       <div
         title={`${characterId} · ${role}`}
-        className="rounded-full border border-[#d7e4ff] bg-[rgba(248,252,255,0.96)] px-2.5 py-0.5 text-[8px] font-black tracking-[0.35px] text-[#29407f] whitespace-nowrap text-center pointer-events-none shadow-[0_6px_14px_rgba(0,0,0,0.2)] -mt-2"
+        className="rounded-full border border-[#d7e4ff] bg-[rgba(248,252,255,0.96)] px-2.5 py-0.5 text-[8px] font-black tracking-[0.35px] text-[#29407f] whitespace-nowrap text-center pointer-events-none shadow-[0_6px_14px_rgba(0,0,0,0.2)] -mt-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
       >
         {camTag}
       </div>
+      {statusLabel && (
+        <div
+          className="rounded-full border px-2 py-[2px] text-[7px] font-black tracking-[0.2px] text-center pointer-events-none"
+          style={{
+            background:
+              statusTone === "typing"
+                ? "rgba(187,247,208,0.95)"
+                : statusTone === "thinking"
+                  ? "rgba(254,243,199,0.95)"
+                  : statusTone === "sleeping"
+                    ? "rgba(203,213,225,0.92)"
+                    : "rgba(226,232,240,0.92)",
+            borderColor:
+              statusTone === "typing"
+                ? "#22c55e"
+                : statusTone === "thinking"
+                  ? "#f59e0b"
+                  : statusTone === "sleeping"
+                    ? "#64748b"
+                    : "#94a3b8",
+            color:
+              statusTone === "typing"
+                ? "#14532d"
+                : statusTone === "thinking"
+                  ? "#78350f"
+                  : statusTone === "sleeping"
+                    ? "#334155"
+                    : "#334155",
+          }}
+        >
+          {statusLabel}
+        </div>
+      )}
     </div>
   );
 }

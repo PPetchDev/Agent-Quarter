@@ -1,20 +1,40 @@
 import * as PIXI from "pixi.js";
 import type { RoomObject } from "./roomDefs";
-import { FURNITURE_DIMS } from "./roomDefs";
+import { FURNITURE_DIMS, FURNITURE_TILES } from "./roomDefs";
 
-export const S = 56;
-export const OX = 100;
-export const OY = 560;
 export const CANVAS_W = 1080;
 export const CANVAS_H = 620;
 
+let _S = 56;
+let _OX = 100;
+let _OY = 560;
+
+export function computeRoomProjection(cols: number, rows: number): { S: number; OX: number; OY: number } {
+  const S = Math.floor(
+    Math.min(
+      (CANVAS_W - 60) / (cols + rows * 0.65),
+      (CANVAS_H - 60) / (rows * 0.65 + 4.5),
+    ),
+  );
+  const OX = Math.floor((CANVAS_W - S * (cols + rows * 0.65)) / 2);
+  const OY = CANVAS_H - 30;
+  return { S, OX, OY };
+}
+
+export function setRoomProjection(cols: number, rows: number): void {
+  const projection = computeRoomProjection(cols, rows);
+  _S = projection.S;
+  _OX = projection.OX;
+  _OY = projection.OY;
+}
+
 export function proj(wx: number, wy: number, wz: number): [number, number] {
-  return [OX + wx * S + wy * S * 0.5, OY - wy * S * 0.5 - wz * S];
+  return [_OX + wx * _S + wy * _S * 0.65, _OY - wy * _S * 0.65 - wz * _S];
 }
 
 export function worldDeltaFromScreen(dx: number, dy: number): [number, number] {
-  const dwy = (-2 * dy) / S;
-  const dwx = dx / S + dy / S;
+  const dwy = -dy / (_S * 0.65);
+  const dwx = dx / _S - dy / _S;
   return [dwx, dwy];
 }
 
@@ -62,45 +82,78 @@ export function isoBox(
 
 // ─── Hit-area helper ──────────────────────────────────────────────────────────
 
-export function furnitureHitRect(type: string, wx: number, wy: number, wz: number): PIXI.Rectangle {
-  const d = FURNITURE_DIMS[type] ?? { w: 2, d: 2, h: 1 };
-  const allPts = [
-    proj(wx, wy, wz),        proj(wx+d.w, wy, wz),
-    proj(wx, wy+d.d, wz),    proj(wx+d.w, wy+d.d, wz),
-    proj(wx, wy, wz+d.h),    proj(wx+d.w, wy, wz+d.h),
-    proj(wx, wy+d.d, wz+d.h),proj(wx+d.w, wy+d.d, wz+d.h),
+export function furnitureHitPolygon(type: string, wx: number, wy: number, wz: number): PIXI.Polygon {
+  const fp = FURNITURE_TILES[type] ?? { w: 1, d: 1 };
+  const pts = [
+    proj(wx,        wy,        wz),
+    proj(wx + fp.w, wy,        wz),
+    proj(wx + fp.w, wy + fp.d, wz),
+    proj(wx,        wy + fp.d, wz),
   ];
-  const xs = allPts.map(([x]) => x);
-  const ys = allPts.map(([, y]) => y);
-  const minX = Math.min(...xs), minY = Math.min(...ys);
-  const maxX = Math.max(...xs), maxY = Math.max(...ys);
-  return new PIXI.Rectangle(minX - 4, minY - 4, maxX - minX + 8, maxY - minY + 8);
+  return new PIXI.Polygon(pts.flatMap(([x, y]) => [x, y]));
 }
 
 // ─── Background (static room shell) ──────────────────────────────────────────
 
-export function drawBackground(g: PIXI.Graphics) {
+export const ROOM_TILES_X = 9;
+export const ROOM_TILES_Y = 7;
+
+export type RoomTheme = {
+  skyTop: string;
+  skyBot: string;
+  wallTint: number;
+  wallTintAlpha: number;
+  floorTint: number;
+  floorTintAlpha: number;
+};
+
+const THEMES: Record<string, RoomTheme> = {
+  dawn:  { skyTop: "#7b5ea7", skyBot: "#f7a67c", wallTint: 0xf7c898, wallTintAlpha: 0.18, floorTint: 0xe89870, floorTintAlpha: 0.10 },
+  day:   { skyTop: "#d4e8f5", skyBot: "#a0c4de", wallTint: 0xffffff, wallTintAlpha: 0.0,  floorTint: 0xffffff, floorTintAlpha: 0.0  },
+  dusk:  { skyTop: "#e06030", skyBot: "#f0a858", wallTint: 0xff7830, wallTintAlpha: 0.22, floorTint: 0xe05818, floorTintAlpha: 0.14 },
+  night: { skyTop: "#1a1a3e", skyBot: "#2a2a5a", wallTint: 0x3050a0, wallTintAlpha: 0.28, floorTint: 0x182038, floorTintAlpha: 0.18 },
+};
+
+export function getTimeTheme(): RoomTheme {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 8)  return THEMES.dawn!;
+  if (h >= 8 && h < 18) return THEMES.day!;
+  if (h >= 18 && h < 21) return THEMES.dusk!;
+  return THEMES.night!;
+}
+
+export function drawBackground(g: PIXI.Graphics, cols = ROOM_TILES_X, rows = ROOM_TILES_Y, theme?: RoomTheme) {
   g.clear();
 
+  const [shadowX, shadowY] = proj(cols / 2, rows / 2, -0.01);
+  g.ellipse(shadowX, shadowY + _S * 0.08, (cols + rows * 0.5) * _S * 0.52, rows * _S * 0.28)
+    .fill({ color: 0x000000, alpha: 0.12 });
+
   // Floor
-  qfill(g, [proj(0,0,0),proj(9,0,0),proj(9,7,0),proj(0,7,0)], 0xc4824a);
-  for (let i = 1; i < 9; i++) {
-    const [ax,ay]=proj(i,0,0),[bx,by]=proj(i,7,0);
+  qfill(g, [proj(0,0,0),proj(cols,0,0),proj(cols,rows,0),proj(0,rows,0)], 0xc4824a);
+  for (let i = 1; i < cols; i++) {
+    const [ax,ay]=proj(i,0,0),[bx,by]=proj(i,rows,0);
     ln(g,ax,ay,bx,by,0xffffff,0.8,0.07);
   }
-  for (let j = 1; j < 7; j++) {
-    const [ax,ay]=proj(0,j,0),[bx,by]=proj(9,j,0);
+  for (let j = 1; j < rows; j++) {
+    const [ax,ay]=proj(0,j,0),[bx,by]=proj(cols,j,0);
     ln(g,ax,ay,bx,by,0xffffff,0.8,0.05);
   }
 
   // Back wall
-  qfill(g,[proj(0,7,0),proj(9,7,0),proj(9,7,4.5),proj(0,7,4.5)],0xf0e9da);
-  qfill(g,[proj(0,7,4.1),proj(9,7,4.1),proj(9,7,4.5),proj(0,7,4.5)],0xb8723c);
-  qfill(g,[proj(0,7,0),proj(9,7,0),proj(9,7,0.18),proj(0,7,0.18)],0xa86030);
+  qfill(g,[proj(0,rows,0),proj(cols,rows,0),proj(cols,rows,4.5),proj(0,rows,4.5)],0xf0e9da);
+  qfill(g,[proj(0,rows,4.1),proj(cols,rows,4.1),proj(cols,rows,4.5),proj(0,rows,4.5)],0xb8723c);
+  qfill(g,[proj(0,rows,0),proj(cols,rows,0),proj(cols,rows,0.18),proj(0,rows,0.18)],0xa86030);
+  for (let x = 2; x < cols; x += 2) {
+    const [px1,py1]=proj(x,rows,0.22),[px2,py2]=proj(x,rows,4.1);
+    ln(g,px1,py1,px2,py2,0xb8a996,1.1,0.32);
+  }
   const floralColors = [0xd4a0c0,0xb8c8e0,0xc8d4b0];
-  for (let fi = 0; fi < 12; fi++) {
-    const fwx = 0.6 + fi * 0.72, fwz = 1.2 + (fi % 3) * 1.1;
-    const [fpx,fpy] = proj(fwx,6.99,fwz);
+  const backFlowerCount = Math.max(1, Math.ceil(cols * 12 / ROOM_TILES_X));
+  const backFlowerSpacing = cols / backFlowerCount;
+  for (let fi = 0; fi < backFlowerCount; fi++) {
+    const fwx = backFlowerSpacing * (fi + 0.5), fwz = 1.2 + (fi % 3) * 1.1;
+    const [fpx,fpy] = proj(fwx,rows - 0.01,fwz);
     const fc = floralColors[fi % 3]!;
     g.circle(fpx,fpy,4.5).fill({color:fc,alpha:0.55});
     g.circle(fpx+7,fpy-3,3).fill({color:fc,alpha:0.35});
@@ -109,11 +162,13 @@ export function drawBackground(g: PIXI.Graphics) {
   }
 
   // Left wall
-  qfill(g,[proj(0,0,0),proj(0,7,0),proj(0,7,4.5),proj(0,0,4.5)],0xf5efe3);
-  qfill(g,[proj(0,0,4.1),proj(0,7,4.1),proj(0,7,4.5),proj(0,0,4.5)],0xb8723c);
-  qfill(g,[proj(0,0,0),proj(0,7,0),proj(0,7,0.18),proj(0,0,0.18)],0xa86030);
-  for (let fi = 0; fi < 8; fi++) {
-    const fwy = 0.8 + fi * 0.8, fwz = 1.0 + (fi % 3) * 1.2;
+  qfill(g,[proj(0,0,0),proj(0,rows,0),proj(0,rows,4.5),proj(0,0,4.5)],0xf5efe3);
+  qfill(g,[proj(0,0,4.1),proj(0,rows,4.1),proj(0,rows,4.5),proj(0,0,4.5)],0xb8723c);
+  qfill(g,[proj(0,0,0),proj(0,rows,0),proj(0,rows,0.18),proj(0,0,0.18)],0xa86030);
+  const leftFlowerCount = Math.max(1, Math.ceil(rows * 8 / ROOM_TILES_Y));
+  const leftFlowerSpacing = rows / leftFlowerCount;
+  for (let fi = 0; fi < leftFlowerCount; fi++) {
+    const fwy = leftFlowerSpacing * (fi + 0.5), fwz = 1.0 + (fi % 3) * 1.2;
     const [fpx,fpy] = proj(0.01,fwy,fwz);
     const fc = floralColors[fi % 3]!;
     g.circle(fpx,fpy,3.5).fill({color:fc,alpha:0.45});
@@ -127,32 +182,53 @@ export function drawBackground(g: PIXI.Graphics) {
   qstroke(g,[proj(1.15,1.75,0.005),proj(5.05,1.75,0.005),proj(5.05,5.25,0.005),proj(1.15,5.25,0.005)],0x8b4820,0.8,0.28);
 
   // Door
-  qfill(g,[proj(0,0.8,0),proj(0,2.4,0),proj(0,2.4,3.0),proj(0,0.8,3.0)],0x8b5c28);
-  qfill(g,[proj(0,0.88,0.04),proj(0,2.32,0.04),proj(0,2.32,2.94),proj(0,0.88,2.94)],0xd4904e);
-  qfill(g,[proj(0,0.92,1.8),proj(0,2.28,1.8),proj(0,2.28,2.88),proj(0,0.92,2.88)],0x87ceeb,0.85);
-  const [twx,twy]=proj(0,1.6,2.3);
-  g.rect(twx-1.5,twy,3,22).fill({color:0x6b3a2a,alpha:0.8});
-  for(let bi=0;bi<8;bi++){const ang=(bi/8)*Math.PI*2;g.circle(twx+Math.cos(ang)*10,twy-5+Math.sin(ang)*6,6).fill({color:0xffb7c5,alpha:0.75});}
-  g.circle(twx,twy-8,9).fill({color:0xffb7c5,alpha:0.7});
-  qfill(g,[proj(0,0.92,0.1),proj(0,2.28,0.1),proj(0,2.28,1.72),proj(0,0.92,1.72)],0xc07838,0.9);
-  const [dkx,dky]=proj(0,2.0,1.2);
-  g.circle(dkx,dky,3.5).fill(0xd4af37);
+  const featureMaxY = Math.max(0, rows - 1);
+  const wallY = (wy: number) => Math.max(0, Math.min(featureMaxY, wy));
+  const leftWallRect = (y1: number, y2: number, z1: number, z2: number, color: number, alpha = 1) => {
+    const cy1 = wallY(y1), cy2 = wallY(y2);
+    if (cy2 - cy1 <= 0.05) return false;
+    qfill(g,[proj(0,cy1,z1),proj(0,cy2,z1),proj(0,cy2,z2),proj(0,cy1,z2)],color,alpha);
+    return true;
+  };
+  if (leftWallRect(0.8,2.4,0,3.0,0x8b5c28)) {
+    leftWallRect(0.88,2.32,0.04,2.94,0xd4904e);
+    leftWallRect(0.92,2.28,1.8,2.88,0x87ceeb,0.85);
+    const [twx,twy]=proj(0,wallY(1.6),2.3);
+    g.rect(twx-1.5,twy,3,22).fill({color:0x6b3a2a,alpha:0.8});
+    for(let bi=0;bi<8;bi++){const ang=(bi/8)*Math.PI*2;g.circle(twx+Math.cos(ang)*10,twy-5+Math.sin(ang)*6,6).fill({color:0xffb7c5,alpha:0.75});}
+    g.circle(twx,twy-8,9).fill({color:0xffb7c5,alpha:0.7});
+    leftWallRect(0.92,2.28,0.1,1.72,0xc07838,0.9);
+    const [dkx,dky]=proj(0,wallY(2.0),1.2);
+    g.circle(dkx,dky,3.5).fill(0xd4af37);
+  }
 
   // Window
-  qfill(g,[proj(0,3.2,1.0),proj(0,5.6,1.0),proj(0,5.6,3.6),proj(0,3.2,3.6)],0x7ab5d8,0.7);
-  qstroke(g,[proj(0,3.0,0.8),proj(0,5.8,0.8),proj(0,5.8,3.8),proj(0,3.0,3.8)],0x8b5c28,3,0.9);
-  const [wdx1,wdy1]=proj(0,4.4,0.8),[wdx2,wdy2]=proj(0,4.4,3.8);
-  ln(g,wdx1,wdy1,wdx2,wdy2,0x8b5c28,2,0.8);
-  const [whx1,why1]=proj(0,3.0,2.2),[whx2,why2]=proj(0,5.8,2.2);
-  ln(g,whx1,why1,whx2,why2,0x8b5c28,2,0.8);
-  qfill(g,[proj(0,2.88,0.75),proj(0,3.28,0.75),proj(0,3.28,3.82),proj(0,2.88,3.82)],0xe8c88a,0.88);
-  qfill(g,[proj(0,5.52,0.75),proj(0,5.92,0.75),proj(0,5.92,3.82),proj(0,5.52,3.82)],0xe8c88a,0.88);
+  if (leftWallRect(3.2,5.6,1.0,3.6,0x7ab5d8,0.7)) {
+    const frameY1 = wallY(3.0), frameY2 = wallY(5.8);
+    qstroke(g,[proj(0,frameY1,0.8),proj(0,frameY2,0.8),proj(0,frameY2,3.8),proj(0,frameY1,3.8)],0x8b5c28,3,0.9);
+    const [wdx1,wdy1]=proj(0,wallY(4.4),0.8),[wdx2,wdy2]=proj(0,wallY(4.4),3.8);
+    ln(g,wdx1,wdy1,wdx2,wdy2,0x8b5c28,2,0.8);
+    const [whx1,why1]=proj(0,frameY1,2.2),[whx2,why2]=proj(0,frameY2,2.2);
+    ln(g,whx1,why1,whx2,why2,0x8b5c28,2,0.8);
+    leftWallRect(2.88,3.28,0.75,3.82,0xe8c88a,0.88);
+    leftWallRect(5.52,5.92,0.75,3.82,0xe8c88a,0.88);
+  }
 
   // Wall lamp
   const [wlx,wly]=proj(0.01,1.6,3.5);
   g.rect(wlx-3,wly-20,6,8).fill(0x8b6914);
   g.poly([wlx-10,wly-12,wlx+10,wly-12,wlx+7,wly,wlx-7,wly]).fill(0xfde68a);
   g.circle(wlx,wly-8,25).fill({color:0xffd070,alpha:0.1});
+
+  // Time-based theme tint overlay
+  if (theme) {
+    if (theme.floorTintAlpha > 0)
+      qfill(g,[proj(0,0,0),proj(cols,0,0),proj(cols,rows,0),proj(0,rows,0)],theme.floorTint,theme.floorTintAlpha);
+    if (theme.wallTintAlpha > 0) {
+      qfill(g,[proj(0,rows,0),proj(cols,rows,0),proj(cols,rows,4.5),proj(0,rows,4.5)],theme.wallTint,theme.wallTintAlpha);
+      qfill(g,[proj(0,0,0),proj(0,rows,0),proj(0,rows,4.5),proj(0,0,4.5)],theme.wallTint,theme.wallTintAlpha);
+    }
+  }
 }
 
 // ─── Individual furniture draw functions ──────────────────────────────────────
@@ -369,28 +445,79 @@ export function drawHighlight(g: PIXI.Graphics, obj: RoomObject) {
   ];
   qfill(g, top, 0xffffff, 0.18);
   qstroke(g, top, 0xffd060, 2.5, 0.9);
-  // Glow pulse dots at corners
   top.forEach(([px, py]) => {
     g.circle(px, py, 4).fill({ color: 0xffd060, alpha: 0.85 });
   });
 }
 
+/** Red collision highlight — drawn during drag when placement is invalid */
+export function drawHighlightCollision(g: PIXI.Graphics, obj: RoomObject) {
+  g.clear();
+  const d = FURNITURE_DIMS[obj.furnitureType] ?? { w: 2, d: 2, h: 0 };
+  const { wx, wy, wz } = obj;
+  // Floor footprint in red
+  const floor: [number, number][] = [
+    proj(wx,       wy,       wz),
+    proj(wx + d.w, wy,       wz),
+    proj(wx + d.w, wy + d.d, wz),
+    proj(wx,       wy + d.d, wz),
+  ];
+  qfill(g, floor, 0xff2222, 0.28);
+  qstroke(g, floor, 0xff2222, 2.5, 1.0);
+  // Top face outline
+  const top: [number, number][] = [
+    proj(wx,       wy,       wz + d.h),
+    proj(wx + d.w, wy,       wz + d.h),
+    proj(wx + d.w, wy + d.d, wz + d.h),
+    proj(wx,       wy + d.d, wz + d.h),
+  ];
+  qfill(g, top, 0xff2222, 0.18);
+  qstroke(g, top, 0xff4444, 2.5, 0.9);
+  top.forEach(([px, py]) => {
+    g.circle(px, py, 4).fill({ color: 0xff3333, alpha: 0.9 });
+  });
+}
+
+// ─── Tile grid overlay (shown in edit/move mode) ─────────────────────────────
+
+export function drawTileGrid(g: PIXI.Graphics, cols = ROOM_TILES_X, rows = ROOM_TILES_Y) {
+  g.clear();
+  // Isometric tile outlines for every cell
+  for (let tx = 0; tx < cols; tx++) {
+    for (let ty = 0; ty < rows; ty++) {
+      const pts: [number, number][] = [
+        proj(tx,     ty,     0.002),
+        proj(tx + 1, ty,     0.002),
+        proj(tx + 1, ty + 1, 0.002),
+        proj(tx,     ty + 1, 0.002),
+      ];
+      g.poly(pts.flatMap(([x, y]) => [x, y]))
+        .fill({ color: 0x88ccff, alpha: 0.08 })
+        .stroke({ color: 0x44aaff, width: 1.5, alpha: 0.7 });
+    }
+  }
+  // Corner dots
+  for (let tx = 0; tx <= cols; tx++) {
+    for (let ty = 0; ty <= rows; ty++) {
+      const [px, py] = proj(tx, ty, 0.003);
+      g.circle(px, py, 2.5).fill({ color: 0x44aaff, alpha: 0.8 });
+    }
+  }
+}
+
 // ─── Legacy all-in-one (backward compat) ─────────────────────────────────────
 
 const DEFAULT_OBJECTS: RoomObject[] = [
-  { id:1,  furnitureType:"hanging_scroll", label:"Autumn Fox Scroll", description:"",  wx:7.0,  wy:6.9,  wz:2.5, happiness:6,  draggable:false },
-  { id:2,  furnitureType:"wall_shelf",     label:"Wall Shelf",        description:"",  wx:6.4,  wy:6.9,  wz:2.1, happiness:5,  draggable:false },
-  { id:3,  furnitureType:"bookcase",       label:"Bookcase",          description:"",  wx:4.3,  wy:6.0,  wz:0,   happiness:10, draggable:true  },
-  { id:4,  furnitureType:"tv_stand",       label:"TV Stand",          description:"",  wx:0.3,  wy:6.0,  wz:0,   happiness:8,  draggable:true  },
-  { id:5,  furnitureType:"tv",             label:"Flat Screen TV",    description:"",  wx:0.4,  wy:5.9,  wz:0.97,happiness:12, draggable:false },
-  { id:6,  furnitureType:"bed",            label:"Wooden Bed",        description:"",  wx:5.4,  wy:0.38, wz:0,   happiness:15, draggable:true  },
-  { id:7,  furnitureType:"nightstand",     label:"Nightstand",        description:"",  wx:8.85, wy:0.42, wz:0,   happiness:5,  draggable:true  },
-  { id:8,  furnitureType:"pool_table",     label:"Pool Table",        description:"",  wx:1.2,  wy:1.7,  wz:0,   happiness:20, draggable:true  },
-  { id:9,  furnitureType:"low_table",      label:"Tea Table",         description:"",  wx:2.7,  wy:3.8,  wz:0,   happiness:8,  draggable:true  },
-  { id:10, furnitureType:"zabuton",        label:"Floor Cushion",     description:"",  wx:2.7,  wy:5.85, wz:0,   happiness:4,  draggable:true  },
-  { id:11, furnitureType:"zabuton",        label:"Floor Cushion",     description:"",  wx:1.35, wy:3.8,  wz:0,   happiness:4,  draggable:true  },
-  { id:12, furnitureType:"zabuton",        label:"Floor Cushion",     description:"",  wx:5.6,  wy:3.8,  wz:0,   happiness:4,  draggable:true  },
-  { id:13, furnitureType:"plant",          label:"Tropical Plant",    description:"",  wx:8.2,  wy:5.7,  wz:0,   happiness:7,  draggable:true  },
+  { id:1,  furnitureType:"hanging_scroll", label:"Autumn Fox Scroll", description:"",  wx:7,  wy:7,  wz:2.5, happiness:6,  draggable:false },
+  { id:2,  furnitureType:"wall_shelf",     label:"Wall Shelf",        description:"",  wx:6,  wy:7,  wz:2.1, happiness:5,  draggable:false },
+  { id:3,  furnitureType:"bookcase",       label:"Bookcase",          description:"",  wx:4,  wy:6,  wz:0,   happiness:10, draggable:true  },
+  { id:4,  furnitureType:"tv_stand",       label:"TV Stand",          description:"",  wx:0,  wy:6,  wz:0,   happiness:8,  draggable:true  },
+  { id:5,  furnitureType:"tv",             label:"Flat Screen TV",    description:"",  wx:0,  wy:6,  wz:0.97,happiness:12, draggable:false },
+  { id:6,  furnitureType:"bed",            label:"Wooden Bed",        description:"",  wx:5,  wy:0,  wz:0,   happiness:15, draggable:true  },
+  { id:7,  furnitureType:"nightstand",     label:"Nightstand",        description:"",  wx:8,  wy:0,  wz:0,   happiness:5,  draggable:true  },
+  { id:9,  furnitureType:"low_table",      label:"Tea Table",         description:"",  wx:3,  wy:4,  wz:0,   happiness:8,  draggable:true  },
+  { id:10, furnitureType:"zabuton",        label:"Floor Cushion",     description:"",  wx:3,  wy:6,  wz:0,   happiness:4,  draggable:true  },
+  { id:13, furnitureType:"plant",          label:"Tropical Plant",    description:"",  wx:8,  wy:6,  wz:0,   happiness:7,  draggable:true  },
 ];
 
 export function drawPixiRoom(g: PIXI.Graphics) {
