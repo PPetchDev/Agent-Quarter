@@ -1,193 +1,217 @@
 # AGENTS.md — Anime Agent Squad
 
 _Shared source of truth for all AI agents working in this repo._
-_Updated: 2026-05-26_
+_Updated: 2026-05-26 | Workflow: Map-First Universal Agent Workflow (C-WORKFLOW-009)_
 
 ---
 
 ## Prime Directive
 
-This repo is built with a **Kernel → Contract → Packet → Patch** workflow.
+**Mode → Map → Minimal Context → Patch**
 
-No agent may expand scope beyond `ai/active.contract.md`.
-
----
-
-## Required Context Flow
-
-Every agent must load context in this order:
-
-1. **`ai/kernel.md`** — compact project truth (≤ 400 words)
-2. **`ai/active.contract.md`** — current definition of done and scope boundary
-3. **`ai/context-packet.md`** — execution context for the current task
-4. **`ai/patches/latest.md`** — read for current patch state if continuing a task
-5. Do not read `ai/sessions/archive/` unless the context packet explicitly references a session
+No agent may expand scope beyond the active contract.
+No agent reads source files blindly — use `ai/maps/` first.
 
 ---
 
-## Execution Rules
+## Map-First Universal Agent Workflow
 
-- Work from the current context packet — not from memory alone
-- If the packet is unclear, improve the packet before implementing
-- If the contract is unclear, improve the contract before implementing
-- If the task exceeds the contract, stop and request a new contract
-- Never expand scope by reading unrelated history
-- Prefer file pointers over pasting file contents into context
-- Promote only durable facts into memory
+_Added: C-WORKFLOW-009_
+
+### Core Pattern
+
+```
+1. Select Mode   — based on task scope
+2. Load Map      — ai/maps/ before any source read
+3. Load Minimal Context — only files the map points to
+4. Patch         — produce output in standard format
+```
+
+### Mode Selection
+
+| Mode | Trigger | Workflow Files Read |
+|------|---------|-------------------|
+| **Micro** | Files known · 1–3 files · no arch/QA/DB/dep/handoff | None |
+| **Map** | Files unknown — locate before read | `ai/maps/` only |
+| **Lean** | Multi-file · unknowns · known contract | context-packet + required reads |
+| **Full Contract** | New contract · arch decision · multi-agent handoff | Full context flow |
+
+**Default: Micro Mode.** Escalate only when conditions require it.
+
+### Micro Mode
+
+- Do not read workflow files (`ai/*.md`, `AGENTS.md`, `CLAUDE.md`)
+- Do not read command/skill files
+- Read only product files required for the task
+- Run exact verification commands
+- Final output: ≤30 lines
+
+### Map Mode
+
+- Read `ai/maps/` to locate target files before any source read
+- Use graphify only if maps insufficient (≤1 query)
+- Do not read workflow files beyond what mode requires
+- Final output: ≤40 lines
+
+### Lean Mode
+
+- Read `ai/context-packet.md` first
+- Read only files listed in Required Reads of packet
+- Do not reread files already read in this session
+- Do not rewrite workflow files unless scope changes
+- Final output: ≤80 lines
+
+### Full Contract Mode
+
+- Read: kernel → contract → packet → required reads
+- Update workflow files as contract requires
+- Multi-agent handoff allowed
+- Final output: ≤120 lines
+
+### Token Budgets
+
+| Mode | Target | Hard Stop |
+|------|--------|-----------|
+| Micro | <10K | 20K |
+| Map | <15K | 30K |
+| Lean | <20K | 90K (stop-compact at 60K) |
+| Full Contract | <35K | 90K (stop-compact at 60K) |
+
+### No Blind Search Rule
+
+**Never search source files without a map query first.**
+
+1. Check `ai/maps/` for the file/symbol location.
+2. If maps insufficient, use graphify for targeted retrieval.
+3. Only read source files after location is confirmed.
+
+### Exact Verification Command Rule
+
+**Hard Criterion** — Incorrect command reporting makes status PARTIAL regardless of code outcome.
+
+- Copy the **exact** command string executed — all flags, exact paths, `; echo "EXIT:$?"` if used.
+- Workspace-specific tsconfig paths must be exact: `apps/web/tsconfig.json` not `tsconfig.json`.
+- If exact string unconfirmed: state PARTIAL and note which commands were unconfirmed.
+
+### Command / Skill Routing
+
+| Context | Command | Skill |
+|---------|---------|-------|
+| Micro Mode | none | none |
+| Files unknown | `agent-map` | `graphify` (if map insufficient) |
+| Single impl task | `agent-run` | — |
+| UI polish | `agent-ui-polish` | `impeccable` |
+| Browser QA | `agent-browser-debug` | `browser-harness` |
+| Code review | `agent-review` | — |
+| Close out | `agent-closeout` | `caveman` |
+| Context generation | `agent-context` | `graphify` |
+
+Do not run commands by default. Select only what the task requires.
+
+### Universal Agent Compatibility
+
+These rules apply to all agents (Claude Code, Codex, Copilot, Antigravity, etc.):
+
+- All commands are plain markdown — no Claude-specific tool assumptions
+- Mode selection is scope-driven, not agent-type-driven
+- `ai/maps/` is the shared retrieval layer for all agents
+- Verification commands are plain shell strings — copy exact
+- Patch format is universal markdown
+
+---
+
+## Agent Lanes
+
+| Agent | Role |
+|-------|------|
+| **Claude Code** | Contract compilation · architecture · review · gatekeeping · memory compression · focused execution |
+| **Codex** | Focused implementation · tests · type cleanup · small bug fixes |
+| **Antigravity** | UI shell · layout · live preview · interaction prototypes |
+| **GitHub Copilot** | Inline completion · helper functions · small local edits |
+
+During C-BOOT-001: Claude Code is the sole active agent. Others introduced after review.
+
+---
+
+## Maps
+
+`ai/maps/` is the shared retrieval layer. Read maps before reading source files.
+
+| Map | Purpose |
+|-----|---------|
+| `repo-map.md` | Directory structure and package layout |
+| `feature-map.md` | Feature → file mapping |
+| `symbol-index.md` | Key types, functions, constants |
+| `api-map.md` | API endpoints and socket events |
+| `test-map.md` | Test files and verification commands |
+
+Keep maps compact. Update when file locations change.
 
 ---
 
 ## Memory Rules
 
-- `ai/memory.md` is compact durable memory — do not paste session logs into it
-- Agents must **not** rewrite `ai/memory.md` directly unless explicitly acting as checkpoint/gatekeeper
-- Agents **may** propose memory patches in `ai/patches/latest.md`
-- Only approved durable facts should be promoted into memory
+- `ai/memory.md` — compact durable memory; do not paste session logs
+- Agents must not rewrite `ai/memory.md` directly — propose via `ai/patches/latest.md`
+- Only approved durable facts promoted into memory
 
 ---
 
 ## Session Rules
 
-- `ai/sessions/archive/` is **cold storage**
-- Do not read session archives during normal boot
-- Read archived sessions only if `ai/active.contract.md` or `ai/context-packet.md` explicitly references them
+- `ai/sessions/archive/` — cold storage; do not read by default
+- Read archives only if `ai/active.contract.md` or `ai/context-packet.md` explicitly references them
 
 ---
 
 ## Stop Conditions
 
 Stop and request review if:
-
-- More than 3–5 files need changes unexpectedly
-- A new external dependency seems necessary
-- Implementation would exceed the active contract
-- Existing architecture conflicts with the contract
-- Verification cannot be performed without out-of-scope reads
-
----
-
-## Agent Lanes
-
-| Agent              | Role                                                                                                                                       |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Claude Code**    | Contract compilation · context packet compilation · architecture reasoning · review · gatekeeping · memory compression · focused execution |
-| **Codex**          | Focused implementation · tests · type cleanup · small bug fixes _(future)_                                                                 |
-| **Antigravity**    | UI shell · layout · live preview · interaction prototypes _(future)_                                                                       |
-| **GitHub Copilot** | Inline completion · helper functions · small local edits _(future)_                                                                        |
-
-**During migration (C-BOOT-001): Claude Code is the only active agent.**
-Other agents are introduced only after C-BOOT-001 passes review.
-
----
-
-## Command / Skill Layer
-
-This repo uses a command/skill layer on top of the Kernel → Contract → Packet → Patch workflow.
-Commands are selected by active contract type — not run by default.
-
-### Commands
-
-- **`ai/commands/agent-context.md`**
-  - Use for compact context generation before implementation.
-  - Prefer graphify query before broad source reading.
-
-- **`ai/commands/agent-run.md`**
-  - Use for one scoped contract implementation task.
-  - Follows: context → inspect → patch → verify → handoff.
-
-- **`ai/commands/agent-review.md`**
-  - Use to review patches against the active contract.
-  - Inputs: contract, task, patch, git diff, test output.
-
-- **`ai/commands/agent-ui-polish.md`**
-  - Use only when UI polish is explicitly in contract scope.
-  - Forbidden: new business logic, large redesigns, removing features.
-
-- **`ai/commands/agent-browser-debug.md`**
-  - Use only when browser/runtime behavior must be verified.
-  - Prerequisites: dev server running, Chrome DevTools Protocol connected.
-
-- **`ai/commands/agent-handoff-compact.md`**
-  - Use after work completes to compress results into handoff and patch output.
-  - Produces: ai/handoff.md, ai/patches/latest.md.
-
-### Skills
-
-- **`ai/skills/caveman.md`** — compact output mode for handoff and patch summaries.
-- **`ai/skills/graphify.md`** — targeted codebase/context retrieval. Prefer over broad file reads.
-- **`ai/skills/impeccable.md`** — UI visual quality review. Use only when UI polish is in scope.
-- **`ai/skills/browser-harness.md`** — browser/runtime UI debug. Use only for verified UI bugs.
-
-### Tool Routing Rules
-
-- Do not run all commands by default.
-- Select the smallest command path required by the active contract.
-- Graphify is for targeted retrieval, not broad exploration.
-- Browser-harness is for runtime UI verification, not normal code reading.
-- Impeccable-style review is for UI polish, not backend or domain work.
-- Caveman-style output should be used for final summaries and handoff.
-- Tool output must not be copied raw into memory.
-- Durable facts must be promoted through patch proposals only.
-- Contract scope has priority over command behavior.
-- Context packet has priority over broad source reading.
-- Token budget has priority over curiosity.
-
----
-
-## Lean Mode / Token Governor
-
-_Added: C-WORKFLOW-004 (2026-05-26)_
-
-Rules:
-
-- Default to Lean Mode after the workflow has already been bootstrapped.
-- Do not reread full workflow files if `ai/context-packet.md` already contains the required routing.
-- Do not rewrite `ai/active.contract.md`, `ai/active.task.md`, or `ai/context-packet.md` unless the contract changes.
-- Prefer patching existing workflow files over full rewrites.
-- Read command/skill files only when they are required by the active contract.
-- If a skill was already read in the same contract, do not reread it.
-- Do not paste raw tool output into `ai/patches/latest.md`.
-- Final output should not duplicate `ai/patches/latest.md`.
-- Use compact final output by default.
-- If output exceeds 120 lines, compress it.
-- If context usage is high, stop and ask to compact before continuing.
-
-Token Thresholds:
-
-- Normal task target: under 20K tokens.
-- Browser/runtime task target: under 35K tokens.
-- Stop-and-compact threshold: 60K tokens.
-- Hard stop threshold: 90K tokens unless user explicitly continues.
+- More than 3–5 files need unexpected changes
+- New external dependency required
+- Implementation would exceed active contract
+- Existing architecture conflicts with contract
+- Verification requires out-of-scope reads
 
 ---
 
 ## Audit Rules
 
-_Added: C-WORKFLOW-005 (2026-05-26)_
+_Added: C-WORKFLOW-005. Strengthened: C-WORKFLOW-006. Unified: C-WORKFLOW-009._
 
 ### Exact Verification Command Reporting
 
-**Hard Acceptance Criterion** — Incorrect command reporting makes task status PARTIAL regardless of code outcome.
+See "Exact Verification Command Rule" above (Map-First section). Same rule — stated once.
 
-- Final output (patches/latest.md, handoff.md, chat response) must copy the **exact** command string that was actually executed — including all flags and `; echo "EXIT:$?"` suffix if present.
-- Do not shorten, normalize, or rewrite command paths.
-- If a verification command includes a workspace-specific tsconfig path (e.g. `apps/web/tsconfig.json`, `packages/core/tsconfig.json`), report that exact path — not a generic `tsconfig.json`.
-- Correct: `pnpm exec tsc -p apps/web/tsconfig.json --noEmit; echo "EXIT:$?"`
-- Incorrect: `pnpm exec tsc -p tsconfig.json --noEmit`
-- If the exact command string cannot be confirmed from terminal output, state `PARTIAL` and note which commands were not verified.
+### Context Packet Freshness (Lean / Full Contract modes only)
 
-### Context Packet Freshness
+- Verify `ai/context-packet.md` Packet ID matches active contract ID before executing.
+- If stale: update packet first, OR explicitly state the mismatch. Never proceed silently.
 
-- Before executing any task, verify that `ai/context-packet.md` Packet ID matches the active contract ID.
-- If the packet contract ID does not match the requested/active contract:
-  1. Update `ai/context-packet.md` to reflect the new contract **before** starting implementation, OR
-  2. Explicitly state in the response that the packet is stale, name the mismatch (e.g. "packet says C-WORKFLOW-004, contract is C-WORKFLOW-005"), and proceed only if the user prompt provides sufficient scope to continue without the packet.
-- Never continue silently on a stale packet.
+---
+
+## Output Format (all modes)
+
+```
+## Status
+PASS / PARTIAL / BLOCKED
+
+## Changed
+- path — reason
+
+## Verified
+- exact command — result
+
+## Risks
+- ...
+
+## Next
+- recommended next task
+```
 
 ---
 
 ## Legacy Workflow Fallback
 
-The previous workflow had no formal AGENTS.md or session structure.
-If the new workflow causes issues, fall back to reading `docs/superpowers/specs/` and `docs/superpowers/plans/` directly.
+If this workflow causes issues, fall back to `docs/superpowers/specs/` and `docs/superpowers/plans/`.
 Do not delete these files.
