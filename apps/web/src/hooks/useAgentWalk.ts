@@ -7,6 +7,7 @@ import { moveTowardsTarget } from '@/game/movement/moveToTarget';
 import { planLoungeGridRoute } from '@/game/scene/loungePathGrid';
 import type { GridCell, IsoRoutePoint } from '@/game/movement/gridPath';
 import { resolveWalkingAnimation, resolveStateAnimation } from '@/game/animation/animationResolver';
+import { enqueueTask as enqueueTaskPure, dequeueTask } from '@/game/agents/taskQueue';
 import type { RoomObject } from '@/components/lounge/roomDefs';
 import {
   computeRoomProjection,
@@ -56,6 +57,7 @@ const DEFAULT_AGENT: Agent = {
   animation:   'idle',
   bubbleText:  undefined,
   speed:       110, // pixels per second
+  taskQueue:   [],
 };
 
 function projectIsoPoint(
@@ -346,25 +348,36 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
     }
     const next = current.workElapsedMs + deltaSeconds * 1000;
     if (next >= current.workDurationMs) {
-      updateAgent((prev) => ({
-        ...prev,
-        state:           'idle',
-        taskType:        'idle',
-        animation:       resolveStateAnimation('idle'),
-        bubbleText:      'Done. Idle.',
-        targetStationId: undefined,
-        arriveState:     undefined,
-        arriveBubbleText: undefined,
-        workDurationMs:  undefined,
-        workElapsedMs:   undefined,
-      }));
+      const { next: nextTask, rest } = dequeueTask(current.taskQueue);
+      if (nextTask) {
+        updateAgent((prev) => ({
+          ...prev,
+          taskQueue:       rest,
+          workDurationMs:  undefined,
+          workElapsedMs:   undefined,
+        }));
+        assignTask(nextTask);
+      } else {
+        updateAgent((prev) => ({
+          ...prev,
+          state:           'idle',
+          taskType:        'idle',
+          animation:       resolveStateAnimation('idle'),
+          bubbleText:      'Done. Idle.',
+          targetStationId: undefined,
+          arriveState:     undefined,
+          arriveBubbleText: undefined,
+          workDurationMs:  undefined,
+          workElapsedMs:   undefined,
+        }));
+      }
     } else {
       updateAgent((prev) => ({
         ...prev,
         workElapsedMs: next,
       }));
     }
-  }, [updateAgent]);
+  }, [assignTask, updateAgent]);
 
   // RAF game loop
   useEffect(() => {
@@ -423,8 +436,20 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
       bubbleText:      undefined,
       workDurationMs:  undefined,
       workElapsedMs:   undefined,
+      taskQueue:       [],
     }));
   }, [clearRoute, updateAgent]);
 
-  return { agent, assignTask, setAgentState, clearAgentTask, routeDebug };
+  const enqueueTask = useCallback((task: AgentTaskType) => {
+    updateAgent((prev) => ({
+      ...prev,
+      taskQueue: enqueueTaskPure(prev.taskQueue, task),
+    }));
+  }, [updateAgent]);
+
+  const clearQueue = useCallback(() => {
+    updateAgent((prev) => ({ ...prev, taskQueue: [] }));
+  }, [updateAgent]);
+
+  return { agent, assignTask, setAgentState, clearAgentTask, enqueueTask, clearQueue, routeDebug };
 }

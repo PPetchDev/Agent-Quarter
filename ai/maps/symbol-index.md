@@ -32,6 +32,11 @@ _Updated: C-FURNITURE-GRID-001_
 | `taskWorkDurationMap` | constant | Per-task work durations in `taskResolver.ts` (code 8000, research 6000, meeting 7000, document 6500, review 7000, print 3500, rest 9000, idle 0 ms) |
 | `Agent.workDurationMs` | field | Total milliseconds for the current work session |
 | `Agent.workElapsedMs` | field | Milliseconds elapsed in the current work session |
+| `Agent.taskQueue` | field | Pending task types the agent will auto-run after the current work completes |
+| `enqueueTask` | function | Pure helper that appends a task to the queue (immutable) in `taskQueue.ts` |
+| `dequeueTask` | function | Pure helper that pops the queue head and returns `{ next, rest }` |
+| `useAgentWalk.enqueueTask` | hook API | Append a task to the agent's queue without interrupting the current task |
+| `useAgentWalk.clearQueue` | hook API | Empty the agent's task queue without affecting the active task |
 
 ## Routes
 
