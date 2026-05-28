@@ -21,9 +21,9 @@ import { checkCollision, FURNITURE_TILES } from "./roomDefs";
 import { FurnitureInspector } from "./FurnitureInspector";
 import { ShopModal } from "./ShopModal";
 import { getDefaultSpawnPosition, type CatalogItem } from "./furnitureCatalog";
-import { CharacterSpot } from "./CharacterSpot";
-import { resolveCharacterMoodImagePath } from "@squad/core";
-import { useLoungePresence } from "@/hooks/useLoungePresence";
+import { useAgentWalk } from "@/hooks/useAgentWalk";
+import type { AgentTaskType } from "@/game/agents/agentTypes";
+import Image from "next/image";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -87,7 +87,7 @@ function autoArrangeLayout(
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "squad:lounge:v4";
+const STORAGE_KEY = "squad:lounge:v6";
 const ROOM_MAP_URL = "/maps/maple_hideout.json";
 const INITIAL_COINS = 500;
 const TRAIN_REWARD = 25;
@@ -106,65 +106,6 @@ type SharedLayoutPayload = {
 };
 
 const LAYOUT_QUERY_PARAM = "layout";
-
-const CHARACTERS = [
-  {
-    id: "mai",
-    mood: "01-idle",
-    wx: 1.42,
-    wy: 0.28,
-    wz: 1.34,
-    bc: "#f7adc9",
-    gc: "rgba(247,173,201,.45)",
-    gs: 20,
-    sz: 52,
-    animClass: "fw" as const,
-    dotBg: "#4ade80",
-    dotFg: "#052e16",
-    dotText: "●",
-    name: "Mai",
-    role: "Frontend · coding",
-  },
-  // { id:"ren",     mood:"01-idle", wx:8.05, wy:0.22, wz:1.14, bc:"#5bd49b", gc:"rgba(91,212,155,.4)",   gs:18, sz:47, animClass:"fw" as const, dotBg:"#4ade80",  dotFg:"#052e16", dotText:"●", name:"Ren",     role:"Backend · guarding" },
-  {
-    id: "yui",
-    mood: "01-idle",
-    wx: 3.2,
-    wy: 4.9,
-    wz: 1.6,
-    bc: "#f5c65e",
-    gc: "rgba(245,198,94,.5)",
-    gs: 24,
-    sz: 60,
-    animClass: "fl" as const,
-    dotBg: "#fde047",
-    dotFg: "#713f12",
-    dotText: "★",
-    name: "Yui",
-    role: "Lead · reviewing",
-  },
-  // { id:"mika",    mood:"01-idle", wx:2.62, wy:2.42, wz:1.1,  bc:"#c0acef", gc:"rgba(192,172,239,.34)", gs:14, sz:44, animClass:"fi" as const, dotBg:"#94a3b8",  dotFg:"#0f172a", dotText:"○", name:"Mika",    role:"UI · sketching" },
-  // { id:"aki",     mood:"01-idle", wx:6.6,  wy:2.06, wz:1.0,  bc:"#f4b16a", gc:"rgba(244,177,106,.3)",  gs:14, sz:44, animClass:"fi" as const, dotBg:"#94a3b8",  dotFg:"#0f172a", dotText:"○", name:"Aki",     role:"DevOps · tuning" },
-  {
-    id: "senko",
-    mood: "07-sleepy",
-    wx: 6.94,
-    wy: 3.64,
-    wz: 1.28,
-    bc: "rgba(148,163,184,.24)",
-    gc: "transparent",
-    gs: 0,
-    sz: 40,
-    animClass: "fs" as const,
-    dotBg: "#334155",
-    dotFg: "#64748b",
-    dotText: "z",
-    name: "Senko",
-    role: "Support · sleeping",
-    sleep: true,
-  },
-  // { id:"shinobu", mood:"07-sleepy",wx:8.1, wy:4.66, wz:1.32, bc:"rgba(148,163,184,.24)",gc:"transparent",gs:0,sz:40,animClass:"fs" as const, dotBg:"#334155",  dotFg:"#64748b", dotText:"z", name:"Shinobu", role:"Strategist · sleeping", sleep:true },
-];
 
 function useTimer(startSecs = 8 * 3600 + 23 * 60 + 17) {
   const [s, setS] = useState(startSecs);
@@ -311,8 +252,6 @@ export function LoungeCanvas() {
   const modeRef = useRef<Mode>("visit");
 
   const router = useRouter();
-  const { presence, counts } = useLoungePresence();
-
   const [mode, setMode] = useState<Mode>("visit");
   const [objects, setObjects] = useState<RoomObject[]>(DEFAULT_OBJECTS);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -334,6 +273,11 @@ export function LoungeCanvas() {
   const roomWRef = useRef(ROOM_TILES_X);
   const roomHRef = useRef(ROOM_TILES_Y);
   const coinsRef = useRef(INITIAL_COINS);
+  const { agent, assignTask, clearAgentTask, routeDebug } = useAgentWalk({
+    roomObjects: objects,
+    roomWidth: roomW,
+    roomHeight: roomH,
+  });
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const timer = useTimer();
@@ -587,14 +531,15 @@ export function LoungeCanvas() {
       const node = viewportRef.current;
       if (!node) return;
       const isMobile = node.clientWidth < 760;
-      const sw = (node.clientWidth - (isMobile ? 20 : 52)) / CANVAS_W;
-      const sh = (node.clientHeight - (isMobile ? 68 : 160)) / CANVAS_H;
+      const sw = (node.clientWidth - (isMobile ? 12 : 24)) / CANVAS_W;
+      const sh = (node.clientHeight - (isMobile ? 18 : 28)) / CANVAS_H;
+      const baseScale = Math.min(sw, sh);
       setScale(
         isMobile
-          ? Math.max(0.55, Math.min(sw, sh, 0.9))
-          : Math.max(0.65, Math.min(sw, sh, 1.3)),
+          ? Math.max(0.7, Math.min(baseScale * 1.12, 1.05))
+          : Math.max(0.88, Math.min(baseScale * 1.22, 1.42)),
       );
-      setCameraY(isMobile ? 4 : 12);
+      setCameraY(isMobile ? -8 : -18);
     };
     updateScale();
     window.addEventListener("resize", updateScale);
@@ -820,7 +765,8 @@ export function LoungeCanvas() {
       ref={viewportRef}
       className="relative flex-1 w-full overflow-hidden"
       style={{
-        minHeight: "calc(100vh - 92px)",
+        height: "calc(100vh - 45px)",
+        minHeight: "calc(100vh - 45px)",
         background: `linear-gradient(180deg,${theme.skyTop} 0%,${theme.skyBot} 100%)`,
       }}
     >
@@ -983,15 +929,6 @@ export function LoungeCanvas() {
         </div>
       )}
 
-      {/* ── Online count ─────────────────────────────────────────────── */}
-      {mode === "visit" &&
-        (counts.active > 0 || counts.typing > 0 || counts.thinking > 0) && (
-          <div className="absolute right-3 top-[92px] z-20 rounded-full border border-[#c8a870] bg-[#f5e4c0]/80 px-3 py-1 text-[10px] font-semibold text-[#5a3c18] backdrop-blur-sm shadow">
-            Active {counts.active} · Typing {counts.typing} · Thinking{" "}
-            {counts.thinking}
-          </div>
-        )}
-
       {/* ── Room canvas ─────────────────────────────────────────────── */}
       <div className="absolute inset-0 flex items-center justify-center">
         <div
@@ -1011,81 +948,110 @@ export function LoungeCanvas() {
           />
 
           <div className="absolute inset-0 z-30 pointer-events-none">
-            {mode === "visit" &&
-              CHARACTERS.map((ch) => {
-                const live = presence[ch.id];
-                const isSleeping =
-                  live?.state === "idle" &&
-                  (live.idleTier === "resting" || live.idleTier === "offline");
-                const isTyping = live?.activity === "typing";
-                const isThinking = live?.activity === "thinking";
-                const isProcessing = live?.state === "processing";
-                const statusLabel = isSleeping
-                  ? "sleeping"
-                  : isTyping
-                    ? "typing"
-                    : isThinking
-                      ? "thinking"
-                      : undefined;
-                return (
-                  <CharacterSpot
-                    key={ch.id}
-                    {...ch}
-                    characterId={ch.id}
-                    priority={ch.id === "yui"}
-                    imagePath={resolveCharacterMoodImagePath(
-                      ch.id,
-                      live?.mood ?? "idle",
-                    )}
-                    sleep={isSleeping}
-                    role={`${ch.role} · ${statusLabel}`}
-                    statusLabel={statusLabel}
-                    statusTone={
-                      isSleeping
-                        ? "sleeping"
-                        : isTyping
-                          ? "typing"
-                          : isThinking
-                            ? "thinking"
-                            : "idle"
-                    }
-                    dotBg={
-                      isSleeping
-                        ? "#334155"
-                        : isTyping
-                          ? "#22c55e"
-                          : isThinking
-                            ? "#f59e0b"
-                            : isProcessing
-                              ? "#4ade80"
-                              : ch.dotBg
-                    }
-                    dotFg={
-                      isSleeping
-                        ? "#64748b"
-                        : isTyping
-                          ? "#14532d"
-                          : isThinking
-                            ? "#78350f"
-                            : isProcessing
-                              ? "#052e16"
-                              : ch.dotFg
-                    }
-                    dotText={
-                      isSleeping
-                        ? "z"
-                        : isTyping
-                          ? "…"
-                          : isThinking
-                            ? "…"
-                            : isProcessing
-                              ? "●"
-                              : ch.dotText
-                    }
-                    onClick={() => router.push(`/stages?character=${ch.id}`)}
-                  />
-                );
-              })}
+            {mode === "move" && routeDebug.points.length > 0 && (
+              <svg
+                className="absolute inset-0 z-[1] h-full w-full"
+                viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`}
+                aria-hidden="true"
+              >
+                {(() => {
+                  const remaining = routeDebug.points.slice(routeDebug.activeIndex);
+                  const points = [agent.position, ...remaining.map((point) => point.position)];
+                  return (
+                    <>
+                      <polyline
+                        points={points.map((point) => `${point.x},${point.y}`).join(" ")}
+                        fill="none"
+                        stroke="#38bdf8"
+                        strokeWidth={4}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeOpacity={0.72}
+                        strokeDasharray="8 9"
+                      />
+                      {remaining.map((point, index) => (
+                        <g key={`${point.cell.x}-${point.cell.y}-${index}`}>
+                          <circle
+                            cx={point.position.x}
+                            cy={point.position.y}
+                            r={index === remaining.length - 1 ? 5 : 3.5}
+                            fill={index === remaining.length - 1 ? "#facc15" : "#e0f2fe"}
+                            fillOpacity={0.92}
+                            stroke="#075985"
+                            strokeWidth={1.5}
+                            strokeOpacity={0.8}
+                          />
+                        </g>
+                      ))}
+                    </>
+                  );
+                })()}
+              </svg>
+            )}
+
+            {/* ── Lounge agent walking overlay ─────────────────────── */}
+            {(() => {
+              const ANIM_FILE: Record<string, string> = {
+                idle: "01-idle",
+                walk_up: "04-thinking",
+                walk_down: "04-thinking",
+                walk_left: "04-thinking",
+                walk_right: "04-thinking",
+                thinking: "04-thinking",
+                typing: "08-excited",
+                reading: "04-thinking",
+                talking: "05-happy",
+                documenting: "08-excited",
+                printing: "08-excited",
+                resting: "07-sleepy",
+                happy: "05-happy",
+                confused: "09-surprised",
+              };
+              const moodFile = ANIM_FILE[agent.animation] ?? "01-idle";
+              const imgSrc = `/characters/${agent.characterId}/${moodFile}.jpg`;
+              const { x, y } = agent.position;
+              const SZ = 64;
+              return (
+                <>
+                  {/* Speech bubble */}
+                  {agent.bubbleText && (
+                    <div
+                      className="pointer-events-none absolute z-20 max-w-[160px] rounded-2xl bg-white/95 px-3 py-1.5 text-[11px] font-semibold text-gray-800 shadow-lg"
+                      style={{
+                        left: x,
+                        top: y - SZ - 8,
+                        transform: "translate(-50%, -100%)",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {agent.bubbleText}
+                      <span className="pointer-events-none absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-white/95" />
+                    </div>
+                  )}
+
+                  {/* Agent sprite */}
+                  <div
+                    className="absolute z-10"
+                    style={{
+                      left: x,
+                      top: y,
+                      transform: "translate(-50%, -100%)",
+                      width: SZ,
+                      height: SZ,
+                    }}
+                  >
+                    <Image
+                      src={imgSrc}
+                      alt={agent.name}
+                      width={SZ}
+                      height={SZ}
+                      className="rounded-full border-2 border-white shadow-md object-cover"
+                      unoptimized
+                    />
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
           <FurnitureInspector
@@ -1095,6 +1061,49 @@ export function LoungeCanvas() {
             onDelete={handleDelete}
           />
         </div>
+      </div>
+
+      {/* ── Agent task buttons ───────────────────────────────────── */}
+      <div className="absolute bottom-4 left-1/2 z-40 -translate-x-1/2 flex flex-col items-center gap-1.5">
+        <div className="flex items-center gap-1 rounded-2xl border border-[#c8a870] bg-[#f5e4c0]/95 px-3 py-2 shadow-lg backdrop-blur-sm">
+          {(
+            [
+              { task: "code" as AgentTaskType, icon: "💻", label: "Code" },
+              { task: "research" as AgentTaskType, icon: "📚", label: "Read" },
+              { task: "meeting" as AgentTaskType, icon: "🗣️", label: "Meet" },
+              { task: "document" as AgentTaskType, icon: "📝", label: "Doc" },
+              { task: "print" as AgentTaskType, icon: "🖨️", label: "Print" },
+              { task: "rest" as AgentTaskType, icon: "🛋️", label: "Rest" },
+            ] as { task: AgentTaskType; icon: string; label: string }[]
+          ).map(({ task, icon, label }) => (
+            <button
+              key={task}
+              type="button"
+              onClick={() => assignTask(task)}
+              className={`flex flex-col items-center gap-0.5 rounded-xl px-2.5 py-1.5 text-[11px] font-bold transition active:scale-95 ${
+                agent.taskType === task && agent.state !== "idle"
+                  ? "bg-[#e8a030] text-white shadow"
+                  : "text-[#5a3c18] hover:bg-[#f0d8a8]"
+              }`}
+            >
+              <span className="text-base leading-none">{icon}</span>
+              <span className="leading-none">{label}</span>
+            </button>
+          ))}
+          {agent.state !== "idle" && (
+            <button
+              type="button"
+              onClick={clearAgentTask}
+              className="ml-1 rounded-xl px-2.5 py-1.5 text-[11px] font-bold text-[#9a3c18] hover:bg-[#fdd] active:scale-95 transition"
+              title="Stop agent"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+        <span className="text-[9px] font-semibold text-[#8b6030]/80 tracking-wide">
+          {agent.name} · {agent.state}
+        </span>
       </div>
 
       {/* ── Bottom-left: Train + Supplies ───────────────────────────── */}

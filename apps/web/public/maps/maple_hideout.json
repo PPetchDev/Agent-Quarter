@@ -22,34 +22,34 @@
       "objects": [
         {
           "id": 1,
-          "name": "hanging_scroll",
+          "name": "document_board",
           "type": "furniture",
           "visible": true,
           "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
           "properties": [
-            { "name": "wx",          "type": "float",  "value": 7.0 },
-            { "name": "wy",          "type": "float",  "value": 6.9 },
-            { "name": "wz",          "type": "float",  "value": 2.5 },
-            { "name": "label",       "type": "string", "value": "Autumn Fox Scroll" },
-            { "name": "description", "type": "string", "value": "A delicate hanging scroll with an autumn fox painting" },
-            { "name": "happiness",   "type": "int",    "value": 6 },
+            { "name": "wx",          "type": "float",  "value": 4 },
+            { "name": "wy",          "type": "float",  "value": 8 },
+            { "name": "wz",          "type": "float",  "value": 2.25 },
+            { "name": "label",       "type": "string", "value": "Document Board" },
+            { "name": "description", "type": "string", "value": "A wall-mounted document board for planning and notes" },
+            { "name": "happiness",   "type": "int",    "value": 7 },
             { "name": "draggable",   "type": "bool",   "value": false }
           ]
         },
         {
           "id": 2,
-          "name": "wall_shelf",
+          "name": "printer",
           "type": "furniture",
           "visible": true,
           "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
           "properties": [
-            { "name": "wx",          "type": "float",  "value": 6.4 },
-            { "name": "wy",          "type": "float",  "value": 6.9 },
-            { "name": "wz",          "type": "float",  "value": 2.1 },
-            { "name": "label",       "type": "string", "value": "Wall Shelf" },
-            { "name": "description", "type": "string", "value": "Wooden wall shelf with books and a glowing lantern" },
-            { "name": "happiness",   "type": "int",    "value": 5 },
-            { "name": "draggable",   "type": "bool",   "value": false }
+            { "name": "wx",          "type": "float",  "value": 9 },
+            { "name": "wy",          "type": "float",  "value": 5 },
+            { "name": "wz",          "type": "float",  "value": 0 },
+            { "name": "label",       "type": "string", "value": "Printer Station" },
+            { "name": "description", "type": "string", "value": "A compact printer and utility station for exports and paperwork" },
+            { "name": "happiness",   "type": "int",    "value": 8 },
+            { "name": "draggable",   "type": "bool",   "value": true }
           ]
         },
         {
@@ -59,8 +59,8 @@
           "visible": true,
           "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
           "properties": [
-            { "name": "wx",          "type": "float",  "value": 4.3 },
-            { "name": "wy",          "type": "float",  "value": 6.0 },
+            { "name": "wx",          "type": "float",  "value": 1 },
+            { "name": "wy",          "type": "float",  "value": 7 },
             { "name": "wz",          "type": "float",  "value": 0 },
             { "name": "label",       "type": "string", "value": "Bookcase" },
             { "name": "description", "type": "string", "value": "A tall bookcase packed with colorful books and a small plant on top" },
@@ -70,34 +70,18 @@
         },
         {
           "id": 4,
-          "name": "tv_stand",
+          "name": "computer_desk",
           "type": "furniture",
           "visible": true,
           "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
           "properties": [
-            { "name": "wx",          "type": "float",  "value": 0.3 },
-            { "name": "wy",          "type": "float",  "value": 6.0 },
+            { "name": "wx",          "type": "float",  "value": 6 },
+            { "name": "wy",          "type": "float",  "value": 6 },
             { "name": "wz",          "type": "float",  "value": 0 },
-            { "name": "label",       "type": "string", "value": "TV Stand" },
-            { "name": "description", "type": "string", "value": "Dark wood TV stand with drawers and a game controller" },
-            { "name": "happiness",   "type": "int",    "value": 8 },
+            { "name": "label",       "type": "string", "value": "Computer Workstation" },
+            { "name": "description", "type": "string", "value": "A coding workstation with desk, monitor, keyboard, and notes" },
+            { "name": "happiness",   "type": "int",    "value": 14 },
             { "name": "draggable",   "type": "bool",   "value": true }
-          ]
-        },
-        {
-          "id": 5,
-          "name": "tv",
-          "type": "furniture",
-          "visible": true,
-          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
-          "properties": [
-            { "name": "wx",          "type": "float",  "value": 0.4 },
-            { "name": "wy",          "type": "float",  "value": 5.9 },
-            { "name": "wz",          "type": "float",  "value": 0.97 },
-            { "name": "label",       "type": "string", "value": "Flat Screen TV" },
-            { "name": "description", "type": "string", "value": "A large flat screen TV for movies and gaming" },
-            { "name": "happiness",   "type": "int",    "value": 12 },
-            { "name": "draggable",   "type": "bool",   "value": false }
           ]
         },
         {
@@ -107,8 +91,8 @@
           "visible": true,
           "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
           "properties": [
-            { "name": "wx",          "type": "float",  "value": 5.4 },
-            { "name": "wy",          "type": "float",  "value": 0.38 },
+            { "name": "wx",          "type": "float",  "value": 6 },
+            { "name": "wy",          "type": "float",  "value": 0 },
             { "name": "wz",          "type": "float",  "value": 0 },
             { "name": "label",       "type": "string", "value": "Wooden Bed" },
             { "name": "description", "type": "string", "value": "A cozy bed with dark wood frame, blue bedding and floral pillows" },
@@ -123,28 +107,12 @@
           "visible": true,
           "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
           "properties": [
-            { "name": "wx",          "type": "float",  "value": 8.85 },
-            { "name": "wy",          "type": "float",  "value": 0.42 },
+            { "name": "wx",          "type": "float",  "value": 5 },
+            { "name": "wy",          "type": "float",  "value": 0 },
             { "name": "wz",          "type": "float",  "value": 0 },
-            { "name": "label",       "type": "string", "value": "Nightstand" },
-            { "name": "description", "type": "string", "value": "A small wooden nightstand with a glowing lantern" },
+            { "name": "label",       "type": "string", "value": "Bedside Cabinet" },
+            { "name": "description", "type": "string", "value": "A small bedside cabinet with a glowing lantern" },
             { "name": "happiness",   "type": "int",    "value": 5 },
-            { "name": "draggable",   "type": "bool",   "value": true }
-          ]
-        },
-        {
-          "id": 8,
-          "name": "pool_table",
-          "type": "furniture",
-          "visible": true,
-          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
-          "properties": [
-            { "name": "wx",          "type": "float",  "value": 1.2 },
-            { "name": "wy",          "type": "float",  "value": 1.7 },
-            { "name": "wz",          "type": "float",  "value": 0 },
-            { "name": "label",       "type": "string", "value": "Pool Table" },
-            { "name": "description", "type": "string", "value": "A full-size billiards table with green felt and a rack of balls" },
-            { "name": "happiness",   "type": "int",    "value": 20 },
             { "name": "draggable",   "type": "bool",   "value": true }
           ]
         },
@@ -155,11 +123,11 @@
           "visible": true,
           "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
           "properties": [
-            { "name": "wx",          "type": "float",  "value": 2.7 },
-            { "name": "wy",          "type": "float",  "value": 3.8 },
+            { "name": "wx",          "type": "float",  "value": 2 },
+            { "name": "wy",          "type": "float",  "value": 3 },
             { "name": "wz",          "type": "float",  "value": 0 },
-            { "name": "label",       "type": "string", "value": "Tea Table" },
-            { "name": "description", "type": "string", "value": "A low Japanese tea table with teapot and cups" },
+            { "name": "label",       "type": "string", "value": "Meeting Table" },
+            { "name": "description", "type": "string", "value": "A low meeting table with teapot and planning notes" },
             { "name": "happiness",   "type": "int",    "value": 8 },
             { "name": "draggable",   "type": "bool",   "value": true }
           ]
@@ -171,10 +139,10 @@
           "visible": true,
           "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
           "properties": [
-            { "name": "wx",          "type": "float",  "value": 2.7 },
-            { "name": "wy",          "type": "float",  "value": 5.85 },
+            { "name": "wx",          "type": "float",  "value": 2 },
+            { "name": "wy",          "type": "float",  "value": 2 },
             { "name": "wz",          "type": "float",  "value": 0 },
-            { "name": "label",       "type": "string", "value": "Floor Cushion" },
+            { "name": "label",       "type": "string", "value": "Meeting Cushion" },
             { "name": "description", "type": "string", "value": "A soft Japanese zabuton floor cushion" },
             { "name": "happiness",   "type": "int",    "value": 4 },
             { "name": "draggable",   "type": "bool",   "value": true }
@@ -187,10 +155,10 @@
           "visible": true,
           "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
           "properties": [
-            { "name": "wx",          "type": "float",  "value": 1.35 },
-            { "name": "wy",          "type": "float",  "value": 3.8 },
+            { "name": "wx",          "type": "float",  "value": 2 },
+            { "name": "wy",          "type": "float",  "value": 5 },
             { "name": "wz",          "type": "float",  "value": 0 },
-            { "name": "label",       "type": "string", "value": "Floor Cushion" },
+            { "name": "label",       "type": "string", "value": "Meeting Cushion" },
             { "name": "description", "type": "string", "value": "A soft Japanese zabuton floor cushion" },
             { "name": "happiness",   "type": "int",    "value": 4 },
             { "name": "draggable",   "type": "bool",   "value": true }
@@ -203,10 +171,10 @@
           "visible": true,
           "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
           "properties": [
-            { "name": "wx",          "type": "float",  "value": 5.6 },
-            { "name": "wy",          "type": "float",  "value": 3.8 },
+            { "name": "wx",          "type": "float",  "value": 0 },
+            { "name": "wy",          "type": "float",  "value": 6 },
             { "name": "wz",          "type": "float",  "value": 0 },
-            { "name": "label",       "type": "string", "value": "Floor Cushion" },
+            { "name": "label",       "type": "string", "value": "Reading Cushion" },
             { "name": "description", "type": "string", "value": "A soft Japanese zabuton floor cushion" },
             { "name": "happiness",   "type": "int",    "value": 4 },
             { "name": "draggable",   "type": "bool",   "value": true }
@@ -219,8 +187,8 @@
           "visible": true,
           "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
           "properties": [
-            { "name": "wx",          "type": "float",  "value": 8.2 },
-            { "name": "wy",          "type": "float",  "value": 5.7 },
+            { "name": "wx",          "type": "float",  "value": 9 },
+            { "name": "wy",          "type": "float",  "value": 6 },
             { "name": "wz",          "type": "float",  "value": 0 },
             { "name": "label",       "type": "string", "value": "Tropical Plant" },
             { "name": "description", "type": "string", "value": "A lush tropical plant in a terracotta pot" },

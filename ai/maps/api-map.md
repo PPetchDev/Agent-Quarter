@@ -1,30 +1,37 @@
 # API Map
 
-_Updated: C-WORKFLOW-009_
+_Updated: C-FURNITURE-GRID-001_
 
-## REST — NestJS (port 3001)
+## API Change Scope
 
-| Method | Path | Controller | Notes |
-|--------|------|-----------|-------|
-| GET | `/projects` | `projects.controller.ts` | List all projects |
-| GET | `/projects/:id` | `projects.controller.ts` | Single project |
-| GET | `/projects/:id/tasks` | `projects.controller.ts` | Tasks for project |
-| GET | `/tasks/:id/runs` | `runs.controller.ts` | Runs for task |
+- No backend API changes were made by C-FURNITURE-GRID-001.
+- This contract is frontend lounge furniture rendering/layout only.
 
-## Socket.io — ClaudeGateway
+## REST — NestJS
 
-| Event | Direction | Description |
-|-------|-----------|-------------|
-| `join-stage` | client → server | Join a stage room |
-| `leave-stage` | client → server | Leave a stage room |
-| `send-message` | client → server | Send chat message |
-| `agent-response` | server → client | Streaming agent response |
-| `agent-emotion` | server → client | Character mood update |
+| Method | Path | Area |
+|---|---|---|
+| GET | `/api/characters` | `characters` |
+| GET | `/api/characters/:id` | `characters` |
+| GET | `/api/conversations/:characterId` | `conversations` |
+| GET | `/api/conversations/:characterId/history` | `conversations` |
+| GET | `/api/projects` | `projects` |
+| GET | `/api/projects/:id` | `projects` |
+| GET | `/api/projects/:id/tasks` | `projects` |
+| GET | `/api/tasks/:id/runs` | `tasks` |
+| POST | `/api/tasks/:id/start` | `tasks` |
+| PATCH | `/api/runs/:id/complete` | `runs` |
+| PATCH | `/api/runs/:id/fail` | `runs` |
+| PATCH | `/api/runs/:id/cancel` | `runs` |
 
-## Env Vars
+## Socket Events
 
-```bash
-DATABASE_URL=file:./prisma/dev.db
-ANTHROPIC_API_KEY=...
-NEXT_PUBLIC_API_URL=http://localhost:3001
-```
+| Event | Direction | Area |
+|---|---|---|
+| `join_stage` | client -> server | `claude gateway` |
+| `send_message` | client -> server | `claude gateway` |
+
+## Frontend Route Clarification
+
+- `/lounge` is the canonical simulation route.
+- `/office` remains as a redirect compatibility route and is not a separate simulator.

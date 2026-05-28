@@ -1,40 +1,43 @@
 # Symbol Index
 
-_Updated: C-WORKFLOW-009 | Source: workflow context_
+_Updated: C-FURNITURE-GRID-001_
 
-## packages/core/src/project.ts
-
-| Symbol | Kind | Description |
-|--------|------|-------------|
-| `RunStartInput` | type | Input shape for starting a run |
-| `getNextTaskForProject` | function | Returns next pending task for a project |
-| `canStartTask` | function | Guard: task is in startable state |
-| `canStartRun` | function | Guard: run can be started for project+task |
-| `buildRunStartPatch` | function | Builds run-start payload |
-| `completeRun` | function | Marks run complete |
-| `failRun` | function | Marks run failed with error |
-| `cancelRun` | function | Marks run cancelled |
-
-## apps/api/src/claude/claude.gateway.ts
+## Lounge Room Layout
 
 | Symbol | Kind | Description |
-|--------|------|-------------|
+|---|---|---|
+| `ROOM_TILES_X` / `ROOM_TILES_Y` | constants | Canonical lounge footprint dimensions in `pixiRoom.ts` |
+| `computeRoomProjection` | function | Calculates canvas scale/origin from room width/depth |
+| `setRoomProjection` | function | Applies live projection globals for PixiJS rendering |
+| `proj` | function | Projects lounge world coordinates to screen coordinates |
+| `drawBackground` | function | Draws floor, walls, rug, room edges, and theme tints |
+| `DEFAULT_OBJECTS` | constant | Fallback non-overlapping furniture layout |
+| `FURNITURE_DIMS` | constant | Furniture visual/highlight dimensions; floor objects should match occupied grid footprint |
+| `FURNITURE_TILES` | constant | Tile footprints used for collision and hit polygons |
+| `drawComputerDesk` | function | Draws the coding workstation with monitor, keyboard, desk notes, and mug |
+| `drawPrinter` | function | Draws the compact print/utility station |
+| `drawDocumentBoard` | function | Draws the wall planning/document board |
+| `FURNITURE_CATALOG` | constant | Furniture shop metadata, including role-aligned station types |
+| `loungeStations` | constant | Canonical station registry for agent tasks |
+| `resolveAgentTask` | function | Maps task types to lounge station ids and target iso points |
+| `buildLoungeBlockedCells` | function | Converts floor furniture footprints into blocked lounge grid cells |
+| `planLoungeGridRoute` | function | Plans a lounge route around static furniture to a station target |
+| `planIsoGridPath` | function | Pure grid route planner for bounded room cells |
+| `findGridPath` | function | Breadth-first path search over unblocked cells |
+| `AgentRouteDebug` | type | Route overlay data exposed by `useAgentWalk` |
+| `useAgentWalk` | hook | Plans route waypoints, animates segment by segment, exposes route debug data, and refreshes routes after committed layout changes |
+
+## Routes
+
+| Symbol | Kind | Description |
+|---|---|---|
+| `LoungePage` | Next.js page | Renders canonical lounge route |
+| `OfficePage` | Next.js page | Redirects `/office` to `/lounge` |
+
+## Stage / Projects
+
+| Symbol | Kind | Description |
+|---|---|---|
 | `ClaudeGateway` | class | Socket.io gateway, room-scoped emit |
-
-## apps/api/src/projects/projects.controller.ts
-
-| Symbol | Kind | Description |
-|--------|------|-------------|
-| `ProjectsController` | class | GET /projects, /projects/:id, /projects/:id/tasks |
-
-## apps/api/src/projects/tasks.controller.ts
-
-| Symbol | Kind | Description |
-|--------|------|-------------|
-| `TasksController` | class | GET /tasks/:id/runs |
-
-## apps/web/src/hooks/useStageSocket.ts
-
-| Symbol | Kind | Description |
-|--------|------|-------------|
-| `useStageSocket` | hook | Socket hook for stage chat panel |
+| `ProjectsController` | class | GET `/projects`, `/projects/:id`, `/projects/:id/tasks` |
+| `TasksController` | class | GET `/tasks/:id/runs` |
