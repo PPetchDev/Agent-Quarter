@@ -12,7 +12,8 @@ _Updated: C-FURNITURE-GRID-001_
 | Furniture catalog / shop metadata | `apps/web/src/components/lounge/furnitureCatalog.ts` |
 | PixiJS scene construction and depth sorting | `apps/web/src/components/lounge/roomLoader.ts` |
 | Lounge canvas, compact HUD, route debug overlay, single walking agent overlay | `apps/web/src/components/lounge/LoungeCanvas.tsx` |
-| Agent task-to-station resolution | `apps/web/src/game/agents/taskResolver.ts` |
+| Agent task-to-station resolution + per-task work duration | `apps/web/src/game/agents/taskResolver.ts` |
+| Agent work timer lifecycle (walk → work → auto-idle) and progress fields | `apps/web/src/hooks/useAgentWalk.ts`, `apps/web/src/game/agents/agentTypes.ts` |
 | Agent type contracts | `apps/web/src/game/agents/agentTypes.ts` |
 | Isometric station registry | `apps/web/src/game/scene/loungeStations.ts` |
 | Lounge blocked-cell grid | `apps/web/src/game/scene/loungePathGrid.ts` |

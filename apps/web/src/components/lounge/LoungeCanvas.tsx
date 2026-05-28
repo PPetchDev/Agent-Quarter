@@ -1114,6 +1114,23 @@ export function LoungeCanvas() {
         <span className="text-[9px] font-semibold text-[#8b6030]/80 tracking-wide">
           {agent.name} · {agent.state}
         </span>
+        {agent.workDurationMs !== undefined &&
+          agent.workElapsedMs !== undefined && (
+            <div className="relative h-1 w-32 overflow-hidden rounded-full bg-[#e8d0a0]">
+              <div
+                className="absolute inset-y-0 left-0 rounded-full bg-[#e8a030]"
+                style={{
+                  width: `${Math.min(
+                    100,
+                    Math.max(
+                      0,
+                      (agent.workElapsedMs / agent.workDurationMs) * 100,
+                    ),
+                  )}%`,
+                }}
+              />
+            </div>
+          )}
       </div>
 
       {/* ── Bottom-left: Train + Supplies ───────────────────────────── */}

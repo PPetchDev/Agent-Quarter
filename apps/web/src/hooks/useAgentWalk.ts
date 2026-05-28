@@ -158,6 +158,8 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
       arriveBubbleText: undefined,
       bubbleText: 'Path is blocked.',
       animation: resolveStateAnimation('error'),
+      workDurationMs: undefined,
+      workElapsedMs: undefined,
     }));
   }, [clearRoute, updateAgent]);
 
@@ -197,6 +199,8 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
       arriveBubbleText: resolved.bubbleText,
       bubbleText:      resolved.walkingBubbleText,
       animation:       resolveWalkingAnimation(prev.direction),
+      workDurationMs:  resolved.workDurationMs > 0 ? resolved.workDurationMs : undefined,
+      workElapsedMs:   undefined,
     }));
   }, [failBlockedRoute, roomHeight, roomObjects, roomWidth, updateAgent, updateRouteDebug]);
 
@@ -235,6 +239,8 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
       arriveState: resolved.arriveState,
       arriveBubbleText: resolved.bubbleText,
       bubbleText: resolved.walkingBubbleText,
+      workDurationMs: resolved.workDurationMs > 0 ? resolved.workDurationMs : undefined,
+      workElapsedMs: undefined,
     }));
   }, [
     failBlockedRoute,
@@ -289,6 +295,7 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
       const arrivedState   = current.arriveState ?? 'idle';
       const arrivedBubble  = current.arriveBubbleText;
       const arrivedAnim    = resolveStateAnimation(arrivedState);
+      const startsWork     = (current.workDurationMs ?? 0) > 0;
 
       updateAgent((prev) => ({
         ...prev,
@@ -301,6 +308,8 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
         targetStationId: prev.targetStationId,
         arriveState:     undefined,
         arriveBubbleText: undefined,
+        workDurationMs:  startsWork ? prev.workDurationMs : undefined,
+        workElapsedMs:   startsWork ? 0 : undefined,
       }));
     } else {
       const walkAnim = resolveWalkingAnimation(result.direction);
@@ -327,6 +336,36 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
     }
   }, [clearRoute, updateAgent, updateRouteDebug]);
 
+  const tickWork = useCallback((deltaSeconds: number) => {
+    const current = agentRef.current;
+    if (
+      current.workDurationMs === undefined ||
+      current.workElapsedMs === undefined
+    ) {
+      return;
+    }
+    const next = current.workElapsedMs + deltaSeconds * 1000;
+    if (next >= current.workDurationMs) {
+      updateAgent((prev) => ({
+        ...prev,
+        state:           'idle',
+        taskType:        'idle',
+        animation:       resolveStateAnimation('idle'),
+        bubbleText:      'Done. Idle.',
+        targetStationId: undefined,
+        arriveState:     undefined,
+        arriveBubbleText: undefined,
+        workDurationMs:  undefined,
+        workElapsedMs:   undefined,
+      }));
+    } else {
+      updateAgent((prev) => ({
+        ...prev,
+        workElapsedMs: next,
+      }));
+    }
+  }, [updateAgent]);
+
   // RAF game loop
   useEffect(() => {
     let animId: number;
@@ -339,8 +378,15 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
       // Clamp to avoid huge jumps after tab blur
       const delta = Math.min(rawDelta, 0.05);
 
-      if (agentRef.current.targetPosition) {
+      const a = agentRef.current;
+      if (a.targetPosition) {
         tickAgent(delta);
+      } else if (
+        a.workDurationMs !== undefined &&
+        a.workElapsedMs !== undefined &&
+        a.workElapsedMs < a.workDurationMs
+      ) {
+        tickWork(delta);
       }
 
       animId = requestAnimationFrame(loop);
@@ -353,7 +399,7 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
       cancelAnimationFrame(animId);
       lastTimeRef.current = 0;
     };
-  }, [tickAgent]);
+  }, [tickAgent, tickWork]);
 
   const setAgentState = useCallback((state: AgentState) => {
     updateAgent((prev) => ({
@@ -375,6 +421,8 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
       state:           'idle',
       animation:       'idle',
       bubbleText:      undefined,
+      workDurationMs:  undefined,
+      workElapsedMs:   undefined,
     }));
   }, [clearRoute, updateAgent]);
 
