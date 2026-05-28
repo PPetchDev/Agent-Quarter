@@ -55,4 +55,9 @@ export type Agent = {
   workDurationMs?: number;
   /** Milliseconds already elapsed in the current work session. */
   workElapsedMs?: number;
+  /**
+   * Pending task types the agent will auto-run after the current work timer completes.
+   * Head of the list is the next task to start.
+   */
+  taskQueue: AgentTaskType[];
 };

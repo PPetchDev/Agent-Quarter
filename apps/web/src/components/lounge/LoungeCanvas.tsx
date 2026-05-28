@@ -88,6 +88,37 @@ function autoArrangeLayout(
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
+const TASK_DEFS: { task: AgentTaskType; icon: string; label: string }[] = [
+  { task: "code",     icon: "💻",  label: "Code"  },
+  { task: "research", icon: "📚",  label: "Read"  },
+  { task: "meeting",  icon: "🗣️", label: "Meet"  },
+  { task: "document", icon: "📝",  label: "Doc"   },
+  { task: "print",    icon: "🖨️", label: "Print" },
+  { task: "rest",     icon: "🛋️", label: "Rest"  },
+];
+
+const TASK_ICON: Record<AgentTaskType, string> = {
+  code:     "💻",
+  research: "📚",
+  meeting:  "🗣️",
+  document: "📝",
+  review:   "🔍",
+  print:    "🖨️",
+  rest:     "🛋️",
+  idle:     "·",
+};
+
+const TASK_ICON_LABEL: Record<AgentTaskType, string> = {
+  code:     "Code",
+  research: "Read",
+  meeting:  "Meet",
+  document: "Doc",
+  review:   "Review",
+  print:    "Print",
+  rest:     "Rest",
+  idle:     "Idle",
+};
+
 const STORAGE_KEY = "squad:lounge:v6";
 const ROOM_MAP_URL = "/maps/maple_hideout.json";
 const INITIAL_COINS = 500;
@@ -274,7 +305,7 @@ export function LoungeCanvas() {
   const roomWRef = useRef(ROOM_TILES_X);
   const roomHRef = useRef(ROOM_TILES_Y);
   const coinsRef = useRef(INITIAL_COINS);
-  const { agent, assignTask, clearAgentTask, routeDebug } = useAgentWalk({
+  const { agent, assignTask, clearAgentTask, enqueueTask, clearQueue, routeDebug } = useAgentWalk({
     roomObjects: objects,
     roomWidth: roomW,
     roomHeight: roomH,
@@ -1113,21 +1144,14 @@ export function LoungeCanvas() {
       {/* ── Agent task buttons ───────────────────────────────────── */}
       <div className="absolute bottom-3 left-1/2 z-40 -translate-x-1/2 flex flex-col items-center gap-1">
         <div className="flex items-center gap-0.5 rounded-2xl border border-[#c8a870] bg-[#f5e4c0]/95 px-2 py-1.5 shadow-lg backdrop-blur-sm">
-          {(
-            [
-              { task: "code" as AgentTaskType, icon: "💻", label: "Code" },
-              { task: "research" as AgentTaskType, icon: "📚", label: "Read" },
-              { task: "meeting" as AgentTaskType, icon: "🗣️", label: "Meet" },
-              { task: "document" as AgentTaskType, icon: "📝", label: "Doc" },
-              { task: "print" as AgentTaskType, icon: "🖨️", label: "Print" },
-              { task: "rest" as AgentTaskType, icon: "🛋️", label: "Rest" },
-            ] as { task: AgentTaskType; icon: string; label: string }[]
-          ).map(({ task, icon, label }) => (
+          {TASK_DEFS.map(({ task, icon, label }) => (
             <button
               key={task}
               type="button"
-              onClick={() => assignTask(task)}
-              title={label}
+              onClick={(e) =>
+                e.shiftKey ? enqueueTask(task) : assignTask(task)
+              }
+              title={`${label} — shift-click to enqueue`}
               className={`flex flex-col items-center gap-0 rounded-xl px-2 py-1 text-[10px] font-bold transition active:scale-95 ${
                 agent.taskType === task && agent.state !== "idle"
                   ? "bg-[#e8a030] text-white shadow"
@@ -1143,12 +1167,36 @@ export function LoungeCanvas() {
               type="button"
               onClick={clearAgentTask}
               className="ml-0.5 rounded-xl px-2 py-1 text-[11px] font-bold text-[#9a3c18] hover:bg-[#fdd] active:scale-95 transition"
-              title="Stop agent"
+              title="Stop agent and clear queue"
             >
               ✕
             </button>
           )}
         </div>
+        {agent.taskQueue.length > 0 && (
+          <div className="flex items-center gap-1 rounded-full border border-[#c8a870] bg-[#f5e4c0]/90 px-2 py-0.5 shadow-sm">
+            <span className="text-[8px] font-bold text-[#8b6030] tracking-wider">
+              QUEUE
+            </span>
+            {agent.taskQueue.map((task, i) => (
+              <span
+                key={`${task}-${i}`}
+                title={TASK_ICON_LABEL[task]}
+                className="text-[12px] leading-none"
+              >
+                {TASK_ICON[task] ?? "·"}
+              </span>
+            ))}
+            <button
+              type="button"
+              onClick={clearQueue}
+              title="Clear queue"
+              className="ml-0.5 text-[10px] font-bold text-[#9a3c18] hover:text-[#7a2c08] active:scale-95 transition"
+            >
+              ✕
+            </button>
+          </div>
+        )}
         <span className="text-[9px] font-semibold text-[#8b6030]/80 tracking-wide">
           {agent.name} · {agent.state}
         </span>
