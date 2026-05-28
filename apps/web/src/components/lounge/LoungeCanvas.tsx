@@ -801,36 +801,45 @@ export function LoungeCanvas() {
         </div>
       </div>
 
-      {/* ── Top-right: Happiness + Coins + Floor + Timer ─────────────── */}
-      <div className="absolute right-3 top-3 z-30 flex flex-col items-end gap-1.5">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-3 py-1.5 shadow-md backdrop-blur-sm">
-            <span className="text-[12px] font-bold text-[#5a3c18]">
-              {totalHappiness}
-            </span>
-            <span className="text-[14px]">😊</span>
-          </div>
-          <div className="flex items-center gap-1.5 rounded-xl border border-[#e8b800] bg-[#fde68a]/90 px-3 py-1.5 shadow-md backdrop-blur-sm">
-            <span className="text-[12px] font-black text-[#7a5000]">
-              {coins.toLocaleString()}
-            </span>
-            <span className="text-[14px]">🪙</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setFloor((f) => (f === 1 ? 2 : 1))}
-            className="flex items-center gap-1 rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-2.5 py-1.5 shadow-md backdrop-blur-sm hover:bg-[#f0d8a8] transition"
-          >
-            <span className="text-[10px] text-[#8b5e30]">✦</span>
-            <span className="text-[12px] font-bold text-[#5a3c18]">
-              {floor}F
-            </span>
-            <span className="text-[10px] text-[#8b5e30]">✦</span>
-          </button>
+      {/* ── Top-right: combined stats bar ────────────────────────── */}
+      <div className="absolute right-3 top-3 z-30 flex items-stretch rounded-2xl border border-[#c8a870] bg-[#f5e4c0]/90 shadow-md backdrop-blur-sm overflow-hidden">
+        <div
+          className="flex items-center gap-1 px-2.5 py-1.5"
+          title="Happiness"
+        >
+          <span className="text-[12px] leading-none">😊</span>
+          <span className="text-[11px] font-bold text-[#5a3c18] tabular-nums">
+            {totalHappiness}
+          </span>
         </div>
-        <div className="flex items-center gap-1.5 rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-2.5 py-1 shadow-md backdrop-blur-sm">
-          <span className="text-[14px]">🍱</span>
-          <span className="text-[11px] font-mono font-bold text-[#5a3c18]">
+        <span className="my-1.5 w-px self-stretch bg-[#c8a870]/60" />
+        <div
+          className="flex items-center gap-1 bg-[#fde68a]/70 px-2.5 py-1.5"
+          title="Coins"
+        >
+          <span className="text-[12px] leading-none">🪙</span>
+          <span className="text-[11px] font-black text-[#7a5000] tabular-nums">
+            {coins.toLocaleString()}
+          </span>
+        </div>
+        <span className="my-1.5 w-px self-stretch bg-[#c8a870]/60" />
+        <button
+          type="button"
+          onClick={() => setFloor((f) => (f === 1 ? 2 : 1))}
+          title="Change floor"
+          className="flex items-center px-2.5 py-1.5 hover:bg-[#f0d8a8] transition"
+        >
+          <span className="text-[11px] font-bold text-[#5a3c18] tabular-nums">
+            {floor}F
+          </span>
+        </button>
+        <span className="my-1.5 w-px self-stretch bg-[#c8a870]/60" />
+        <div
+          className="flex items-center gap-1 px-2.5 py-1.5"
+          title="Next meal"
+        >
+          <span className="text-[11px] leading-none">🍱</span>
+          <span className="text-[10px] font-mono font-bold text-[#5a3c18] tabular-nums">
             {timer}
           </span>
         </div>
@@ -838,14 +847,14 @@ export function LoungeCanvas() {
 
       {/* ── Move-mode banner ────────────────────────────────────────── */}
       {mode === "move" && (
-        <div className="absolute left-1/2 top-3 z-30 -translate-x-1/2 flex items-center gap-2 rounded-full border border-[#e8b800] bg-[#fde68a] px-4 py-1.5 shadow-md">
-          <span className="text-[11px] font-black text-[#7a5000]">
-            ✋ Move Mode — drag furniture to reposition
+        <div className="absolute left-1/2 top-3 z-30 -translate-x-1/2 flex items-center gap-1.5 rounded-full border border-[#e8b800] bg-[#fde68a] px-3 py-1 shadow-md">
+          <span className="text-[10px] font-black text-[#7a5000]">
+            ✋ Move Mode
           </span>
           <button
             type="button"
             onClick={handleAutoArrange}
-            className="rounded-full bg-[#2563eb] px-2.5 py-0.5 text-[9px] font-black text-white hover:bg-[#1d4ed8] active:scale-95 transition"
+            className="rounded-full bg-[#2563eb] px-2 py-0.5 text-[9px] font-black text-white hover:bg-[#1d4ed8] active:scale-95 transition"
           >
             ✦ Auto
           </button>
@@ -853,7 +862,7 @@ export function LoungeCanvas() {
             type="button"
             onClick={handleUndo}
             disabled={!canUndo}
-            className={`rounded-full px-2.5 py-0.5 text-[9px] font-black active:scale-95 transition ${canUndo ? "bg-[#166534] text-white hover:bg-[#14532d]" : "bg-[#94a3b8] text-[#334155] cursor-not-allowed"}`}
+            className={`rounded-full px-2 py-0.5 text-[9px] font-black active:scale-95 transition ${canUndo ? "bg-[#166534] text-white hover:bg-[#14532d]" : "bg-[#94a3b8] text-[#334155] cursor-not-allowed"}`}
           >
             ↶ Undo
           </button>
@@ -861,21 +870,21 @@ export function LoungeCanvas() {
             type="button"
             onClick={handleRedo}
             disabled={!canRedo}
-            className={`rounded-full px-2.5 py-0.5 text-[9px] font-black active:scale-95 transition ${canRedo ? "bg-[#7c3aed] text-white hover:bg-[#6d28d9]" : "bg-[#94a3b8] text-[#334155] cursor-not-allowed"}`}
+            className={`rounded-full px-2 py-0.5 text-[9px] font-black active:scale-95 transition ${canRedo ? "bg-[#7c3aed] text-white hover:bg-[#6d28d9]" : "bg-[#94a3b8] text-[#334155] cursor-not-allowed"}`}
           >
             ↷ Redo
           </button>
           <button
             type="button"
             onClick={() => setShowRoomSettings((s) => !s)}
-            className="rounded-full bg-[#7a5000] px-2.5 py-0.5 text-[9px] font-black text-[#fde68a] hover:bg-[#5a3800] active:scale-95 transition"
+            className="rounded-full bg-[#7a5000] px-2 py-0.5 text-[9px] font-black text-[#fde68a] hover:bg-[#5a3800] active:scale-95 transition"
           >
             ⚙ Room
           </button>
           <button
             type="button"
             onClick={handleReset}
-            className="rounded-full bg-[#e84040] px-2.5 py-0.5 text-[9px] font-black text-white hover:bg-[#d03030] active:scale-95 transition"
+            className="rounded-full bg-[#e84040] px-2 py-0.5 text-[9px] font-black text-white hover:bg-[#d03030] active:scale-95 transition"
           >
             ↻ Reset
           </button>
@@ -1064,8 +1073,8 @@ export function LoungeCanvas() {
       </div>
 
       {/* ── Agent task buttons ───────────────────────────────────── */}
-      <div className="absolute bottom-4 left-1/2 z-40 -translate-x-1/2 flex flex-col items-center gap-1.5">
-        <div className="flex items-center gap-1 rounded-2xl border border-[#c8a870] bg-[#f5e4c0]/95 px-3 py-2 shadow-lg backdrop-blur-sm">
+      <div className="absolute bottom-3 left-1/2 z-40 -translate-x-1/2 flex flex-col items-center gap-1">
+        <div className="flex items-center gap-0.5 rounded-2xl border border-[#c8a870] bg-[#f5e4c0]/95 px-2 py-1.5 shadow-lg backdrop-blur-sm">
           {(
             [
               { task: "code" as AgentTaskType, icon: "💻", label: "Code" },
@@ -1080,21 +1089,22 @@ export function LoungeCanvas() {
               key={task}
               type="button"
               onClick={() => assignTask(task)}
-              className={`flex flex-col items-center gap-0.5 rounded-xl px-2.5 py-1.5 text-[11px] font-bold transition active:scale-95 ${
+              title={label}
+              className={`flex flex-col items-center gap-0 rounded-xl px-2 py-1 text-[10px] font-bold transition active:scale-95 ${
                 agent.taskType === task && agent.state !== "idle"
                   ? "bg-[#e8a030] text-white shadow"
                   : "text-[#5a3c18] hover:bg-[#f0d8a8]"
               }`}
             >
-              <span className="text-base leading-none">{icon}</span>
-              <span className="leading-none">{label}</span>
+              <span className="text-[15px] leading-none">{icon}</span>
+              <span className="leading-none mt-0.5">{label}</span>
             </button>
           ))}
           {agent.state !== "idle" && (
             <button
               type="button"
               onClick={clearAgentTask}
-              className="ml-1 rounded-xl px-2.5 py-1.5 text-[11px] font-bold text-[#9a3c18] hover:bg-[#fdd] active:scale-95 transition"
+              className="ml-0.5 rounded-xl px-2 py-1 text-[11px] font-bold text-[#9a3c18] hover:bg-[#fdd] active:scale-95 transition"
               title="Stop agent"
             >
               ✕
@@ -1107,95 +1117,83 @@ export function LoungeCanvas() {
       </div>
 
       {/* ── Bottom-left: Train + Supplies ───────────────────────────── */}
-      <div className="absolute left-3 bottom-4 z-30 flex flex-col gap-2">
-        <div className="flex items-center gap-2">
+      <div className="absolute left-3 bottom-3 z-30 flex flex-col gap-1.5">
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={handleTrain}
             disabled={trainCount >= trainMax}
-            className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-white shadow-lg active:scale-95 transition ${
+            className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-white shadow-md active:scale-95 transition ${
               trainCount >= trainMax
                 ? "bg-[#a0a0a0] cursor-not-allowed"
                 : "bg-[#e84040] hover:bg-[#d03030]"
             }`}
           >
-            <span className="text-[13px] font-black">Train</span>
-          </button>
-          <div className="flex items-center gap-1">
-            <span className="text-[13px] font-bold text-[#3a1a00]">
+            <span className="text-[11px] font-black">Train</span>
+            <span className="text-[10px] font-bold opacity-90 tabular-nums">
               {trainCount}/{trainMax}
             </span>
-            <span className="h-2.5 w-2.5 rounded-full bg-[#e84040]" />
-          </div>
+          </button>
         </div>
-        <div className="rounded-2xl border border-[#c8a870] bg-[#f5e4c0]/90 px-3 py-2 shadow-md backdrop-blur-sm min-w-[200px]">
-          <div className="flex items-center gap-1.5 mb-1">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#f5c518] text-[10px] font-black text-[#5a3c00] shadow">
-              +
-            </span>
-            <span className="text-[10px] font-bold text-[#5a3c18]">
-              Supplies
-            </span>
-            <span className="text-[9px] text-[#8b5e30]">Time left:</span>
-            <span className="text-[9px] font-mono font-bold text-[#2a7a30]">
+        <div className="rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-2.5 py-1.5 shadow-md backdrop-blur-sm min-w-[168px]">
+          <div className="flex items-center gap-1 mb-1">
+            <span className="text-[10px]">📦</span>
+            <span className="text-[9px] font-bold text-[#5a3c18]">Supplies</span>
+            <span className="ml-auto text-[9px] font-mono font-bold text-[#2a7a30] tabular-nums">
               {suppliesTimer}
             </span>
           </div>
-          <div className="relative h-4 w-full overflow-hidden rounded-full bg-[#e8d0a0]">
+          <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-[#e8d0a0]">
             <div
               className="absolute inset-y-0 left-0 rounded-full bg-[#e84040] transition-all"
               style={{ width: `${suppliesPct}%` }}
             />
           </div>
-          <div className="mt-0.5 text-center text-[9px] font-bold text-[#5a3c18]">
+          <div className="mt-0.5 text-right text-[8px] font-bold text-[#5a3c18] tabular-nums">
             {suppliesProgress.toLocaleString()}/{suppliesMax.toLocaleString()}
           </div>
         </div>
       </div>
 
-      {/* ── Bottom-right: Action buttons ────────────────────────────── */}
-      <div className="absolute right-3 bottom-4 z-30 flex items-end gap-2">
-        <div className="flex flex-col gap-2">
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setMode((m) => (m === "visit" ? "move" : "visit"))}
-              className={`flex flex-col items-center justify-center gap-0.5 rounded-2xl border px-4 py-3 shadow-md active:scale-95 transition min-w-[68px] ${mode === "move" ? "border-[#e8b800] bg-[#fde68a] text-[#7a5000]" : "border-[#c8a870] bg-[#f5e4c0]/90 text-[#5a3c18] hover:bg-[#f0d8a8]"}`}
-            >
-              <span className="text-[22px]">🪑</span>
-              <span className="text-[9px] font-bold">
-                {mode === "move" ? "Done" : "Move"}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setShopOpen(true)}
-              className="flex flex-col items-center justify-center gap-0.5 rounded-2xl border border-[#e89830] bg-[#fad090]/90 px-4 py-3 shadow-md hover:bg-[#fac070] active:scale-95 transition min-w-[68px]"
-            >
-              <span className="text-[22px]">🏪</span>
-              <span className="text-[9px] font-bold text-[#7a4000]">Shop</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleShare}
-              className="flex flex-col items-center justify-center gap-0.5 rounded-2xl border border-[#4a8acc] bg-[#b8d8f0]/90 px-4 py-3 shadow-md hover:bg-[#a0c8e8] active:scale-95 transition min-w-[68px]"
-            >
-              <span className="text-[22px]">☁️</span>
-              <span className="text-[9px] font-bold text-[#1a4870]">Share</span>
-            </button>
-          </div>
-        </div>
+      {/* ── Bottom-right: Action dock ──────────────────────────────── */}
+      <div className="absolute right-3 bottom-3 z-30 flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => setMode((m) => (m === "visit" ? "move" : "visit"))}
+          title={mode === "move" ? "Done editing" : "Move furniture"}
+          className={`flex flex-col items-center justify-center gap-0 rounded-xl border px-2.5 py-1.5 shadow-md active:scale-95 transition min-w-[54px] ${mode === "move" ? "border-[#e8b800] bg-[#fde68a] text-[#7a5000]" : "border-[#c8a870] bg-[#f5e4c0]/90 text-[#5a3c18] hover:bg-[#f0d8a8]"}`}
+        >
+          <span className="text-[18px] leading-none">🪑</span>
+          <span className="text-[9px] font-bold mt-0.5">
+            {mode === "move" ? "Done" : "Move"}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setShopOpen(true)}
+          title="Shop"
+          className="flex flex-col items-center justify-center gap-0 rounded-xl border border-[#e89830] bg-[#fad090]/90 px-2.5 py-1.5 shadow-md hover:bg-[#fac070] active:scale-95 transition min-w-[54px]"
+        >
+          <span className="text-[18px] leading-none">🏪</span>
+          <span className="text-[9px] font-bold text-[#7a4000] mt-0.5">Shop</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleShare}
+          title="Share lounge link"
+          className="flex flex-col items-center justify-center gap-0 rounded-xl border border-[#4a8acc] bg-[#b8d8f0]/90 px-2.5 py-1.5 shadow-md hover:bg-[#a0c8e8] active:scale-95 transition min-w-[54px]"
+        >
+          <span className="text-[18px] leading-none">☁️</span>
+          <span className="text-[9px] font-bold text-[#1a4870] mt-0.5">Share</span>
+        </button>
         <button
           type="button"
           onClick={() => setFloor((f) => (f === 1 ? 2 : 1))}
-          className="flex flex-col items-center justify-center gap-1 rounded-2xl border border-[#c8a870] bg-[#f5e4c0]/90 px-3 py-3 shadow-md hover:bg-[#f0d8a8] active:scale-95 transition h-[84px] min-w-[64px]"
+          title="Change floor"
+          className="flex flex-col items-center justify-center gap-0 rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-2.5 py-1.5 shadow-md hover:bg-[#f0d8a8] active:scale-95 transition min-w-[54px]"
         >
-          <span className="text-[20px]">🪜</span>
-          <span className="text-[9px] font-bold text-[#5a3c18] text-center leading-tight">
-            Change
-            <br />
-            Floors
-          </span>
+          <span className="text-[18px] leading-none">🪜</span>
+          <span className="text-[9px] font-bold text-[#5a3c18] mt-0.5">Floor</span>
         </button>
       </div>
 

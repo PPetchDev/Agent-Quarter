@@ -11,7 +11,7 @@ _Updated: C-FURNITURE-GRID-001_
 | Furniture dimensions and tile footprints | `apps/web/src/components/lounge/roomDefs.ts` |
 | Furniture catalog / shop metadata | `apps/web/src/components/lounge/furnitureCatalog.ts` |
 | PixiJS scene construction and depth sorting | `apps/web/src/components/lounge/roomLoader.ts` |
-| Lounge canvas, HUD, route debug overlay, single walking agent overlay | `apps/web/src/components/lounge/LoungeCanvas.tsx` |
+| Lounge canvas, compact HUD, route debug overlay, single walking agent overlay | `apps/web/src/components/lounge/LoungeCanvas.tsx` |
 | Agent task-to-station resolution | `apps/web/src/game/agents/taskResolver.ts` |
 | Agent type contracts | `apps/web/src/game/agents/agentTypes.ts` |
 | Isometric station registry | `apps/web/src/game/scene/loungeStations.ts` |
