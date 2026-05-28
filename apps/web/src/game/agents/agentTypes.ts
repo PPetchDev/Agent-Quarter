@@ -51,4 +51,8 @@ export type Agent = {
   animation: string;
   bubbleText?: string;
   speed: number;
+  /** Total milliseconds the agent should remain in the arrival state before auto-idling. */
+  workDurationMs?: number;
+  /** Milliseconds already elapsed in the current work session. */
+  workElapsedMs?: number;
 };

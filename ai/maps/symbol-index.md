@@ -25,7 +25,10 @@ _Updated: C-FURNITURE-GRID-001_
 | `planIsoGridPath` | function | Pure grid route planner for bounded room cells |
 | `findGridPath` | function | Breadth-first path search over unblocked cells |
 | `AgentRouteDebug` | type | Route overlay data exposed by `useAgentWalk` |
-| `useAgentWalk` | hook | Plans route waypoints, animates segment by segment, exposes route debug data, and refreshes routes after committed layout changes |
+| `useAgentWalk` | hook | Plans route waypoints, animates segment by segment, exposes route debug data, refreshes routes after committed layout changes, and ticks the post-arrival work timer to auto-return the agent to idle |
+| `taskWorkDurationMap` | constant | Per-task work durations in `taskResolver.ts` (code 8000, research 6000, meeting 7000, document 6500, review 7000, print 3500, rest 9000, idle 0 ms) |
+| `Agent.workDurationMs` | field | Total milliseconds for the current work session |
+| `Agent.workElapsedMs` | field | Milliseconds elapsed in the current work session |
 
 ## Routes
 

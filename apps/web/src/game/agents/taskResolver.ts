@@ -17,6 +17,11 @@ export type ResolvedAgentTask = {
   arriveState: AgentState;
   walkingBubbleText: string;
   bubbleText: string;
+  /**
+   * Deterministic duration the agent should remain in the arrival state
+   * before auto-returning to idle. 0 means no work loop (idle task).
+   */
+  workDurationMs: number;
 };
 
 const taskToStationMap: Record<AgentTaskType, LoungeStationId> = {
@@ -63,6 +68,17 @@ const taskBubbleMap: Record<AgentTaskType, string> = {
   idle:     'Idle...',
 };
 
+const taskWorkDurationMap: Record<AgentTaskType, number> = {
+  code:     8000,
+  research: 6000,
+  meeting:  7000,
+  document: 6500,
+  review:   7000,
+  print:    3500,
+  rest:     9000,
+  idle:     0,
+};
+
 export function resolveAgentTask(
   taskType: AgentTaskType,
   roomObjects: LoungeStationFurniture[] = [],
@@ -78,5 +94,6 @@ export function resolveAgentTask(
     arriveState:       taskArrivalStateMap[taskType],
     walkingBubbleText: taskWalkingBubbleMap[taskType],
     bubbleText:        taskBubbleMap[taskType],
+    workDurationMs:    taskWorkDurationMap[taskType],
   };
 }

@@ -95,4 +95,25 @@ describe('resolveAgentTask', () => {
     expect(r.targetStationId).toBe('printer');
     expect(r.targetIsoPoint).toEqual({ wx: 3.45, wy: 2.35, wz: 0.2 });
   });
+
+  it('exposes a non-zero workDurationMs for every work task', () => {
+    const workTasks = ['code', 'research', 'meeting', 'document', 'review', 'print', 'rest'] as const;
+    for (const task of workTasks) {
+      const r = resolveAgentTask(task);
+      expect(r.workDurationMs).toBeGreaterThan(0);
+    }
+  });
+
+  it('idle task resolves to zero workDurationMs', () => {
+    const r = resolveAgentTask('idle');
+    expect(r.workDurationMs).toBe(0);
+  });
+
+  it('print is the shortest work task', () => {
+    const print = resolveAgentTask('print').workDurationMs;
+    const code = resolveAgentTask('code').workDurationMs;
+    const rest = resolveAgentTask('rest').workDurationMs;
+    expect(print).toBeLessThan(code);
+    expect(print).toBeLessThan(rest);
+  });
 });
