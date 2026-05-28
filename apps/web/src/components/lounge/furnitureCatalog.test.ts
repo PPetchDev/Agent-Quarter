@@ -7,6 +7,12 @@ describe("furniture catalog smoke", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it("includes role-aligned station furniture", () => {
+    expect(FURNITURE_CATALOG.map((item) => item.type)).toEqual(
+      expect.arrayContaining(["computer_desk", "printer", "document_board"]),
+    );
+  });
+
   it("spawns wall items on back wall", () => {
     for (const item of FURNITURE_CATALOG.filter((entry) => entry.category === "wall")) {
       const pos = getDefaultSpawnPosition(item.type);

@@ -1,18 +1,51 @@
 # Feature Map
 
-_Updated: C-WORKFLOW-009_
+_Updated: C-FURNITURE-GRID-001_
 
-| Feature | Files |
-|---------|-------|
-| Isometric lounge (PixiJS) | `apps/web/src/components/lounge/*` |
-| Stage chat panel | `apps/web/src/components/stages/ChatPanel.tsx` |
-| Stage socket hook | `apps/web/src/hooks/useStageSocket.ts` |
-| Claude streaming gateway | `apps/api/src/claude/claude.gateway.ts` |
-| Projects REST API | `apps/api/src/projects/projects.controller.ts` |
-| Tasks REST API | `apps/api/src/projects/tasks.controller.ts` |
-| Runs REST API | `apps/api/src/projects/runs.controller.ts` |
-| NestJS module wiring | `apps/api/src/projects/projects.module.ts` |
-| App module (root) | `apps/api/src/app.module.ts` |
-| Run lifecycle (domain) | `packages/core/src/project.ts` |
-| Character domain | `packages/core/src/character.ts` |
-| Core exports | `packages/core/src/index.ts` |
+| Feature | Canonical Files |
+|---|---|
+| Lounge simulation route | `apps/web/src/app/lounge/page.tsx` |
+| Legacy office route compatibility | `apps/web/src/app/office/page.tsx` (redirect only) |
+| Room footprint, projection, walls, floor, rug, primitive furniture drawings | `apps/web/src/components/lounge/pixiRoom.ts` |
+| Active initial role-aligned furniture layout | `apps/web/public/maps/maple_hideout.json` |
+| Furniture dimensions and tile footprints | `apps/web/src/components/lounge/roomDefs.ts` |
+| Furniture catalog / shop metadata | `apps/web/src/components/lounge/furnitureCatalog.ts` |
+| PixiJS scene construction and depth sorting | `apps/web/src/components/lounge/roomLoader.ts` |
+| Lounge canvas, HUD, route debug overlay, single walking agent overlay | `apps/web/src/components/lounge/LoungeCanvas.tsx` |
+| Agent task-to-station resolution | `apps/web/src/game/agents/taskResolver.ts` |
+| Agent type contracts | `apps/web/src/game/agents/agentTypes.ts` |
+| Isometric station registry | `apps/web/src/game/scene/loungeStations.ts` |
+| Lounge blocked-cell grid | `apps/web/src/game/scene/loungePathGrid.ts` |
+| Isometric projection helpers | `apps/web/src/game/isometric/isoProjection.ts` |
+| Movement logic | `apps/web/src/game/movement/direction.ts`, `apps/web/src/game/movement/moveToTarget.ts`, `apps/web/src/game/movement/gridPath.ts` |
+| Animation resolver | `apps/web/src/game/animation/animationResolver.ts` |
+| Lounge walking integration hook | `apps/web/src/hooks/useAgentWalk.ts` |
+| Global navigation | `apps/web/src/components/TopBar.tsx` |
+
+## Functional Zone Mapping
+
+- Code -> computer workstation (`computer_desk`) with monitor, keyboard, and desk notes.
+- Read -> bookcase / reading cushion zone.
+- Meet -> central low table / rug zone.
+- Doc -> wall document board (`document_board`) zone.
+- Print -> compact printer (`printer`) utility zone.
+- Rest -> bed / rest nook zone.
+
+## Furniture Grid Contract
+
+- Floor furniture dimensions in `FURNITURE_DIMS` should match occupied floor cells in `FURNITURE_TILES`.
+- PixiJS furniture drawings in `pixiRoom.ts` should visually fill their grid footprint rather than leaving large unused tile gaps.
+
+## Removed Legacy Prototype Feature
+
+- Standalone flat office simulator files are absent.
+- Flat pixel station registry `apps/web/src/game/scene/officeStations.ts` is absent.
+
+## Pathfinding Mapping
+
+- Grid planner -> `apps/web/src/game/movement/gridPath.ts`.
+- Furniture blocked cells -> `apps/web/src/game/scene/loungePathGrid.ts`.
+- Active furniture inputs -> `LoungeCanvas` passes current `RoomObject[]`, room width, and room height into `useAgentWalk`.
+- Waypoint animation -> `useAgentWalk` plans a route at task assignment and advances through projected waypoints with `moveTowardsTarget`.
+- Route debug overlay -> `useAgentWalk` exposes route debug points; `LoungeCanvas` renders them only in move/edit mode.
+- Dynamic static-obstacle refresh -> `useAgentWalk` re-plans while walking after committed room object or room dimension changes.

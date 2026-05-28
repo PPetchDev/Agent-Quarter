@@ -95,8 +95,8 @@ export function furnitureHitPolygon(type: string, wx: number, wy: number, wz: nu
 
 // ─── Background (static room shell) ──────────────────────────────────────────
 
-export const ROOM_TILES_X = 9;
-export const ROOM_TILES_Y = 7;
+export const ROOM_TILES_X = 10;
+export const ROOM_TILES_Y = 8;
 
 export type RoomTheme = {
   skyTop: string;
@@ -140,6 +140,11 @@ export function drawBackground(g: PIXI.Graphics, cols = ROOM_TILES_X, rows = ROO
     ln(g,ax,ay,bx,by,0xffffff,0.8,0.05);
   }
 
+  // Low cutaway edges make the full room footprint read as intentional.
+  qfill(g,[proj(0,0,0),proj(cols,0,0),proj(cols,0,-0.28),proj(0,0,-0.28)],0x7a4624,0.92);
+  qfill(g,[proj(cols,0,0),proj(cols,rows,0),proj(cols,rows,-0.28),proj(cols,0,-0.28)],0x6f3e20,0.82);
+  qstroke(g,[proj(0,0,0.01),proj(cols,0,0.01),proj(cols,rows,0.01),proj(0,rows,0.01)],0x5c3218,1.7,0.42);
+
   // Back wall
   qfill(g,[proj(0,rows,0),proj(cols,rows,0),proj(cols,rows,4.5),proj(0,rows,4.5)],0xf0e9da);
   qfill(g,[proj(0,rows,4.1),proj(cols,rows,4.1),proj(cols,rows,4.5),proj(0,rows,4.5)],0xb8723c);
@@ -177,9 +182,9 @@ export function drawBackground(g: PIXI.Graphics, cols = ROOM_TILES_X, rows = ROO
   }
 
   // Area rug
-  qfill(g,[proj(1.0,1.6,0.005),proj(5.2,1.6,0.005),proj(5.2,5.4,0.005),proj(1.0,5.4,0.005)],0xc87848,0.32);
-  qstroke(g,[proj(1.0,1.6,0.005),proj(5.2,1.6,0.005),proj(5.2,5.4,0.005),proj(1.0,5.4,0.005)],0x8b4820,1.5,0.38);
-  qstroke(g,[proj(1.15,1.75,0.005),proj(5.05,1.75,0.005),proj(5.05,5.25,0.005),proj(1.15,5.25,0.005)],0x8b4820,0.8,0.28);
+  qfill(g,[proj(1.0,1.35,0.005),proj(6.0,1.35,0.005),proj(6.0,6.65,0.005),proj(1.0,6.65,0.005)],0xc87848,0.32);
+  qstroke(g,[proj(1.0,1.35,0.005),proj(6.0,1.35,0.005),proj(6.0,6.65,0.005),proj(1.0,6.65,0.005)],0x8b4820,1.5,0.38);
+  qstroke(g,[proj(1.18,1.55,0.005),proj(5.82,1.55,0.005),proj(5.82,6.45,0.005),proj(1.18,6.45,0.005)],0x8b4820,0.8,0.28);
 
   // Door
   const featureMaxY = Math.max(0, rows - 1);
@@ -234,16 +239,17 @@ export function drawBackground(g: PIXI.Graphics, cols = ROOM_TILES_X, rows = ROO
 // ─── Individual furniture draw functions ──────────────────────────────────────
 
 export function drawBed(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
-  qfill(g,[proj(wx,wy,0.002),proj(wx+3.4,wy,0.002),proj(wx+3.4,wy+5.0,0.002),proj(wx,wy+5.0,0.002)],0x000000,0.1);
-  isoBox(g,wx,wy,wz,3.4,5.0,0.38,0x3e2010,0x2e1808,0x241208);
-  isoBox(g,wx+0.05,wy+0.05,wz+0.38,3.3,4.9,0.42,0xf0ecff,0xe8e4f5,0xe0dcee);
-  isoBox(g,wx+0.1,wy+1.9,wz+0.8,3.2,2.8,0.14,0x4a7ab5,0x3a6098,0x2e5080);
-  qfill(g,[proj(wx+0.1,wy+1.9,wz+0.94),proj(wx+3.3,wy+1.9,wz+0.94),proj(wx+3.3,wy+1.9,wz+0.8),proj(wx+0.1,wy+1.9,wz+0.8)],0x5a8ac5);
-  isoBox(g,wx+0.12,wy+0.07,wz+0.8,1.28,1.05,0.28,0xfafaff,0xeeeaff,0xe0d8f0);
-  isoBox(g,wx+1.6,wy+0.07,wz+0.8,1.28,1.05,0.28,0xfafaff,0xeeeaff,0xe0d8f0);
-  isoBox(g,wx,wy,wz+0.38,3.4,0.16,1.15,0x5c3818,0x4a2c10,0x3c2208);
-  isoBox(g,wx,wy+4.7,wz+0.38,3.4,0.16,0.58,0x5c3818,0x4a2c10,0x3c2208);
-  const [bfx,bfy]=proj(wx+1.7,wy+2.9,wz+0.95);
+  const W = 4.0, D = 5.0;
+  qfill(g,[proj(wx,wy,0.002),proj(wx+W,wy,0.002),proj(wx+W,wy+D,0.002),proj(wx,wy+D,0.002)],0x000000,0.1);
+  isoBox(g,wx,wy,wz,W,D,0.38,0x3e2010,0x2e1808,0x241208);
+  isoBox(g,wx+0.06,wy+0.06,wz+0.38,W-0.12,D-0.12,0.42,0xf0ecff,0xe8e4f5,0xe0dcee);
+  isoBox(g,wx+0.12,wy+1.88,wz+0.8,W-0.24,2.95,0.14,0x4a7ab5,0x3a6098,0x2e5080);
+  qfill(g,[proj(wx+0.12,wy+1.88,wz+0.94),proj(wx+W-0.12,wy+1.88,wz+0.94),proj(wx+W-0.12,wy+1.88,wz+0.8),proj(wx+0.12,wy+1.88,wz+0.8)],0x5a8ac5);
+  isoBox(g,wx+0.18,wy+0.1,wz+0.8,1.48,1.1,0.28,0xfafaff,0xeeeaff,0xe0d8f0);
+  isoBox(g,wx+2.28,wy+0.1,wz+0.8,1.48,1.1,0.28,0xfafaff,0xeeeaff,0xe0d8f0);
+  isoBox(g,wx,wy,wz+0.38,W,0.18,1.15,0x5c3818,0x4a2c10,0x3c2208);
+  isoBox(g,wx,wy+D-0.32,wz+0.38,W,0.18,0.58,0x5c3818,0x4a2c10,0x3c2208);
+  const [bfx,bfy]=proj(wx+W/2,wy+3.0,wz+0.95);
   g.circle(bfx,bfy,5).fill({color:0x8ab4e0,alpha:0.45});
   [[-9,0],[9,0],[0,-9],[0,9]].forEach(([dx,dy])=>g.circle(bfx+dx!,bfy+dy!,3.5).fill({color:0x8ab4e0,alpha:0.32}));
 }
@@ -261,7 +267,7 @@ export function drawNightstand(g: PIXI.Graphics, wx: number, wy: number, wz: num
 }
 
 export function drawTVStand(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
-  isoBox(g,wx,wy,wz,3.9,0.8,0.85,0x5c3818,0x4a2c10,0x3c2208);
+  isoBox(g,wx,wy,wz,4.0,1.0,0.85,0x5c3818,0x4a2c10,0x3c2208);
   for(let di=0;di<2;di++){
     const dwx=wx+0.4+di*1.85;
     const [dhx,dhy]=proj(dwx+0.6,wy,wz+0.42);
@@ -278,29 +284,95 @@ export function drawTVStand(g: PIXI.Graphics, wx: number, wy: number, wz: number
 }
 
 export function drawTV(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
-  isoBox(g,wx+0.9,wy+0.1,wz,1.8,0.12,0.12,0x1a1a1a,0x111111);
-  isoBox(g,wx,wy,wz,3.5,0.12,2.1,0x141414,0x1c1c1c,0x101010);
-  qfill(g,[proj(wx+0.05,wy-0.02,wz+0.05),proj(wx+3.45,wy-0.02,wz+0.05),proj(wx+3.45,wy-0.02,wz+2.0),proj(wx+0.05,wy-0.02,wz+2.0)],0x1a3a70);
-  qfill(g,[proj(wx+0.1,wy-0.03,wz+0.1),proj(wx+3.4,wy-0.03,wz+0.1),proj(wx+3.4,wy-0.03,wz+1.95),proj(wx+0.1,wy-0.03,wz+1.95)],0x2855a8,0.8);
+  isoBox(g,wx+1.1,wy+0.1,wz,1.8,0.12,0.12,0x1a1a1a,0x111111);
+  isoBox(g,wx,wy,wz,4.0,0.12,2.1,0x141414,0x1c1c1c,0x101010);
+  qfill(g,[proj(wx+0.08,wy-0.02,wz+0.05),proj(wx+3.92,wy-0.02,wz+0.05),proj(wx+3.92,wy-0.02,wz+2.0),proj(wx+0.08,wy-0.02,wz+2.0)],0x1a3a70);
+  qfill(g,[proj(wx+0.14,wy-0.03,wz+0.1),proj(wx+3.86,wy-0.03,wz+0.1),proj(wx+3.86,wy-0.03,wz+1.95),proj(wx+0.14,wy-0.03,wz+1.95)],0x2855a8,0.8);
+}
+
+export function drawComputerDesk(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
+  qfill(g,[proj(wx,wy,0.002),proj(wx+3.0,wy,0.002),proj(wx+3.0,wy+2.0,0.002),proj(wx,wy+2.0,0.002)],0x000000,0.12);
+  isoBox(g,wx,wy,wz,3.0,2.0,0.72,0x6a4122,0x563019,0x442413);
+  isoBox(g,wx+0.08,wy+0.08,wz+0.72,2.84,1.84,0.08,0x8b5a2b,0x71431f,0x5a3418);
+  isoBox(g,wx+0.18,wy+0.18,wz,0.16,0.16,0.72,0x3c2208,0x2a1608,0x241208);
+  isoBox(g,wx+2.66,wy+0.18,wz,0.16,0.16,0.72,0x3c2208,0x2a1608,0x241208);
+  isoBox(g,wx+0.18,wy+1.62,wz,0.16,0.16,0.72,0x3c2208,0x2a1608,0x241208);
+  isoBox(g,wx+2.66,wy+1.62,wz,0.16,0.16,0.72,0x3c2208,0x2a1608,0x241208);
+
+  qfill(g,[proj(wx+0.38,wy+1.52,wz+0.9),proj(wx+1.72,wy+1.52,wz+0.9),proj(wx+1.72,wy+1.52,wz+1.8),proj(wx+0.38,wy+1.52,wz+1.8)],0x172033);
+  qfill(g,[proj(wx+0.45,wy+1.5,wz+0.98),proj(wx+1.65,wy+1.5,wz+0.98),proj(wx+1.65,wy+1.5,wz+1.7),proj(wx+0.45,wy+1.5,wz+1.7)],0x2f80ed,0.88);
+  qstroke(g,[proj(wx+0.45,wy+1.495,wz+0.98),proj(wx+1.65,wy+1.495,wz+0.98),proj(wx+1.65,wy+1.495,wz+1.7),proj(wx+0.45,wy+1.495,wz+1.7)],0xbce7ff,1,0.5);
+  const [line1x,line1y]=proj(wx+0.58,wy+1.48,wz+1.5);
+  ln(g,line1x,line1y,line1x+32,line1y-4,0x99ffcc,2,0.8);
+  const [line2x,line2y]=proj(wx+0.58,wy+1.48,wz+1.35);
+  ln(g,line2x,line2y,line2x+22,line2y-3,0xe7f0ff,2,0.65);
+  isoBox(g,wx+0.9,wy+1.34,wz+0.78,0.26,0.22,0.22,0x172033,0x0f172a,0x0b1020);
+
+  qfill(g,[proj(wx+0.34,wy+0.42,wz+0.83),proj(wx+1.86,wy+0.42,wz+0.83),proj(wx+1.86,wy+0.76,wz+0.83),proj(wx+0.34,wy+0.76,wz+0.83)],0x202a38,0.95);
+  for(let ki=0;ki<8;ki++){
+    const [kx,ky]=proj(wx+0.5+ki*0.16,wy+0.43,wz+0.84);
+    g.rect(kx-3,ky-2,5,3).fill({color:0xd8e5f0,alpha:0.58});
+  }
+  qfill(g,[proj(wx+1.98,wy+0.42,wz+0.84),proj(wx+2.68,wy+0.42,wz+0.84),proj(wx+2.68,wy+1.05,wz+0.84),proj(wx+1.98,wy+1.05,wz+0.84)],0xf6ead7,0.95);
+  qstroke(g,[proj(wx+1.98,wy+0.42,wz+0.845),proj(wx+2.68,wy+0.42,wz+0.845),proj(wx+2.68,wy+1.05,wz+0.845),proj(wx+1.98,wy+1.05,wz+0.845)],0x4a5568,1,0.28);
+  const [mugX,mugY]=proj(wx+2.7,wy+1.24,wz+0.86);
+  g.circle(mugX,mugY,6).fill(0x90cdf4);
+  g.circle(mugX+6,mugY-2,3).stroke({color:0x90cdf4,width:2,alpha:0.9});
+}
+
+export function drawPrinter(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
+  qfill(g,[proj(wx,wy,0.002),proj(wx+1.0,wy,0.002),proj(wx+1.0,wy+1.0,0.002),proj(wx,wy+1.0,0.002)],0x000000,0.1);
+  isoBox(g,wx,wy,wz,1.0,1.0,0.64,0xd8dee9,0xaeb8c6,0x94a3b8);
+  isoBox(g,wx+0.08,wy+0.08,wz+0.64,0.84,0.84,0.25,0xf8fafc,0xcbd5e1,0xb8c4d4);
+  qfill(g,[proj(wx+0.16,wy+0.18,wz+0.9),proj(wx+0.78,wy+0.18,wz+0.9),proj(wx+0.78,wy+0.68,wz+0.9),proj(wx+0.16,wy+0.68,wz+0.9)],0x334155,0.9);
+  qfill(g,[proj(wx+0.14,wy,wz+0.2),proj(wx+0.86,wy,wz+0.2),proj(wx+0.86,wy,wz+0.44),proj(wx+0.14,wy,wz+0.44)],0x64748b,0.82);
+  qfill(g,[proj(wx+0.2,wy-0.02,wz+0.08),proj(wx+0.82,wy-0.02,wz+0.08),proj(wx+0.82,wy-0.02,wz+0.28),proj(wx+0.2,wy-0.02,wz+0.28)],0xf8fafc,0.9);
+  const [ledX,ledY]=proj(wx+0.82,wy+0.02,wz+0.55);
+  g.circle(ledX,ledY,3).fill(0x34d399);
+}
+
+export function drawDocumentBoard(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
+  qfill(g,[proj(wx,wy,wz),proj(wx+3.0,wy,wz),proj(wx+3.0,wy,wz+1.6),proj(wx,wy,wz+1.6)],0x6b4020);
+  qfill(g,[proj(wx+0.08,wy-0.01,wz+0.08),proj(wx+2.92,wy-0.01,wz+0.08),proj(wx+2.92,wy-0.01,wz+1.52),proj(wx+0.08,wy-0.01,wz+1.52)],0xf7edd0,0.96);
+  qstroke(g,[proj(wx+0.08,wy-0.015,wz+0.08),proj(wx+2.92,wy-0.015,wz+0.08),proj(wx+2.92,wy-0.015,wz+1.52),proj(wx+0.08,wy-0.015,wz+1.52)],0x7a4518,1.3,0.75);
+  [wx+1.0, wx+2.0].forEach((lineX) => {
+    const [aX,aY]=proj(lineX,wy-0.02,wz+0.18), [bX,bY]=proj(lineX,wy-0.02,wz+1.42);
+    ln(g,aX,aY,bX,bY,0x94a3b8,1,0.45);
+  });
+  [wz+0.56, wz+1.04].forEach((lineZ) => {
+    const [aX,aY]=proj(wx+0.18,wy-0.02,lineZ), [bX,bY]=proj(wx+2.82,wy-0.02,lineZ);
+    ln(g,aX,aY,bX,bY,0x94a3b8,1,0.42);
+  });
+  const notes = [
+    { x: 0.24, z: 0.24, w: 0.48, h: 0.34, c: 0xfde68a },
+    { x: 1.08, z: 0.68, w: 0.55, h: 0.38, c: 0x93c5fd },
+    { x: 1.98, z: 1.06, w: 0.5,  h: 0.34, c: 0xfca5a5 },
+    { x: 2.04, z: 0.28, w: 0.42, h: 0.32, c: 0x86efac },
+  ];
+  notes.forEach((note) => {
+    qfill(g,[proj(wx+note.x,wy-0.03,wz+note.z),proj(wx+note.x+note.w,wy-0.03,wz+note.z),proj(wx+note.x+note.w,wy-0.03,wz+note.z+note.h),proj(wx+note.x,wy-0.03,wz+note.z+note.h)],note.c,0.92);
+  });
+  const [pinX,pinY]=proj(wx+1.4,wy-0.04,wz+1.45);
+  g.circle(pinX,pinY,4).fill(0xef4444);
 }
 
 export function drawBookcase(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
-  isoBox(g,wx,wy,wz,2.3,0.7,3.6,0x5c3818,0x4a2c10,0x3c2208);
+  isoBox(g,wx,wy,wz,3.0,1.0,3.6,0x5c3818,0x4a2c10,0x3c2208);
   [0.72,1.62,2.52,3.42].forEach(sh=>{
-    qfill(g,[proj(wx,wy,sh),proj(wx+2.3,wy,sh),proj(wx+2.3,wy+0.7,sh),proj(wx,wy+0.7,sh)],0x3c2208);
+    qfill(g,[proj(wx,wy,sh),proj(wx+3.0,wy,sh),proj(wx+3.0,wy+1.0,sh),proj(wx,wy+1.0,sh)],0x3c2208);
   });
   const bkPalette=[0xe74c3c,0x3498db,0x2ecc71,0xf39c12,0x9b59b6,0xe67e22,0x1abc9c,0xe91e63];
   [0.72,1.62,2.52].forEach((sh,ri)=>{
-    let bx2=wx+0.04;
-    for(let bi=0;bi<6;bi++){
+    let bx2=wx+0.06;
+    for(let bi=0;bi<8;bi++){
       const bw=0.26+Math.sin(ri*5+bi)*0.06, bh=0.52+Math.cos(ri*2+bi*3)*0.1;
       const bc=bkPalette[(ri*4+bi)%bkPalette.length]!;
       qfill(g,[proj(bx2,wy,sh+0.05),proj(bx2+bw,wy,sh+0.05),proj(bx2+bw,wy,sh+0.05+bh),proj(bx2,wy,sh+0.05+bh)],bc);
-      qfill(g,[proj(bx2+bw,wy,sh+0.05),proj(bx2+bw,wy+0.7,sh+0.05),proj(bx2+bw,wy+0.7,sh+0.05+bh),proj(bx2+bw,wy,sh+0.05+bh)],0x000000,0.25);
-      bx2+=bw+0.04; if(bx2>wx+2.2) break;
+      qfill(g,[proj(bx2+bw,wy,sh+0.05),proj(bx2+bw,wy+1.0,sh+0.05),proj(bx2+bw,wy+1.0,sh+0.05+bh),proj(bx2+bw,wy,sh+0.05+bh)],0x000000,0.25);
+      bx2+=bw+0.05; if(bx2>wx+2.88) break;
     }
   });
-  const [bpsx,bpsy]=proj(wx+0.9,wy+0.05,3.6);
+  const [bpsx,bpsy]=proj(wx+1.3,wy+0.08,3.6);
   g.rect(bpsx-8,bpsy-8,16,10).fill(0x8b4513);
   g.circle(bpsx,bpsy-12,9).fill({color:0x22a43a,alpha:0.9});
   g.circle(bpsx-8,bpsy-10,7).fill({color:0x1a8a2e,alpha:0.85});
@@ -308,11 +380,11 @@ export function drawBookcase(g: PIXI.Graphics, wx: number, wy: number, wz: numbe
 }
 
 export function drawHangingScroll(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
-  qfill(g,[proj(wx,wy,wz+1.35),proj(wx+1.9,wy,wz+1.35),proj(wx+1.9,wy,wz+1.5),proj(wx,wy,wz+1.5)],0x7a4518);
-  qfill(g,[proj(wx+0.02,wy,wz+0.0),proj(wx+1.88,wy,wz+0.0),proj(wx+1.88,wy,wz+1.35),proj(wx+0.02,wy,wz+1.35)],0xfff8e8);
-  qstroke(g,[proj(wx+0.02,wy,wz+0.0),proj(wx+1.88,wy,wz+0.0),proj(wx+1.88,wy,wz+1.35),proj(wx+0.02,wy,wz+1.35)],0xc8a040,1.2,0.5);
+  qfill(g,[proj(wx,wy,wz+1.35),proj(wx+2.0,wy,wz+1.35),proj(wx+2.0,wy,wz+1.5),proj(wx,wy,wz+1.5)],0x7a4518);
+  qfill(g,[proj(wx+0.02,wy,wz+0.0),proj(wx+1.98,wy,wz+0.0),proj(wx+1.98,wy,wz+1.35),proj(wx+0.02,wy,wz+1.35)],0xfff8e8);
+  qstroke(g,[proj(wx+0.02,wy,wz+0.0),proj(wx+1.98,wy,wz+0.0),proj(wx+1.98,wy,wz+1.35),proj(wx+0.02,wy,wz+1.35)],0xc8a040,1.2,0.5);
   qfill(g,[proj(wx+0.1,wy,wz+0.08),proj(wx+1.8,wy,wz+0.08),proj(wx+1.8,wy,wz+1.28),proj(wx+0.1,wy,wz+1.28)],0xfce8c0,0.6);
-  const [artX,artY]=proj(wx+0.95,wy-0.01,wz+0.72);
+  const [artX,artY]=proj(wx+1.0,wy-0.01,wz+0.72);
   g.ellipse(artX,artY,14,10).fill({color:0xe8942a,alpha:0.8});
   g.circle(artX+2,artY-14,9).fill({color:0xe8942a,alpha:0.8});
   g.poly([artX-4,artY-20,artX,artY-28,artX+4,artY-20]).fill({color:0xe8942a,alpha:0.75});
@@ -321,7 +393,7 @@ export function drawHangingScroll(g: PIXI.Graphics, wx: number, wy: number, wz: 
   [[artX-22,artY-5],[artX+22,artY-8],[artX-18,artY+12],[artX+18,artY+10]].forEach(([lx,ly],li)=>{
     g.ellipse(lx!,ly!,5,3).fill({color:[0xe07830,0xd44020,0xe8a830][li%3]!,alpha:0.65});
   });
-  qfill(g,[proj(wx,wy,wz-0.06),proj(wx+1.9,wy,wz-0.06),proj(wx+1.9,wy,wz+0.08),proj(wx,wy,wz+0.08)],0x7a4518);
+  qfill(g,[proj(wx,wy,wz-0.06),proj(wx+2.0,wy,wz-0.06),proj(wx+2.0,wy,wz+0.08),proj(wx,wy,wz+0.08)],0x7a4518);
   const [ss1x,ss1y]=proj(wx+0.2,wy,wz+1.5), [ss2x,ss2y]=proj(wx+0.2,wy,wz+1.75);
   ln(g,ss1x,ss1y,ss2x,ss2y,0x7a4518,1.5);
   const [ss3x,ss3y]=proj(wx+1.7,wy,wz+1.5), [ss4x,ss4y]=proj(wx+1.7,wy,wz+1.75);
@@ -329,9 +401,9 @@ export function drawHangingScroll(g: PIXI.Graphics, wx: number, wy: number, wz: 
 }
 
 export function drawWallShelf(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
-  qfill(g,[proj(wx,wy,wz),proj(wx+2.5,wy,wz),proj(wx+2.5,wy,wz+0.18),proj(wx,wy,wz+0.18)],0x6b4020);
+  qfill(g,[proj(wx,wy,wz),proj(wx+3.0,wy,wz),proj(wx+3.0,wy,wz+0.18),proj(wx,wy,wz+0.18)],0x6b4020);
   qfill(g,[proj(wx,wy,wz-0.4),proj(wx,wy,wz),proj(wx+0.16,wy,wz),proj(wx+0.16,wy,wz-0.4)],0x5a3418);
-  qfill(g,[proj(wx+2.34,wy,wz-0.4),proj(wx+2.34,wy,wz),proj(wx+2.5,wy,wz),proj(wx+2.5,wy,wz-0.4)],0x5a3418);
+  qfill(g,[proj(wx+2.84,wy,wz-0.4),proj(wx+2.84,wy,wz),proj(wx+3.0,wy,wz),proj(wx+3.0,wy,wz-0.4)],0x5a3418);
   const shelfBks=[0xe74c3c,0x3498db,0x2ecc71,0xf39c12,0x9b59b6];
   let sbx=wx+0.05;
   shelfBks.forEach((bc,bi)=>{
@@ -339,7 +411,7 @@ export function drawWallShelf(g: PIXI.Graphics, wx: number, wy: number, wz: numb
     qfill(g,[proj(sbx,wy,wz+0.18),proj(sbx+bw,wy,wz+0.18),proj(sbx+bw,wy,wz+0.18+bh),proj(sbx,wy,wz+0.18+bh)],bc);
     sbx+=bw+0.07;
   });
-  const [lsx,lsy]=proj(wx+2.15,wy-0.01,wz+0.18);
+  const [lsx,lsy]=proj(wx+2.6,wy-0.01,wz+0.18);
   g.rect(lsx-10,lsy-26,20,26).fill(0x8b6914);
   g.rect(lsx-7,lsy-23,14,20).fill({color:0xfde68a,alpha:0.9});
   g.circle(lsx,lsy-13,22).fill({color:0xffd070,alpha:0.14});
@@ -347,25 +419,25 @@ export function drawWallShelf(g: PIXI.Graphics, wx: number, wy: number, wz: numb
 }
 
 export function drawPoolTable(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
-  qfill(g,[proj(wx,wy,0.002),proj(wx+3.6,wy,0.002),proj(wx+3.6,wy+2.3,0.002),proj(wx,wy+2.3,0.002)],0x000000,0.12);
-  isoBox(g,wx+0.05,wy+0.05,wz,3.5,2.2,0.72,0x5a3012,0x4a2608,0x3c1e06);
-  isoBox(g,wx,wy,wz+0.72,3.6,2.3,0.1,0x1a6b2a,0x145520,0x0f4018);
-  qfill(g,[proj(wx,wy,wz+0.82),proj(wx+3.6,wy,wz+0.82),proj(wx+3.6,wy,wz+0.85),proj(wx,wy,wz+0.85)],0x0d4015);
-  [[wx,wy],[wx+3.6,wy],[wx,wy+2.3],[wx+3.6,wy+2.3],[wx+1.8,wy],[wx+1.8,wy+2.3]].forEach(([px,py])=>{
+  qfill(g,[proj(wx,wy,0.002),proj(wx+4.0,wy,0.002),proj(wx+4.0,wy+3.0,0.002),proj(wx,wy+3.0,0.002)],0x000000,0.12);
+  isoBox(g,wx+0.05,wy+0.05,wz,3.9,2.9,0.72,0x5a3012,0x4a2608,0x3c1e06);
+  isoBox(g,wx,wy,wz+0.72,4.0,3.0,0.1,0x1a6b2a,0x145520,0x0f4018);
+  qfill(g,[proj(wx,wy,wz+0.82),proj(wx+4.0,wy,wz+0.82),proj(wx+4.0,wy,wz+0.85),proj(wx,wy,wz+0.85)],0x0d4015);
+  [[wx,wy],[wx+4.0,wy],[wx,wy+3.0],[wx+4.0,wy+3.0],[wx+2.0,wy],[wx+2.0,wy+3.0]].forEach(([px,py])=>{
     const [hx,hy]=proj(px!,py!,wz+0.83);
     g.circle(hx,hy,4).fill(0x0a2010);
   });
   const ballColors=[0xffffff,0xf5c518,0x2255cc,0xdd2222,0x7722aa,0xff7700,0x116611,0xaa1111];
-  const rb={wx:wx+2.1,wy:wy+0.8};
+  const rb={wx:wx+2.32,wy:wy+1.05};
   const rackPos:[[number,number]][]=[[[rb.wx,rb.wy]],[[rb.wx-0.22,rb.wy+0.22]],[[rb.wx+0.22,rb.wy+0.22]],[[rb.wx-0.44,rb.wy+0.44]],[[rb.wx,rb.wy+0.44]],[[rb.wx+0.44,rb.wy+0.44]]];
   rackPos.forEach(([[bwx,bwy]],i)=>{
     const [bpx,bpy]=proj(bwx,bwy,wz+0.84);
     g.circle(bpx,bpy,4.5).fill(ballColors[i%ballColors.length]!);
     g.circle(bpx-1.5,bpy-1.5,1.5).fill({color:0xffffff,alpha:0.4});
   });
-  const [cbx,cby]=proj(wx+1.0,wy+1.5,wz+0.84);
+  const [cbx,cby]=proj(wx+1.0,wy+1.85,wz+0.84);
   g.circle(cbx,cby,4.5).fill(0xffffff);
-  const [c1x,c1y]=proj(wx+0.3,wy+2.1,wz+0.84), [c2x,c2y]=proj(wx+3.0,wy+0.55,wz+0.84);
+  const [c1x,c1y]=proj(wx+0.35,wy+2.55,wz+0.84), [c2x,c2y]=proj(wx+3.4,wy+0.72,wz+0.84);
   ln(g,c1x,c1y,c2x,c2y,0xd4a054,3);
 }
 
@@ -385,12 +457,12 @@ export function drawLowTable(g: PIXI.Graphics, wx: number, wy: number, wz: numbe
 }
 
 export function drawZabuton(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
-  isoBox(g,wx,wy,wz,2.8,0.85,0.18,0x4a5830,0x3a4828,0x2e3c20);
+  isoBox(g,wx,wy,wz,3.0,1.0,0.18,0x4a5830,0x3a4828,0x2e3c20);
 }
 
 export function drawPlant(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
-  isoBox(g,wx,wy,wz,0.9,0.8,0.62,0xc04a2a,0xa03818,0x882e10);
-  const [psx,psy]=proj(wx+0.45,wy+0.4,wz+0.62);
+  isoBox(g,wx,wy,wz,1.0,1.0,0.62,0xc04a2a,0xa03818,0x882e10);
+  const [psx,psy]=proj(wx+0.5,wy+0.5,wz+0.62);
   for(let li=0;li<7;li++){
     const ang=(li/7)*Math.PI*2-0.3;
     const ex=psx+Math.cos(ang)*24, ey=psy+Math.sin(ang)*11-28;
@@ -406,6 +478,9 @@ export function drawFurnitureByType(g: PIXI.Graphics, type: string, wx: number, 
   switch (type) {
     case "bed":            drawBed(g, wx, wy, wz); break;
     case "nightstand":     drawNightstand(g, wx, wy, wz); break;
+    case "computer_desk":  drawComputerDesk(g, wx, wy, wz); break;
+    case "printer":        drawPrinter(g, wx, wy, wz); break;
+    case "document_board": drawDocumentBoard(g, wx, wy, wz); break;
     case "tv_stand":       drawTVStand(g, wx, wy, wz); break;
     case "tv":             drawTV(g, wx, wy, wz); break;
     case "bookcase":       drawBookcase(g, wx, wy, wz); break;
@@ -508,16 +583,17 @@ export function drawTileGrid(g: PIXI.Graphics, cols = ROOM_TILES_X, rows = ROOM_
 // ─── Legacy all-in-one (backward compat) ─────────────────────────────────────
 
 const DEFAULT_OBJECTS: RoomObject[] = [
-  { id:1,  furnitureType:"hanging_scroll", label:"Autumn Fox Scroll", description:"",  wx:7,  wy:7,  wz:2.5, happiness:6,  draggable:false },
-  { id:2,  furnitureType:"wall_shelf",     label:"Wall Shelf",        description:"",  wx:6,  wy:7,  wz:2.1, happiness:5,  draggable:false },
-  { id:3,  furnitureType:"bookcase",       label:"Bookcase",          description:"",  wx:4,  wy:6,  wz:0,   happiness:10, draggable:true  },
-  { id:4,  furnitureType:"tv_stand",       label:"TV Stand",          description:"",  wx:0,  wy:6,  wz:0,   happiness:8,  draggable:true  },
-  { id:5,  furnitureType:"tv",             label:"Flat Screen TV",    description:"",  wx:0,  wy:6,  wz:0.97,happiness:12, draggable:false },
-  { id:6,  furnitureType:"bed",            label:"Wooden Bed",        description:"",  wx:5,  wy:0,  wz:0,   happiness:15, draggable:true  },
-  { id:7,  furnitureType:"nightstand",     label:"Nightstand",        description:"",  wx:8,  wy:0,  wz:0,   happiness:5,  draggable:true  },
-  { id:9,  furnitureType:"low_table",      label:"Tea Table",         description:"",  wx:3,  wy:4,  wz:0,   happiness:8,  draggable:true  },
-  { id:10, furnitureType:"zabuton",        label:"Floor Cushion",     description:"",  wx:3,  wy:6,  wz:0,   happiness:4,  draggable:true  },
-  { id:13, furnitureType:"plant",          label:"Tropical Plant",    description:"",  wx:8,  wy:6,  wz:0,   happiness:7,  draggable:true  },
+  { id:1,  furnitureType:"document_board", label:"Document Board",       description:"",  wx:4,  wy:8,  wz:2.25,happiness:7,  draggable:false },
+  { id:2,  furnitureType:"printer",        label:"Printer Station",      description:"",  wx:9,  wy:5,  wz:0,   happiness:8,  draggable:true  },
+  { id:3,  furnitureType:"bookcase",       label:"Bookcase",          description:"",  wx:1,  wy:7,  wz:0,   happiness:10, draggable:true  },
+  { id:4,  furnitureType:"computer_desk",  label:"Computer Workstation", description:"",  wx:6,  wy:6,  wz:0,   happiness:14, draggable:true  },
+  { id:6,  furnitureType:"bed",            label:"Wooden Bed",        description:"",  wx:6,  wy:0,  wz:0,   happiness:15, draggable:true  },
+  { id:7,  furnitureType:"nightstand",     label:"Bedside Cabinet",   description:"",  wx:5,  wy:0,  wz:0,   happiness:5,  draggable:true  },
+  { id:9,  furnitureType:"low_table",      label:"Meeting Table",     description:"",  wx:2,  wy:3,  wz:0,   happiness:8,  draggable:true  },
+  { id:10, furnitureType:"zabuton",        label:"Meeting Cushion",   description:"",  wx:2,  wy:2,  wz:0,   happiness:4,  draggable:true  },
+  { id:11, furnitureType:"zabuton",        label:"Meeting Cushion",   description:"",  wx:2,  wy:5,  wz:0,   happiness:4,  draggable:true  },
+  { id:12, furnitureType:"zabuton",        label:"Reading Cushion",   description:"",  wx:0,  wy:6,  wz:0,   happiness:4,  draggable:true  },
+  { id:13, furnitureType:"plant",          label:"Tropical Plant",    description:"",  wx:9,  wy:6,  wz:0,   happiness:7,  draggable:true  },
 ];
 
 export function drawPixiRoom(g: PIXI.Graphics) {

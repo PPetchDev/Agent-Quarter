@@ -1,63 +1,68 @@
 # Repo Map
 
-_Updated: C-WORKFLOW-009 | Source: workflow context_
+_Updated: C-FURNITURE-GRID-001_
 
 ## Monorepo Layout
 
-```
+```txt
 AnimeAgentSquad/
 ├── apps/
-│   ├── api/                      # NestJS backend (port 3001)
-│   │   ├── src/
-│   │   │   ├── app.module.ts
-│   │   │   ├── claude/
-│   │   │   │   └── claude.gateway.ts   # Socket.io + Claude streaming
-│   │   │   └── projects/
-│   │   │       ├── projects.controller.ts
-│   │   │       ├── tasks.controller.ts
-│   │   │       ├── runs.controller.ts
-│   │   │       └── projects.module.ts
-│   │   ├── prisma/dev.db               # SQLite dev DB
-│   │   └── tsconfig.json
-│   └── web/                      # Next.js 15 frontend
-│       ├── src/
-│       │   ├── components/
-│       │   │   ├── lounge/             # PixiJS isometric room
-│       │   │   └── stages/
-│       │   │       └── ChatPanel.tsx
-│       │   └── hooks/
-│       │       └── useStageSocket.ts
+│   ├── api/                      # NestJS backend
+│   └── web/                      # Next.js frontend
+│       ├── public/maps/
+│       │   └── maple_hideout.json # Active initial role-aligned lounge furniture layout
+│       ├── src/app/
+│       │   ├── lounge/page.tsx    # Canonical simulation route
+│       │   ├── office/page.tsx    # Redirects to /lounge
+│       │   ├── projects/page.tsx
+│       │   └── stages/page.tsx
+│       ├── src/components/
+│       │   ├── lounge/            # Canonical lounge rendering layer
+│       │   ├── stages/
+│       │   └── TopBar.tsx
+│       ├── src/game/
+│       │   ├── agents/
+│       │   ├── animation/
+│       │   ├── isometric/
+│       │   ├── movement/          # Direction, linear segment movement, grid pathfinding
+│       │   └── scene/             # Lounge stations and furniture-blocked path grid
+│       ├── src/hooks/useAgentWalk.ts
 │       └── tsconfig.json
 └── packages/
-    └── core/                     # Shared domain logic
-        ├── src/
-        │   ├── character.ts
-        │   ├── project.ts              # Run lifecycle helpers
-        │   └── index.ts
-        └── tsconfig.json
+    └── core/
 ```
+
+## Canonical Simulation Source Of Truth
+
+- Route: `apps/web/src/app/lounge/page.tsx`
+- Legacy route: `apps/web/src/app/office/page.tsx` redirects to `/lounge`
+- Room footprint, projection, walls, floor, rug, fallback furniture, and grid-filled primitive furniture drawings: `apps/web/src/components/lounge/pixiRoom.ts`
+- Active initial role-aligned furniture map: `apps/web/public/maps/maple_hideout.json`
+- Furniture dimensions and collision footprints, including `computer_desk`, `printer`, and `document_board`: `apps/web/src/components/lounge/roomDefs.ts`
+- Furniture shop catalog: `apps/web/src/components/lounge/furnitureCatalog.ts`
+- Renderer integration, HUD, and edit-mode route overlay: `apps/web/src/components/lounge/LoungeCanvas.tsx`
+- Station registry: `apps/web/src/game/scene/loungeStations.ts`
+- Static furniture collision grid: `apps/web/src/game/scene/loungePathGrid.ts`
+- Task resolver: `apps/web/src/game/agents/taskResolver.ts`
+- Pure grid planner: `apps/web/src/game/movement/gridPath.ts`
+- Segment movement helper: `apps/web/src/game/movement/moveToTarget.ts`
+- Movement hook, route waypoint runner, route debug data, and active route refresh: `apps/web/src/hooks/useAgentWalk.ts`
+
+## Removed Duplicate Prototype Paths
+
+- Office component files are absent from `apps/web/src/components/office/`.
+- `apps/web/src/game/scene/officeStations.ts` is absent.
 
 ## Workflow Files
 
-```
+```txt
 ai/
 ├── active.contract.md
 ├── active.task.md
+├── backlog.md
 ├── context-packet.md
 ├── handoff.md
-├── kernel.md
-├── memory.md
-├── maps/                    ← this directory
-├── commands/
-├── patches/latest.md
-└── sessions/archive/        (cold storage — do not read)
-```
-
-## Root Config
-
-```
-AGENTS.md
-CLAUDE.md
-pnpm-workspace.yaml
-tsconfig.json              (root — references only)
+├── changelog.md
+├── maps/
+└── patches/latest.md
 ```
