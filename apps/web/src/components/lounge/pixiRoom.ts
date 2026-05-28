@@ -525,6 +525,25 @@ export function drawHighlight(g: PIXI.Graphics, obj: RoomObject) {
   });
 }
 
+/** Gold floor ring used to pulse the agent's active work station */
+export function drawActiveStationHighlight(
+  g: PIXI.Graphics,
+  obj: RoomObject,
+  alpha: number,
+) {
+  g.clear();
+  const fp = FURNITURE_TILES[obj.furnitureType] ?? { w: 1, d: 1 };
+  const { wx, wy, wz } = obj;
+  const floor: [number, number][] = [
+    proj(wx,        wy,        wz),
+    proj(wx + fp.w, wy,        wz),
+    proj(wx + fp.w, wy + fp.d, wz),
+    proj(wx,        wy + fp.d, wz),
+  ];
+  qfill(g, floor, 0xfacc15, 0.18 * alpha);
+  qstroke(g, floor, 0xfacc15, 3, alpha);
+}
+
 /** Red collision highlight — drawn during drag when placement is invalid */
 export function drawHighlightCollision(g: PIXI.Graphics, obj: RoomObject) {
   g.clear();

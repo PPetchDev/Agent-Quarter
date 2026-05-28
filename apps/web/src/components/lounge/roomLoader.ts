@@ -6,6 +6,7 @@ import {
   drawFurnitureByType,
   drawHighlight,
   drawHighlightCollision,
+  drawActiveStationHighlight,
   drawTileGrid,
   furnitureHitPolygon,
   CANVAS_W,
@@ -28,6 +29,7 @@ export interface RoomScene {
   backgroundGraphics: PIXI.Graphics;
   tileGridGraphics: PIXI.Graphics;
   furnitureLayer: PIXI.Container;
+  activeStationGraphics: PIXI.Graphics;
   highlightGraphics: PIXI.Graphics;
   items: Map<number, FurnitureItem>;
   /** Redraw a single furniture item at its current position */
@@ -44,6 +46,8 @@ export interface RoomScene {
   setEditMode: (active: boolean, cols?: number, rows?: number) => void;
   /** Draw collision (red) or normal highlight on the dragged item */
   setDragHighlight: (id: number, colliding: boolean) => void;
+  /** Draw or clear the pulsing active-station floor ring */
+  setActiveStation: (id: number | null, alpha: number) => void;
 }
 
 // ─── Load room JSON from URL ──────────────────────────────────────────────────
@@ -103,10 +107,11 @@ export function buildRoomScene(
   objects: RoomObject[],
   handlers: FurnitureHandlers,
 ): RoomScene {
-  // Four layers in draw order
+  // Five layers in draw order
   const backgroundGraphics = new PIXI.Graphics();
   const tileGridGraphics = new PIXI.Graphics();
   const furnitureLayer = new PIXI.Container();
+  const activeStationGraphics = new PIXI.Graphics();
   const highlightGraphics = new PIXI.Graphics();
 
   tileGridGraphics.visible = false;
@@ -114,6 +119,7 @@ export function buildRoomScene(
   stage.addChild(backgroundGraphics);
   stage.addChild(tileGridGraphics);
   stage.addChild(furnitureLayer);
+  stage.addChild(activeStationGraphics);
   stage.addChild(highlightGraphics);
 
   // Make stage interactive so drag events propagate
@@ -163,6 +169,7 @@ export function buildRoomScene(
   function rebuild(objs: RoomObject[]) {
     populateFurniture(objs);
     highlightGraphics.clear();
+    activeStationGraphics.clear();
   }
 
   function addItem(obj: RoomObject) {
@@ -178,6 +185,7 @@ export function buildRoomScene(
     item.container.destroy({ children: true });
     items.delete(id);
     highlightGraphics.clear();
+    activeStationGraphics.clear();
   }
 
   function setEditMode(active: boolean, cols?: number, rows?: number) {
@@ -199,5 +207,33 @@ export function buildRoomScene(
     }
   }
 
-  return { backgroundGraphics, tileGridGraphics, furnitureLayer, highlightGraphics, items, updateItem, setSelected, rebuild, addItem, removeItem, setEditMode, setDragHighlight };
+  function setActiveStation(id: number | null, alpha: number) {
+    if (id === null) {
+      activeStationGraphics.clear();
+      return;
+    }
+    const item = items.get(id);
+    if (!item) {
+      activeStationGraphics.clear();
+      return;
+    }
+    drawActiveStationHighlight(activeStationGraphics, item.obj, alpha);
+  }
+
+  return {
+    backgroundGraphics,
+    tileGridGraphics,
+    furnitureLayer,
+    activeStationGraphics,
+    highlightGraphics,
+    items,
+    updateItem,
+    setSelected,
+    rebuild,
+    addItem,
+    removeItem,
+    setEditMode,
+    setDragHighlight,
+    setActiveStation,
+  };
 }

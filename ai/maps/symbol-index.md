@@ -17,6 +17,9 @@ _Updated: C-FURNITURE-GRID-001_
 | `drawComputerDesk` | function | Draws the coding workstation with monitor, keyboard, desk notes, and mug |
 | `drawPrinter` | function | Draws the compact print/utility station |
 | `drawDocumentBoard` | function | Draws the wall planning/document board |
+| `drawActiveStationHighlight` | function | Draws a gold floor ring at a parameterised alpha used to pulse the active work station |
+| `RoomScene.setActiveStation` | method | Draws or clears the pulsing active-station highlight on its own graphics layer |
+| `activeStationGraphics` | PIXI layer | Scene layer hosting the active-station pulse, drawn below `highlightGraphics` |
 | `FURNITURE_CATALOG` | constant | Furniture shop metadata, including role-aligned station types |
 | `loungeStations` | constant | Canonical station registry for agent tasks |
 | `resolveAgentTask` | function | Maps task types to lounge station ids and target iso points |
