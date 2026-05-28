@@ -23,6 +23,7 @@ import { ShopModal } from "./ShopModal";
 import { getDefaultSpawnPosition, type CatalogItem } from "./furnitureCatalog";
 import { useAgentWalk } from "@/hooks/useAgentWalk";
 import type { AgentTaskType } from "@/game/agents/agentTypes";
+import { loungeStations, type LoungeStationId } from "@/game/scene/loungeStations";
 import Image from "next/image";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -524,6 +525,43 @@ export function LoungeCanvas() {
   useEffect(() => {
     sceneRef.current?.setEditMode(mode === "move", roomW, roomH);
   }, [mode, roomW, roomH]);
+
+  // ── Active station pulse (driven by agent work lifecycle) ───────────────────
+  const working = agent.workDurationMs !== undefined;
+  const stationId = agent.targetStationId as LoungeStationId | undefined;
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    if (!working || !stationId) {
+      scene.setActiveStation(null, 0);
+      return;
+    }
+    const station = loungeStations[stationId];
+    if (!station) {
+      scene.setActiveStation(null, 0);
+      return;
+    }
+    const target = objects.find((o) => o.furnitureType === station.furnitureType);
+    if (!target) {
+      scene.setActiveStation(null, 0);
+      return;
+    }
+
+    let rafId = 0;
+    const start = performance.now();
+    const loop = () => {
+      const elapsed = performance.now() - start;
+      const alpha = 0.55 + 0.35 * Math.sin(elapsed / 220);
+      sceneRef.current?.setActiveStation(target.id, alpha);
+      rafId = requestAnimationFrame(loop);
+    };
+    rafId = requestAnimationFrame(loop);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      sceneRef.current?.setActiveStation(null, 0);
+    };
+  }, [working, stationId, objects]);
 
   // ── Scale / camera ───────────────────────────────────────────────────────────
   useEffect(() => {
