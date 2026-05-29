@@ -26,7 +26,7 @@ import { ShopModal } from "./ShopModal";
 import { getDefaultSpawnPosition, type CatalogItem } from "./furnitureCatalog";
 import { useAgentWalk } from "@/hooks/useAgentWalk";
 import { useCountdown } from "@/hooks/useCountdown";
-import type { AgentTaskType } from "@/game/agents/agentTypes";
+import type { AgentState, AgentTaskType } from "@/game/agents/agentTypes";
 import { loungeStations, type LoungeStationId } from "@/game/scene/loungeStations";
 import Image from "next/image";
 
@@ -351,6 +351,40 @@ export function LoungeCanvas() {
     update('agent-1', agent.position, agent.direction);
     update('agent-2', aki.agent.position, aki.agent.direction);
   }, [agent.position, agent.direction, aki.agent.position, aki.agent.direction]);
+
+  // ── Spine animation state mapping ────────────────────────────────────────────
+  const SPINE_ANIM_CANDIDATES: Record<AgentState, string[]> = {
+    idle:        ['normal','stand','stand2','sit','sleep'],
+    walking:     ['walk','move','move_left','normal','stand'],
+    thinking:    ['normal','stand','stand2'],
+    coding:      ['normal','stand','stand2'],
+    researching: ['normal','stand','stand2'],
+    meeting:     ['normal','stand','stand2'],
+    documenting: ['normal','stand','stand2'],
+    reviewing:   ['normal','stand','stand2'],
+    printing:    ['normal','stand','stand2'],
+    resting:     ['sit','sleep','normal','stand'],
+    done:        ['victory','normal','stand'],
+    error:       ['break','normal','stand'],
+  };
+
+  useEffect(() => {
+    const applyAnim = (id: string, state: AgentState) => {
+      const spine = charSpritesRef.current.get(id) as any;
+      if (!spine?.state) return;
+      const candidates = SPINE_ANIM_CANDIDATES[state];
+      if (!candidates) return;
+      const available = (spine.spineData.animations as any[]).map((a:any) => a.name) as string[];
+      const target = candidates.find((c) => available.includes(c)) ?? available[0];
+      if (!target) return;
+      const current = spine.state.getCurrent(0);
+      if (!current || current.animation.name !== target) {
+        spine.state.setAnimation(0, target, true);
+      }
+    };
+    applyAnim('agent-1', agent.state);
+    applyAnim('agent-2', aki.agent.state);
+  }, [agent.state, aki.agent.state]);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const timer = useCountdown(8 * 3600 + 23 * 60 + 17);
