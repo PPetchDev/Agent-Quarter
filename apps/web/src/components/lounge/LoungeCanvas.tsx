@@ -310,6 +310,26 @@ export function LoungeCanvas() {
     roomWidth: roomW,
     roomHeight: roomH,
   });
+  // Second agent — autopilot demo. Cycles through tasks deterministically when
+  // idle so the multi-agent foundation is visible without extra HUD chrome.
+  const aki = useAgentWalk({
+    roomObjects: objects,
+    roomWidth: roomW,
+    roomHeight: roomH,
+    agentId: 'agent-2',
+    agentName: 'Aki',
+    characterId: 'aki',
+    startIso: { wx: 7.0, wy: 0.65, wz: 0.2 },
+  });
+  const akiTaskIndexRef = useRef(0);
+  useEffect(() => {
+    if (aki.agent.state !== 'idle') return;
+    const cycle: AgentTaskType[] = ['code', 'research', 'meeting', 'document', 'print', 'rest'];
+    const next = cycle[akiTaskIndexRef.current % cycle.length]!;
+    akiTaskIndexRef.current += 1;
+    const handle = window.setTimeout(() => aki.assignTask(next), 1500);
+    return () => window.clearTimeout(handle);
+  }, [aki, aki.agent.state]);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const timer = useTimer();
@@ -1067,8 +1087,8 @@ export function LoungeCanvas() {
               </svg>
             )}
 
-            {/* ── Lounge agent walking overlay ─────────────────────── */}
-            {(() => {
+            {/* ── Lounge agents walking overlay ─────────────────────── */}
+            {[agent, aki.agent].map((a) => {
               const ANIM_FILE: Record<string, string> = {
                 idle: "01-idle",
                 walk_up: "04-thinking",
@@ -1085,14 +1105,13 @@ export function LoungeCanvas() {
                 happy: "05-happy",
                 confused: "09-surprised",
               };
-              const moodFile = ANIM_FILE[agent.animation] ?? "01-idle";
-              const imgSrc = `/characters/${agent.characterId}/${moodFile}.jpg`;
-              const { x, y } = agent.position;
+              const moodFile = ANIM_FILE[a.animation] ?? "01-idle";
+              const imgSrc = `/characters/${a.characterId}/${moodFile}.jpg`;
+              const { x, y } = a.position;
               const SZ = 64;
               return (
-                <>
-                  {/* Speech bubble */}
-                  {agent.bubbleText && (
+                <div key={a.id}>
+                  {a.bubbleText && (
                     <div
                       className="pointer-events-none absolute z-20 max-w-[160px] rounded-2xl bg-white/95 px-3 py-1.5 text-[11px] font-semibold text-gray-800 shadow-lg"
                       style={{
@@ -1102,12 +1121,10 @@ export function LoungeCanvas() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {agent.bubbleText}
+                      {a.bubbleText}
                       <span className="pointer-events-none absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-white/95" />
                     </div>
                   )}
-
-                  {/* Agent sprite */}
                   <div
                     className="absolute z-10"
                     style={{
@@ -1120,16 +1137,16 @@ export function LoungeCanvas() {
                   >
                     <Image
                       src={imgSrc}
-                      alt={agent.name}
+                      alt={a.name}
                       width={SZ}
                       height={SZ}
                       className="rounded-full border-2 border-white shadow-md object-cover"
                       unoptimized
                     />
                   </div>
-                </>
+                </div>
               );
-            })()}
+            })}
           </div>
 
           <FurnitureInspector

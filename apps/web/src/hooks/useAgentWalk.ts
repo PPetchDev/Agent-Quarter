@@ -34,6 +34,12 @@ type UseAgentWalkOptions = {
   roomHeight?: number;
   /** Override the agent's task queue cap. Defaults to `MAX_TASK_QUEUE_LENGTH`. */
   maxQueueLength?: number;
+  /** Agent identity overrides. Defaults represent the original solo agent "Mai". */
+  agentId?: string;
+  agentName?: string;
+  characterId?: string;
+  /** Initial iso world position. Defaults to `DEFAULT_START_ISO`. */
+  startIso?: IsoWorldPoint;
 };
 
 export type AgentRouteDebugPoint = {
@@ -49,28 +55,13 @@ export type AgentRouteDebug = {
   activeIndex: number;
 };
 
-function projectDefaultStart(): { x: number; y: number } {
+function projectStartIso(iso: IsoWorldPoint): { x: number; y: number } {
   const { S, OX, OY } = computeRoomProjection(ROOM_TILES_X, ROOM_TILES_Y);
   return {
-    x: OX + DEFAULT_START_ISO.wx * S + DEFAULT_START_ISO.wy * S * 0.65,
-    y: OY - DEFAULT_START_ISO.wy * S * 0.65 - DEFAULT_START_ISO.wz * S,
+    x: OX + iso.wx * S + iso.wy * S * 0.65,
+    y: OY - iso.wy * S * 0.65 - iso.wz * S,
   };
 }
-
-// Default position: open floor between the meeting table and rest zone.
-const DEFAULT_AGENT_POSITION = projectDefaultStart();
-const DEFAULT_AGENT: Agent = {
-  id:          'agent-1',
-  name:        'Mai',
-  characterId: 'mai',
-  state:       'idle',
-  position:    DEFAULT_AGENT_POSITION,
-  direction:   'down',
-  animation:   'idle',
-  bubbleText:  undefined,
-  speed:       110, // pixels per second
-  taskQueue:   [],
-};
 
 function projectIsoPoint(
   point: IsoWorldPoint,
@@ -114,26 +105,42 @@ function interpolateIso(a: IsoWorldPoint, b: IsoWorldPoint, t: number): IsoWorld
   };
 }
 
-export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent-1') {
+export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId = 'agent-1') {
   const {
     roomObjects = EMPTY_ROOM_OBJECTS,
     roomWidth = ROOM_TILES_X,
     roomHeight = ROOM_TILES_Y,
     maxQueueLength = MAX_TASK_QUEUE_LENGTH,
+    agentId = 'agent-1',
+    agentName = 'Mai',
+    characterId = 'mai',
+    startIso = DEFAULT_START_ISO,
   } = options;
-  const [agent, setAgent] = useState<Agent>(DEFAULT_AGENT);
+  void _legacyAgentId;
+  const [agent, setAgent] = useState<Agent>(() => ({
+    id:          agentId,
+    name:        agentName,
+    characterId,
+    state:       'idle',
+    position:    projectStartIso(startIso),
+    direction:   'down',
+    animation:   'idle',
+    bubbleText:  undefined,
+    speed:       110,
+    taskQueue:   [],
+  }));
   const [routeDebug, setRouteDebug] = useState<AgentRouteDebug>({
     points: [],
     activeIndex: 0,
   });
 
   // Use refs so RAF callback always sees latest values without stale closures
-  const agentRef    = useRef<Agent>(DEFAULT_AGENT);
+  const agentRef    = useRef<Agent>(agent);
   const rafRef      = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
-  const currentIsoRef = useRef<IsoWorldPoint>(DEFAULT_START_ISO);
-  const segmentStartIsoRef = useRef<IsoWorldPoint>(DEFAULT_START_ISO);
-  const segmentStartPositionRef = useRef<Position>(DEFAULT_AGENT_POSITION);
+  const currentIsoRef = useRef<IsoWorldPoint>(startIso);
+  const segmentStartIsoRef = useRef<IsoWorldPoint>(startIso);
+  const segmentStartPositionRef = useRef<Position>(agent.position);
   const routeRef = useRef<RouteWaypoint[]>([]);
   const routeIndexRef = useRef(0);
   const routeDebugRef = useRef<AgentRouteDebug>({ points: [], activeIndex: 0 });
