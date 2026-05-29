@@ -368,6 +368,9 @@ export function LoungeCanvas() {
     error:       ['break','normal','stand'],
   };
 
+  const ONE_SHOT_STATES = new Set<AgentState>(['done', 'error']);
+  const CALM_ANIMS = ['normal','stand','stand2','sit','sleep'];
+
   useEffect(() => {
     const applyAnim = (id: string, state: AgentState) => {
       const spine = charSpritesRef.current.get(id) as any;
@@ -378,8 +381,19 @@ export function LoungeCanvas() {
       const target = candidates.find((c) => available.includes(c)) ?? available[0];
       if (!target) return;
       const current = spine.state.getCurrent(0);
-      if (!current || current.animation.name !== target) {
-        spine.state.setAnimation(0, target, true);
+      const isPlaying = (name: string) => current?.animation?.name === name;
+
+      if (ONE_SHOT_STATES.has(state)) {
+        // One-shot: play once then queue calm
+        if (isPlaying(target)) return; // don't restart
+        spine.state.setAnimation(0, target, false);
+        const calm = CALM_ANIMS.find((c) => available.includes(c)) ?? available[0];
+        if (calm) spine.state.addAnimation(0, calm, true, 0);
+      } else {
+        // Normal looped
+        if (!isPlaying(target)) {
+          spine.state.setAnimation(0, target, true);
+        }
       }
     };
     applyAnim('agent-1', agent.state);
