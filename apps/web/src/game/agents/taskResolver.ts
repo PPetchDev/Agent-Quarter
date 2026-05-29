@@ -8,109 +8,109 @@ import type { AgentState, AgentTaskType, IsoWorldPoint } from './agentTypes';
 export type ResolvedAgentTask = {
   taskType: AgentTaskType;
   targetStationId: LoungeStationId;
-  /**
-   * Isometric world coordinates of the interaction point.
-   * Use with proj() from pixiRoom to get the current screen position.
-   * Stored here for future pathfinding passes.
-   */
+  /** Isometric world coordinates of the interaction point. */
   targetIsoPoint: IsoWorldPoint;
   arriveState: AgentState;
   walkingBubbleText: string;
   bubbleText: string;
-  /**
-   * Bubble text shown when the work timer auto-completes and the agent
-   * returns to idle. Per task type so the post-work message reads naturally.
-   */
+  /** Bubble text shown when the work timer auto-completes and the agent returns to idle. */
   doneBubbleText: string;
-  /**
-   * Deterministic duration the agent should remain in the arrival state
-   * before auto-returning to idle. 0 means no work loop (idle task).
-   */
+  /** Deterministic duration the agent should remain in the arrival state. 0 = no work loop. */
   workDurationMs: number;
 };
 
-const taskToStationMap: Record<AgentTaskType, LoungeStationId> = {
-  code:     'computerDesk',
-  research: 'bookshelf',
-  meeting:  'meetingTable',
-  document: 'documentDesk',
-  review:   'computerDesk',
-  print:    'printer',
-  rest:     'sofa',
-  idle:     'sofa',
+type TaskConfig = {
+  stationId: LoungeStationId;
+  arriveState: AgentState;
+  walkingBubble: string;
+  bubble: string;
+  doneBubble: string;
+  workDurationMs: number;
 };
 
-const taskArrivalStateMap: Record<AgentTaskType, AgentState> = {
-  code:     'coding',
-  research: 'researching',
-  meeting:  'meeting',
-  document: 'documenting',
-  review:   'reviewing',
-  print:    'printing',
-  rest:     'resting',
-  idle:     'idle',
-};
-
-const taskWalkingBubbleMap: Record<AgentTaskType, string> = {
-  code:     'Going to computer...',
-  research: 'Going to bookshelf...',
-  meeting:  'Going to meeting table...',
-  document: 'Going to document desk...',
-  review:   'Going to review station...',
-  print:    'Going to printer...',
-  rest:     'Going to sofa...',
-  idle:     'Going idle...',
-};
-
-const taskBubbleMap: Record<AgentTaskType, string> = {
-  code:     'Writing code...',
-  research: 'Reading docs...',
-  meeting:  'Planning with team...',
-  document: 'Preparing document...',
-  review:   'Reviewing work...',
-  print:    'Exporting document...',
-  rest:     'Taking a short break...',
-  idle:     'Idle...',
-};
-
-const taskWorkDurationMap: Record<AgentTaskType, number> = {
-  code:     8000,
-  research: 6000,
-  meeting:  7000,
-  document: 6500,
-  review:   7000,
-  print:    3500,
-  rest:     9000,
-  idle:     0,
-};
-
-const taskDoneBubbleMap: Record<AgentTaskType, string> = {
-  code:     'Code session done.',
-  research: 'Finished reading.',
-  meeting:  'Wrapped up the meeting.',
-  document: 'Document ready.',
-  review:   'Review complete.',
-  print:    'Print job sent.',
-  rest:     'Feeling refreshed.',
-  idle:     'Idle.',
+const TASK_CONFIG: Record<AgentTaskType, TaskConfig> = {
+  code: {
+    stationId: 'computerDesk',
+    arriveState: 'coding',
+    walkingBubble: 'Going to computer...',
+    bubble: 'Writing code...',
+    doneBubble: 'Code session done.',
+    workDurationMs: 8000,
+  },
+  research: {
+    stationId: 'bookshelf',
+    arriveState: 'researching',
+    walkingBubble: 'Going to bookshelf...',
+    bubble: 'Reading docs...',
+    doneBubble: 'Finished reading.',
+    workDurationMs: 6000,
+  },
+  meeting: {
+    stationId: 'meetingTable',
+    arriveState: 'meeting',
+    walkingBubble: 'Going to meeting table...',
+    bubble: 'Planning with team...',
+    doneBubble: 'Wrapped up the meeting.',
+    workDurationMs: 7000,
+  },
+  document: {
+    stationId: 'documentDesk',
+    arriveState: 'documenting',
+    walkingBubble: 'Going to document desk...',
+    bubble: 'Preparing document...',
+    doneBubble: 'Document ready.',
+    workDurationMs: 6500,
+  },
+  review: {
+    stationId: 'computerDesk',
+    arriveState: 'reviewing',
+    walkingBubble: 'Going to review station...',
+    bubble: 'Reviewing work...',
+    doneBubble: 'Review complete.',
+    workDurationMs: 7000,
+  },
+  print: {
+    stationId: 'printer',
+    arriveState: 'printing',
+    walkingBubble: 'Going to printer...',
+    bubble: 'Exporting document...',
+    doneBubble: 'Print job sent.',
+    workDurationMs: 3500,
+  },
+  rest: {
+    stationId: 'sofa',
+    arriveState: 'resting',
+    walkingBubble: 'Going to sofa...',
+    bubble: 'Taking a short break...',
+    doneBubble: 'Feeling refreshed.',
+    workDurationMs: 9000,
+  },
+  idle: {
+    stationId: 'sofa',
+    arriveState: 'idle',
+    walkingBubble: 'Going idle...',
+    bubble: 'Idle...',
+    doneBubble: 'Idle.',
+    workDurationMs: 0,
+  },
 };
 
 export function resolveAgentTask(
   taskType: AgentTaskType,
   roomObjects: LoungeStationFurniture[] = [],
 ): ResolvedAgentTask {
-  const targetStationId = taskToStationMap[taskType];
-  const station = resolveLoungeStation(targetStationId, roomObjects);
+  const config = TASK_CONFIG[taskType];
+  const station = resolveLoungeStation(config.stationId, roomObjects);
   const p = station.interactionIsoPoint;
 
   return {
     taskType,
-    targetStationId,
+    targetStationId: config.stationId,
     targetIsoPoint: { wx: p.x, wy: p.y, wz: p.z ?? 0 },
-    arriveState:       taskArrivalStateMap[taskType],
-    walkingBubbleText: taskWalkingBubbleMap[taskType],
-    bubbleText:        taskBubbleMap[taskType],
-    doneBubbleText:    taskDoneBubbleMap[taskType],
-    workDurationMs:    taskWorkDurationMap[taskType],
+    arriveState: config.arriveState,
+    walkingBubbleText: config.walkingBubble,
+    bubbleText: config.bubble,
+    doneBubbleText: config.doneBubble,
+    workDurationMs: config.workDurationMs,
   };
 }

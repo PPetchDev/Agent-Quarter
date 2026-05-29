@@ -7,7 +7,7 @@ import {
   type AmbientDrawContext,
 } from "./stationAmbients";
 
-export const CANVAS_W = 1080;
+export const CANVAS_W = 1240;
 export const CANVAS_H = 620;
 
 let _S = 56;
@@ -17,8 +17,8 @@ let _OY = 560;
 export function computeRoomProjection(cols: number, rows: number): { S: number; OX: number; OY: number } {
   const S = Math.floor(
     Math.min(
-      (CANVAS_W - 60) / (cols + rows * 0.65),
-      (CANVAS_H - 60) / (rows * 0.65 + 4.5),
+      (CANVAS_W - 20) / (cols + rows * 0.65),
+      (CANVAS_H - 20) / (rows * 0.65 + 4.5),
     ),
   );
   const OX = Math.floor((CANVAS_W - S * (cols + rows * 0.65)) / 2);
@@ -33,8 +33,16 @@ export function setRoomProjection(cols: number, rows: number): void {
   _OY = projection.OY;
 }
 
+/** Project isometric coords using explicit scale/origin — pure, no globals. */
+export function projAt(
+  wx: number, wy: number, wz: number,
+  S: number, OX: number, OY: number,
+): [number, number] {
+  return [OX + wx * S + wy * S * 0.65, OY - wy * S * 0.65 - wz * S];
+}
+
 export function proj(wx: number, wy: number, wz: number): [number, number] {
-  return [_OX + wx * _S + wy * _S * 0.65, _OY - wy * _S * 0.65 - wz * _S];
+  return projAt(wx, wy, wz, _S, _OX, _OY);
 }
 
 export function worldDeltaFromScreen(dx: number, dy: number): [number, number] {
@@ -50,15 +58,15 @@ function P(pts: [number, number][]): number[] {
 }
 
 function qfill(g: PIXI.Graphics, pts: [number, number][], color: number, alpha = 1) {
-  g.poly(P(pts)).fill({ color, alpha });
+  g.beginFill(color, alpha).drawPolygon(P(pts)).endFill();
 }
 
 function qstroke(g: PIXI.Graphics, pts: [number, number][], color: number, width = 0.7, alpha = 0.18) {
-  g.poly(P(pts)).stroke({ color, width, alpha });
+  g.lineStyle(width, color, alpha).drawPolygon(P(pts));
 }
 
 function ln(g: PIXI.Graphics, x1: number, y1: number, x2: number, y2: number, color: number, width: number, alpha = 1) {
-  g.moveTo(x1, y1).lineTo(x2, y2).stroke({ color, width, alpha });
+  g.lineStyle(width, color, alpha).moveTo(x1, y1).lineTo(x2, y2);
 }
 
 export function isoBox(
@@ -113,10 +121,10 @@ export type RoomTheme = {
 };
 
 const THEMES: Record<string, RoomTheme> = {
-  dawn:  { skyTop: "#7b5ea7", skyBot: "#f7a67c", wallTint: 0xf7c898, wallTintAlpha: 0.18, floorTint: 0xe89870, floorTintAlpha: 0.10 },
-  day:   { skyTop: "#d4e8f5", skyBot: "#a0c4de", wallTint: 0xffffff, wallTintAlpha: 0.0,  floorTint: 0xffffff, floorTintAlpha: 0.0  },
-  dusk:  { skyTop: "#e06030", skyBot: "#f0a858", wallTint: 0xff7830, wallTintAlpha: 0.22, floorTint: 0xe05818, floorTintAlpha: 0.14 },
-  night: { skyTop: "#1a1a3e", skyBot: "#2a2a5a", wallTint: 0x3050a0, wallTintAlpha: 0.28, floorTint: 0x182038, floorTintAlpha: 0.18 },
+  dawn:  { skyTop: "#ffd1dc", skyBot: "#ffe4e1", wallTint: 0xffe4d0, wallTintAlpha: 0.12, floorTint: 0xffdab9, floorTintAlpha: 0.08 },
+  day:   { skyTop: "#fff0f5", skyBot: "#ffe4e1", wallTint: 0xffffff, wallTintAlpha: 0.0,  floorTint: 0xffffff, floorTintAlpha: 0.0  },
+  dusk:  { skyTop: "#ffb6c1", skyBot: "#ffa07a", wallTint: 0xffc8a0, wallTintAlpha: 0.18, floorTint: 0xffb899, floorTintAlpha: 0.12 },
+  night: { skyTop: "#2a1a3e", skyBot: "#3a2a5a", wallTint: 0x3040a0, wallTintAlpha: 0.22, floorTint: 0x182038, floorTintAlpha: 0.15 },
 };
 
 export function getTimeTheme(): RoomTheme {
@@ -130,68 +138,119 @@ export function getTimeTheme(): RoomTheme {
 export function drawBackground(g: PIXI.Graphics, cols = ROOM_TILES_X, rows = ROOM_TILES_Y, theme?: RoomTheme) {
   g.clear();
 
-  const [shadowX, shadowY] = proj(cols / 2, rows / 2, -0.01);
-  g.ellipse(shadowX, shadowY + _S * 0.08, (cols + rows * 0.5) * _S * 0.52, rows * _S * 0.28)
-    .fill({ color: 0x000000, alpha: 0.12 });
+  const WAINSCOT_H = 1.8;  // wainscoting height
+  const sakuraPink = [0xffb7c5, 0xffc0cb, 0xffd1dc, 0xffe4e9];
 
-  // Floor
-  qfill(g, [proj(0,0,0),proj(cols,0,0),proj(cols,rows,0),proj(0,rows,0)], 0xc4824a);
-  for (let i = 1; i < cols; i++) {
-    const [ax,ay]=proj(i,0,0),[bx,by]=proj(i,rows,0);
-    ln(g,ax,ay,bx,by,0xffffff,0.8,0.07);
-  }
+  // ── Shadow ──────────────────────────────────────────────────────────────
+  const [shadowX, shadowY] = proj(cols / 2, rows / 2, -0.01);
+  g.beginFill(0x3a2020, 0.16).drawEllipse(shadowX, shadowY + _S * 0.1, (cols + rows * 0.5) * _S * 0.55, rows * _S * 0.32).endFill();
+  g.beginFill(0x3a2020, 0.08).drawEllipse(shadowX, shadowY + _S * 0.05, (cols + rows * 0.5) * _S * 0.38, rows * _S * 0.18).endFill();
+
+  // ── Floor — rich wood planks ────────────────────────────────────────────
+  qfill(g, [proj(0,0,0),proj(cols,0,0),proj(cols,rows,0),proj(0,rows,0)], 0xc4956a);
+  // Horizontal plank lines
   for (let j = 1; j < rows; j++) {
     const [ax,ay]=proj(0,j,0),[bx,by]=proj(cols,j,0);
-    ln(g,ax,ay,bx,by,0xffffff,0.8,0.05);
+    ln(g,ax,ay,bx,by,0xb8885a,1.5,0.20);
+    ln(g,ax+1,ay+1,bx+1,by+1,0xd4a878,1.0,0.10);
+  }
+  // Vertical plank seams (staggered)
+  for (let j = 0; j < rows; j++) {
+    const offset = (j % 3) * 2;
+    for (let i = 1 + offset; i < cols; i += 3) {
+      const [ax,ay]=proj(i,j,0),[bx,by]=proj(i,j+1,0);
+      ln(g,ax,ay,bx,by,0xa07848,1.0,0.15);
+    }
   }
 
-  // Low cutaway edges make the full room footprint read as intentional.
-  qfill(g,[proj(0,0,0),proj(cols,0,0),proj(cols,0,-0.28),proj(0,0,-0.28)],0x7a4624,0.92);
-  qfill(g,[proj(cols,0,0),proj(cols,rows,0),proj(cols,rows,-0.28),proj(cols,0,-0.28)],0x6f3e20,0.82);
-  qstroke(g,[proj(0,0,0.01),proj(cols,0,0.01),proj(cols,rows,0.01),proj(0,rows,0.01)],0x5c3218,1.7,0.42);
+  // ── Floor edges + baseboard ─────────────────────────────────────────────
+  qfill(g,[proj(0,0,0),proj(cols,0,0),proj(cols,0,-0.28),proj(0,0,-0.28)],0x9b6b3a,0.85);
+  qfill(g,[proj(cols,0,0),proj(cols,rows,0),proj(cols,rows,-0.28),proj(cols,0,-0.28)],0x8b5b2a,0.78);
+  qstroke(g,[proj(0,0,0.01),proj(cols,0,0.01),proj(cols,rows,0.01),proj(0,rows,0.01)],0x7a4a20,1.8,0.40);
 
-  // Back wall
-  qfill(g,[proj(0,rows,0),proj(cols,rows,0),proj(cols,rows,4.5),proj(0,rows,4.5)],0xf0e9da);
-  qfill(g,[proj(0,rows,4.1),proj(cols,rows,4.1),proj(cols,rows,4.5),proj(0,rows,4.5)],0xb8723c);
-  qfill(g,[proj(0,rows,0),proj(cols,rows,0),proj(cols,rows,0.18),proj(0,rows,0.18)],0xa86030);
-  for (let x = 2; x < cols; x += 2) {
-    const [px1,py1]=proj(x,rows,0.22),[px2,py2]=proj(x,rows,4.1);
-    ln(g,px1,py1,px2,py2,0xb8a996,1.1,0.32);
+  // ── Back wall ────────────────────────────────────────────────────────────
+  // Baseboard
+  qfill(g,[proj(0,rows,0),proj(cols,rows,0),proj(cols,rows,0.22),proj(0,rows,0.22)],0xb07050);
+  qstroke(g,[proj(0,rows,0.22),proj(cols,rows,0.22),proj(cols,rows,0.24),proj(0,rows,0.24)],0xd49070,1.0,0.5);
+  // Wainscoting (lower wall — rose wood)
+  qfill(g,[proj(0,rows,0.22),proj(cols,rows,0.22),proj(cols,rows,WAINSCOT_H),proj(0,rows,WAINSCOT_H)],0xf0d8c8);
+  // Wainscoting panel lines
+  for (let x = 1; x < cols; x += 2) {
+    const [px1,py1]=proj(x,rows,0.25),[px2,py2]=proj(x,rows,WAINSCOT_H);
+    ln(g,px1,py1,px2,py2,0xe0c0b0,1.2,0.25);
   }
-  const floralColors = [0xd4a0c0,0xb8c8e0,0xc8d4b0];
-  const backFlowerCount = Math.max(1, Math.ceil(cols * 12 / ROOM_TILES_X));
-  const backFlowerSpacing = cols / backFlowerCount;
+  // Chair rail (transition between wainscoting and wallpaper)
+  qfill(g,[proj(0,rows,WAINSCOT_H-0.06),proj(cols,rows,WAINSCOT_H-0.06),proj(cols,rows,WAINSCOT_H+0.08),proj(0,rows,WAINSCOT_H+0.08)],0xd4a088);
+  qstroke(g,[proj(0,rows,WAINSCOT_H+0.08),proj(cols,rows,WAINSCOT_H+0.08)],0xe8b898,1.5,0.6);
+  // Wallpaper (upper wall — sakura with dot pattern)
+  qfill(g,[proj(0,rows,WAINSCOT_H+0.08),proj(cols,rows,WAINSCOT_H+0.08),proj(cols,rows,4.5),proj(0,rows,4.5)],0xfff5f8);
+  // Wallpaper dot pattern
+  for (let x = 1; x < cols; x++) {
+    for (let z = WAINSCOT_H + 0.4; z < 4.3; z += 0.7) {
+      const [dx,dy] = proj(x + (Math.floor(z*10) % 2) * 0.5, rows - 0.01, z);
+      g.beginFill(0xffdde8, 0.40 ).drawCircle(dx, dy, 1.2).endFill();
+    }
+  }
+  // Crown molding
+  qfill(g,[proj(0,rows,4.0),proj(cols,rows,4.0),proj(cols,rows,4.18),proj(0,rows,4.18)],0xe8c0a8);
+  qfill(g,[proj(0,rows,4.18),proj(cols,rows,4.18),proj(cols,rows,4.3),proj(0,rows,4.3)],0xd4a080);
+  qfill(g,[proj(0,rows,4.3),proj(cols,rows,4.3),proj(cols,rows,4.5),proj(0,rows,4.5)],0xffb7c5);
+
+  // 🌸 Sakura on back wall (above chair rail)
+  const backFlowerCount = Math.max(2, Math.ceil(cols * 12 / ROOM_TILES_X));
+  const backSpacing = cols / backFlowerCount;
   for (let fi = 0; fi < backFlowerCount; fi++) {
-    const fwx = backFlowerSpacing * (fi + 0.5), fwz = 1.2 + (fi % 3) * 1.1;
-    const [fpx,fpy] = proj(fwx,rows - 0.01,fwz);
-    const fc = floralColors[fi % 3]!;
-    g.circle(fpx,fpy,4.5).fill({color:fc,alpha:0.55});
-    g.circle(fpx+7,fpy-3,3).fill({color:fc,alpha:0.35});
-    g.circle(fpx-7,fpy-3,3).fill({color:fc,alpha:0.35});
-    g.circle(fpx,fpy-8,3).fill({color:fc,alpha:0.35});
+    const fwx = backSpacing * (fi + 0.5), fwz = WAINSCOT_H + 0.6 + (fi % 3) * 0.9;
+    const [fpx,fpy] = proj(fwx, rows - 0.01, fwz);
+    const fc = sakuraPink[fi % sakuraPink.length]!;
+    for (let p = 0; p < 5; p++) {
+      const angle = (p / 5) * Math.PI * 2 - Math.PI / 2;
+      g.beginFill(fc, 0.7 ).drawEllipse(fpx + Math.cos(angle) * 5, fpy + Math.sin(angle) * 4.5, 4, 2.5).endFill();
+    }
+    g.beginFill(0xffe4b5, 0.85 ).drawCircle(fpx, fpy, 2.5).endFill();
   }
 
-  // Left wall
-  qfill(g,[proj(0,0,0),proj(0,rows,0),proj(0,rows,4.5),proj(0,0,4.5)],0xf5efe3);
-  qfill(g,[proj(0,0,4.1),proj(0,rows,4.1),proj(0,rows,4.5),proj(0,0,4.5)],0xb8723c);
-  qfill(g,[proj(0,0,0),proj(0,rows,0),proj(0,rows,0.18),proj(0,0,0.18)],0xa86030);
+  // ── Left wall ────────────────────────────────────────────────────────────
+  // Baseboard
+  qfill(g,[proj(0,0,0),proj(0,rows,0),proj(0,rows,0.22),proj(0,0,0.22)],0xb07050);
+  // Wainscoting
+  qfill(g,[proj(0,0,0.22),proj(0,rows,0.22),proj(0,rows,WAINSCOT_H),proj(0,0,WAINSCOT_H)],0xf5e0d0);
+  for (let y = 1; y < rows; y += 2) {
+    const [px1,py1]=proj(0,y,0.25),[px2,py2]=proj(0,y,WAINSCOT_H);
+    ln(g,px1,py1,px2,py2,0xe8d0c0,1.0,0.20);
+  }
+  // Chair rail
+  qfill(g,[proj(0,0,WAINSCOT_H-0.06),proj(0,rows,WAINSCOT_H-0.06),proj(0,rows,WAINSCOT_H+0.08),proj(0,0,WAINSCOT_H+0.08)],0xd4a088);
+  // Wallpaper
+  qfill(g,[proj(0,0,WAINSCOT_H+0.08),proj(0,rows,WAINSCOT_H+0.08),proj(0,rows,4.5),proj(0,0,4.5)],0xfff8fa);
+  // Crown molding
+  qfill(g,[proj(0,0,4.0),proj(0,rows,4.0),proj(0,rows,4.18),proj(0,0,4.18)],0xe8c0a8);
+  qfill(g,[proj(0,0,4.18),proj(0,rows,4.18),proj(0,rows,4.5),proj(0,0,4.5)],0xffb7c5);
+  // 🌸 Sakura on left wall
   const leftFlowerCount = Math.max(1, Math.ceil(rows * 8 / ROOM_TILES_Y));
-  const leftFlowerSpacing = rows / leftFlowerCount;
+  const leftSpacing = rows / leftFlowerCount;
   for (let fi = 0; fi < leftFlowerCount; fi++) {
-    const fwy = leftFlowerSpacing * (fi + 0.5), fwz = 1.0 + (fi % 3) * 1.2;
-    const [fpx,fpy] = proj(0.01,fwy,fwz);
-    const fc = floralColors[fi % 3]!;
-    g.circle(fpx,fpy,3.5).fill({color:fc,alpha:0.45});
-    g.circle(fpx+6,fpy-2,2.5).fill({color:fc,alpha:0.28});
-    g.circle(fpx-6,fpy-2,2.5).fill({color:fc,alpha:0.28});
+    const fwy = leftSpacing * (fi + 0.5), fwz = WAINSCOT_H + 0.5 + (fi % 3) * 1.0;
+    const [fpx,fpy] = proj(0.01, fwy, fwz);
+    const fc = sakuraPink[fi % sakuraPink.length]!;
+    for (let p = 0; p < 5; p++) {
+      const angle = (p / 5) * Math.PI * 2 - Math.PI / 2;
+      g.beginFill(fc, 0.6 ).drawEllipse(fpx + Math.cos(angle) * 4, fpy + Math.sin(angle) * 3.5, 3.5, 2).endFill();
+    }
+    g.beginFill(0xffe4b5, 0.8 ).drawCircle(fpx, fpy, 2).endFill();
   }
 
-  // Area rug
-  qfill(g,[proj(1.0,1.35,0.005),proj(6.0,1.35,0.005),proj(6.0,6.65,0.005),proj(1.0,6.65,0.005)],0xc87848,0.32);
-  qstroke(g,[proj(1.0,1.35,0.005),proj(6.0,1.35,0.005),proj(6.0,6.65,0.005),proj(1.0,6.65,0.005)],0x8b4820,1.5,0.38);
-  qstroke(g,[proj(1.18,1.55,0.005),proj(5.82,1.55,0.005),proj(5.82,6.45,0.005),proj(1.18,6.45,0.005)],0x8b4820,0.8,0.28);
+  // ── Area rug — soft pastel pink ─────────────────────────────────────────
+  qfill(g,[proj(1.0,1.35,0.005),proj(6.0,1.35,0.005),proj(6.0,6.65,0.005),proj(1.0,6.65,0.005)],0xffe8e8,0.38);
+  qstroke(g,[proj(1.0,1.35,0.005),proj(6.0,1.35,0.005),proj(6.0,6.65,0.005),proj(1.0,6.65,0.005)],0xffc0cb,2.2,0.48);
+  qstroke(g,[proj(1.18,1.55,0.005),proj(5.82,1.55,0.005),proj(5.82,6.45,0.005),proj(1.18,6.45,0.005)],0xffd0d8,1.2,0.32);
+  // Heart decoration in rug center
+  const [rugCX, rugCY] = proj(3.5, 4.0, 0.006);
+  g.beginFill(0xffb7c5, 0.4 ).drawEllipse(rugCX-3, rugCY-4, 7, 5).endFill();
+  g.beginFill(0xffb7c5, 0.4 ).drawEllipse(rugCX+3, rugCY-4, 7, 5).endFill();
+  g.beginFill(0xffb7c5, 0.35 ).drawPolygon([rugCX-8,rugCY-2,rugCX,rugCY-12,rugCX+8,rugCY-2]).endFill();
 
-  // Door
+  // ── Door + Window (left wall features) ───────────────────────────────────
   const featureMaxY = Math.max(0, rows - 1);
   const wallY = (wy: number) => Math.max(0, Math.min(featureMaxY, wy));
   const leftWallRect = (y1: number, y2: number, z1: number, z2: number, color: number, alpha = 1) => {
@@ -200,37 +259,52 @@ export function drawBackground(g: PIXI.Graphics, cols = ROOM_TILES_X, rows = ROO
     qfill(g,[proj(0,cy1,z1),proj(0,cy2,z1),proj(0,cy2,z2),proj(0,cy1,z2)],color,alpha);
     return true;
   };
-  if (leftWallRect(0.8,2.4,0,3.0,0x8b5c28)) {
-    leftWallRect(0.88,2.32,0.04,2.94,0xd4904e);
-    leftWallRect(0.92,2.28,1.8,2.88,0x87ceeb,0.85);
-    const [twx,twy]=proj(0,wallY(1.6),2.3);
-    g.rect(twx-1.5,twy,3,22).fill({color:0x6b3a2a,alpha:0.8});
-    for(let bi=0;bi<8;bi++){const ang=(bi/8)*Math.PI*2;g.circle(twx+Math.cos(ang)*10,twy-5+Math.sin(ang)*6,6).fill({color:0xffb7c5,alpha:0.75});}
-    g.circle(twx,twy-8,9).fill({color:0xffb7c5,alpha:0.7});
-    leftWallRect(0.92,2.28,0.1,1.72,0xc07838,0.9);
-    const [dkx,dky]=proj(0,wallY(2.0),1.2);
-    g.circle(dkx,dky,3.5).fill(0xd4af37);
+  // Door
+  if (leftWallRect(0.6,2.2,0,3.0,0xc07050)) {
+    leftWallRect(0.68,2.12,0.04,2.94,0xe8a080);
+    leftWallRect(0.72,2.08,1.8,2.88,0xfff0f5,0.88);
+    const [twx,twy]=proj(0,wallY(1.4),2.3);
+    g.beginFill(0x8b5c38, 0.75).drawRect(twx-1.5,twy,3,22).endFill();
+    for(let bi=0;bi<8;bi++){
+      const ang=(bi/8)*Math.PI*2;
+      g.beginFill(0xffb7c5, 0.8).drawCircle(twx+Math.cos(ang)*9,twy-5+Math.sin(ang)*5,5).endFill();
+    }
+    g.beginFill(0xff69b4, 0.65).drawCircle(twx,twy-8,8).endFill();
+    leftWallRect(0.72,2.08,0.1,1.72,0xd08060,0.85);
+    const [dkx,dky]=proj(0,wallY(1.8),1.2);
+    g.beginFill(0xffd700, 1).drawCircle(dkx,dky,3.5).endFill();
   }
-
   // Window
-  if (leftWallRect(3.2,5.6,1.0,3.6,0x7ab5d8,0.7)) {
-    const frameY1 = wallY(3.0), frameY2 = wallY(5.8);
-    qstroke(g,[proj(0,frameY1,0.8),proj(0,frameY2,0.8),proj(0,frameY2,3.8),proj(0,frameY1,3.8)],0x8b5c28,3,0.9);
-    const [wdx1,wdy1]=proj(0,wallY(4.4),0.8),[wdx2,wdy2]=proj(0,wallY(4.4),3.8);
-    ln(g,wdx1,wdy1,wdx2,wdy2,0x8b5c28,2,0.8);
-    const [whx1,why1]=proj(0,frameY1,2.2),[whx2,why2]=proj(0,frameY2,2.2);
-    ln(g,whx1,why1,whx2,why2,0x8b5c28,2,0.8);
-    leftWallRect(2.88,3.28,0.75,3.82,0xe8c88a,0.88);
-    leftWallRect(5.52,5.92,0.75,3.82,0xe8c88a,0.88);
+  if (leftWallRect(3.0,5.4,0.6,3.6,0xffe4e1,0.6)) {
+    const frameY1 = wallY(2.8), frameY2 = wallY(5.6);
+    qstroke(g,[proj(0,frameY1,0.4),proj(0,frameY2,0.4),proj(0,frameY2,3.8),proj(0,frameY1,3.8)],0xd4a0a0,3.5,0.9);
+    const [wdx1,wdy1]=proj(0,wallY(4.2),0.4),[wdx2,wdy2]=proj(0,wallY(4.2),3.8);
+    ln(g,wdx1,wdy1,wdx2,wdy2,0xd4a0a0,2.5,0.8);
+    const [whx1,why1]=proj(0,frameY1,2.1),[whx2,why2]=proj(0,frameY2,2.1);
+    ln(g,whx1,why1,whx2,why2,0xd4a0a0,2.5,0.8);
+    leftWallRect(2.68,3.08,0.35,3.85,0xffb7c5,0.75);
+    leftWallRect(5.32,5.72,0.35,3.85,0xffb7c5,0.75);
   }
 
-  // Wall lamp
-  const [wlx,wly]=proj(0.01,1.6,3.5);
-  g.rect(wlx-3,wly-20,6,8).fill(0x8b6914);
-  g.poly([wlx-10,wly-12,wlx+10,wly-12,wlx+7,wly,wlx-7,wly]).fill(0xfde68a);
-  g.circle(wlx,wly-8,25).fill({color:0xffd070,alpha:0.1});
+  // ── Wall lamp — warm golden glow ─────────────────────────────────────────
+  const [wlx,wly]=proj(0.01,1.4,3.6);
+  g.beginFill(0xd4a060, 1).drawRect(wlx-4,wly-22,8,10).endFill();
+  g.beginFill(0xffe8c0, 1).drawPolygon([wlx-12,wly-12,wlx+12,wly-12,wlx+8,wly,wlx-8,wly]).endFill();
+  g.beginFill(0xffdab9, 0.10).drawCircle(wlx,wly-8,30).endFill();
 
-  // Time-based theme tint overlay
+  // ── Floating petals ──────────────────────────────────────────────────────
+  const airPetals = [
+    [2.0, 2.5, 1.8], [5.0, 3.0, 2.2], [3.5, 5.0, 1.5],
+    [7.0, 4.0, 2.0], [1.5, 6.0, 2.5], [8.0, 5.5, 1.6],
+    [4.5, 1.5, 2.8], [6.5, 6.5, 1.2],
+  ];
+  for (const [px, py, pz] of airPetals) {
+    const [apx, apy] = proj(px!, py!, pz!);
+    const apc = sakuraPink[Math.floor((px! + py!) % sakuraPink.length)]!;
+    g.beginFill(apc, 0.35 ).drawEllipse(apx, apy, 3, 1.5).endFill();
+  }
+
+  // ── Time theme tint ──────────────────────────────────────────────────────
   if (theme) {
     if (theme.floorTintAlpha > 0)
       qfill(g,[proj(0,0,0),proj(cols,0,0),proj(cols,rows,0),proj(0,rows,0)],theme.floorTint,theme.floorTintAlpha);
@@ -255,20 +329,20 @@ export function drawBed(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
   isoBox(g,wx,wy,wz+0.38,W,0.18,1.15,0x5c3818,0x4a2c10,0x3c2208);
   isoBox(g,wx,wy+D-0.32,wz+0.38,W,0.18,0.58,0x5c3818,0x4a2c10,0x3c2208);
   const [bfx,bfy]=proj(wx+W/2,wy+3.0,wz+0.95);
-  g.circle(bfx,bfy,5).fill({color:0x8ab4e0,alpha:0.45});
-  [[-9,0],[9,0],[0,-9],[0,9]].forEach(([dx,dy])=>g.circle(bfx+dx!,bfy+dy!,3.5).fill({color:0x8ab4e0,alpha:0.32}));
+  g.beginFill(0x8ab4e0, 0.45).drawCircle(bfx,bfy,5).endFill();
+  [[-9,0],[9,0],[0,-9],[0,9]].forEach(([dx,dy])=>g.beginFill(0x8ab4e0, 0.32).drawCircle(bfx+dx!,bfy+dy!,3.5).endFill());
 }
 
 export function drawNightstand(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
   isoBox(g,wx,wy,wz,1.0,1.0,0.6,0x5c3818,0x4a2c10,0x3c2208);
   qfill(g,[proj(wx,wy,wz+0.22),proj(wx+1.0,wy,wz+0.22),proj(wx+1.0,wy,wz+0.48),proj(wx,wy,wz+0.48)],0x000000,0.12);
   const [nsx,nsy]=proj(wx+0.5,wy,wz+0.35);
-  g.circle(nsx,nsy,2).fill(0xd4af37);
+  g.beginFill(0xd4af37, 1).drawCircle(nsx,nsy,2).endFill();
   const [nlx,nly]=proj(wx+0.3,wy+0.2,wz+0.62);
-  g.rect(nlx-9,nly-24,18,24).fill(0x8b6914);
-  g.rect(nlx-6,nly-21,12,17).fill({color:0xfde68a,alpha:0.88});
-  g.poly([nlx-7,nly-24,nlx,nly-31,nlx+7,nly-24]).fill(0x8b6914);
-  g.circle(nlx,nly-12,30).fill({color:0xffd070,alpha:0.13});
+  g.beginFill(0x8b6914, 1).drawRect(nlx-9,nly-24,18,24).endFill();
+  g.beginFill(0xfde68a, 0.88).drawRect(nlx-6,nly-21,12,17).endFill();
+  g.beginFill(0x8b6914, 1).drawPolygon([nlx-7,nly-24,nlx,nly-31,nlx+7,nly-24]).endFill();
+  g.beginFill(0xffd070, 0.13).drawCircle(nlx,nly-12,30).endFill();
 }
 
 export function drawTVStand(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
@@ -276,16 +350,16 @@ export function drawTVStand(g: PIXI.Graphics, wx: number, wy: number, wz: number
   for(let di=0;di<2;di++){
     const dwx=wx+0.4+di*1.85;
     const [dhx,dhy]=proj(dwx+0.6,wy,wz+0.42);
-    g.rect(dhx-12,dhy-4,24,8).fill({color:0x2a1408,alpha:0.5});
-    g.circle(dhx,dhy,2.5).fill(0xd4af37);
+    g.beginFill(0x2a1408, 0.5).drawRect(dhx-12,dhy-4,24,8).endFill();
+    g.beginFill(0xd4af37, 1).drawCircle(dhx,dhy,2.5).endFill();
   }
   const [gcx,gcy]=proj(wx+3.1,wy,wz+0.87);
-  g.rect(gcx-14,gcy-7,28,14).fill({color:0x1a1a2e,alpha:0.85});
-  g.circle(gcx+5,gcy-1,2.5).fill(0xe74c3c);
-  g.circle(gcx+9,gcy+2,2).fill(0x3498db);
+  g.beginFill(0x1a1a2e, 0.85).drawRect(gcx-14,gcy-7,28,14).endFill();
+  g.beginFill(0xe74c3c, 1).drawCircle(gcx+5,gcy-1,2.5).endFill();
+  g.beginFill(0x3498db, 1).drawCircle(gcx+9,gcy+2,2).endFill();
   const [pfx,pfy]=proj(wx+0.2,wy,wz+0.87);
-  g.rect(pfx-8,pfy-12,16,16).fill(0x8b5c28);
-  g.rect(pfx-6,pfy-10,12,12).fill(0x4a7ab0);
+  g.beginFill(0x8b5c28, 1).drawRect(pfx-8,pfy-12,16,16).endFill();
+  g.beginFill(0x4a7ab0, 1).drawRect(pfx-6,pfy-10,12,12).endFill();
 }
 
 export function drawTV(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
@@ -316,13 +390,13 @@ export function drawComputerDesk(g: PIXI.Graphics, wx: number, wy: number, wz: n
   qfill(g,[proj(wx+0.34,wy+0.42,wz+0.83),proj(wx+1.86,wy+0.42,wz+0.83),proj(wx+1.86,wy+0.76,wz+0.83),proj(wx+0.34,wy+0.76,wz+0.83)],0x202a38,0.95);
   for(let ki=0;ki<8;ki++){
     const [kx,ky]=proj(wx+0.5+ki*0.16,wy+0.43,wz+0.84);
-    g.rect(kx-3,ky-2,5,3).fill({color:0xd8e5f0,alpha:0.58});
+    g.beginFill(0xd8e5f0, 0.58).drawRect(kx-3,ky-2,5,3).endFill();
   }
   qfill(g,[proj(wx+1.98,wy+0.42,wz+0.84),proj(wx+2.68,wy+0.42,wz+0.84),proj(wx+2.68,wy+1.05,wz+0.84),proj(wx+1.98,wy+1.05,wz+0.84)],0xf6ead7,0.95);
   qstroke(g,[proj(wx+1.98,wy+0.42,wz+0.845),proj(wx+2.68,wy+0.42,wz+0.845),proj(wx+2.68,wy+1.05,wz+0.845),proj(wx+1.98,wy+1.05,wz+0.845)],0x4a5568,1,0.28);
   const [mugX,mugY]=proj(wx+2.7,wy+1.24,wz+0.86);
-  g.circle(mugX,mugY,6).fill(0x90cdf4);
-  g.circle(mugX+6,mugY-2,3).stroke({color:0x90cdf4,width:2,alpha:0.9});
+  g.beginFill(0x90cdf4, 1).drawCircle(mugX,mugY,6).endFill();
+  g.lineStyle(2, 0x90cdf4, 0.9).drawCircle(mugX+6, mugY-2, 3);
 }
 
 export function drawPrinter(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
@@ -333,7 +407,7 @@ export function drawPrinter(g: PIXI.Graphics, wx: number, wy: number, wz: number
   qfill(g,[proj(wx+0.14,wy,wz+0.2),proj(wx+0.86,wy,wz+0.2),proj(wx+0.86,wy,wz+0.44),proj(wx+0.14,wy,wz+0.44)],0x64748b,0.82);
   qfill(g,[proj(wx+0.2,wy-0.02,wz+0.08),proj(wx+0.82,wy-0.02,wz+0.08),proj(wx+0.82,wy-0.02,wz+0.28),proj(wx+0.2,wy-0.02,wz+0.28)],0xf8fafc,0.9);
   const [ledX,ledY]=proj(wx+0.82,wy+0.02,wz+0.55);
-  g.circle(ledX,ledY,3).fill(0x34d399);
+  g.beginFill(0x34d399, 1).drawCircle(ledX,ledY,3).endFill();
 }
 
 export function drawDocumentBoard(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
@@ -358,7 +432,7 @@ export function drawDocumentBoard(g: PIXI.Graphics, wx: number, wy: number, wz: 
     qfill(g,[proj(wx+note.x,wy-0.03,wz+note.z),proj(wx+note.x+note.w,wy-0.03,wz+note.z),proj(wx+note.x+note.w,wy-0.03,wz+note.z+note.h),proj(wx+note.x,wy-0.03,wz+note.z+note.h)],note.c,0.92);
   });
   const [pinX,pinY]=proj(wx+1.4,wy-0.04,wz+1.45);
-  g.circle(pinX,pinY,4).fill(0xef4444);
+  g.beginFill(0xef4444, 1).drawCircle(pinX,pinY,4).endFill();
 }
 
 export function drawBookcase(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
@@ -378,10 +452,10 @@ export function drawBookcase(g: PIXI.Graphics, wx: number, wy: number, wz: numbe
     }
   });
   const [bpsx,bpsy]=proj(wx+1.3,wy+0.08,3.6);
-  g.rect(bpsx-8,bpsy-8,16,10).fill(0x8b4513);
-  g.circle(bpsx,bpsy-12,9).fill({color:0x22a43a,alpha:0.9});
-  g.circle(bpsx-8,bpsy-10,7).fill({color:0x1a8a2e,alpha:0.85});
-  g.circle(bpsx+7,bpsy-10,7).fill({color:0x2ecc71,alpha:0.8});
+  g.beginFill(0x8b4513, 1).drawRect(bpsx-8,bpsy-8,16,10).endFill();
+  g.beginFill(0x22a43a, 0.9).drawCircle(bpsx,bpsy-12,9).endFill();
+  g.beginFill(0x1a8a2e, 0.85).drawCircle(bpsx-8,bpsy-10,7).endFill();
+  g.beginFill(0x2ecc71, 0.8).drawCircle(bpsx+7,bpsy-10,7).endFill();
 }
 
 export function drawHangingScroll(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
@@ -390,13 +464,13 @@ export function drawHangingScroll(g: PIXI.Graphics, wx: number, wy: number, wz: 
   qstroke(g,[proj(wx+0.02,wy,wz+0.0),proj(wx+1.98,wy,wz+0.0),proj(wx+1.98,wy,wz+1.35),proj(wx+0.02,wy,wz+1.35)],0xc8a040,1.2,0.5);
   qfill(g,[proj(wx+0.1,wy,wz+0.08),proj(wx+1.8,wy,wz+0.08),proj(wx+1.8,wy,wz+1.28),proj(wx+0.1,wy,wz+1.28)],0xfce8c0,0.6);
   const [artX,artY]=proj(wx+1.0,wy-0.01,wz+0.72);
-  g.ellipse(artX,artY,14,10).fill({color:0xe8942a,alpha:0.8});
-  g.circle(artX+2,artY-14,9).fill({color:0xe8942a,alpha:0.8});
-  g.poly([artX-4,artY-20,artX,artY-28,artX+4,artY-20]).fill({color:0xe8942a,alpha:0.75});
-  g.poly([artX+8,artY-20,artX+12,artY-27,artX+15,artY-20]).fill({color:0xe8942a,alpha:0.75});
-  g.ellipse(artX-16,artY+2,8,5).fill({color:0xe8942a,alpha:0.7});
+  g.beginFill(0xe8942a, 0.8).drawEllipse(artX,artY,14,10).endFill();
+  g.beginFill(0xe8942a, 0.8).drawCircle(artX+2,artY-14,9).endFill();
+  g.beginFill(0xe8942a, 0.75).drawPolygon([artX-4,artY-20,artX,artY-28,artX+4,artY-20]).endFill();
+  g.beginFill(0xe8942a, 0.75).drawPolygon([artX+8,artY-20,artX+12,artY-27,artX+15,artY-20]).endFill();
+  g.beginFill(0xe8942a, 0.7).drawEllipse(artX-16,artY+2,8,5).endFill();
   [[artX-22,artY-5],[artX+22,artY-8],[artX-18,artY+12],[artX+18,artY+10]].forEach(([lx,ly],li)=>{
-    g.ellipse(lx!,ly!,5,3).fill({color:[0xe07830,0xd44020,0xe8a830][li%3]!,alpha:0.65});
+    g.beginFill([0xe07830,0xd44020,0xe8a830][li%3]!, 0.65).drawEllipse(lx!, ly!, 5, 3).endFill();
   });
   qfill(g,[proj(wx,wy,wz-0.06),proj(wx+2.0,wy,wz-0.06),proj(wx+2.0,wy,wz+0.08),proj(wx,wy,wz+0.08)],0x7a4518);
   const [ss1x,ss1y]=proj(wx+0.2,wy,wz+1.5), [ss2x,ss2y]=proj(wx+0.2,wy,wz+1.75);
@@ -417,10 +491,10 @@ export function drawWallShelf(g: PIXI.Graphics, wx: number, wy: number, wz: numb
     sbx+=bw+0.07;
   });
   const [lsx,lsy]=proj(wx+2.6,wy-0.01,wz+0.18);
-  g.rect(lsx-10,lsy-26,20,26).fill(0x8b6914);
-  g.rect(lsx-7,lsy-23,14,20).fill({color:0xfde68a,alpha:0.9});
-  g.circle(lsx,lsy-13,22).fill({color:0xffd070,alpha:0.14});
-  g.poly([lsx-6,lsy-26,lsx,lsy-32,lsx+6,lsy-26]).fill(0x8b6914);
+  g.beginFill(0x8b6914, 1).drawRect(lsx-10,lsy-26,20,26).endFill();
+  g.beginFill(0xfde68a, 0.9).drawRect(lsx-7,lsy-23,14,20).endFill();
+  g.beginFill(0xffd070, 0.14).drawCircle(lsx,lsy-13,22).endFill();
+  g.beginFill(0x8b6914, 1).drawPolygon([lsx-6,lsy-26,lsx,lsy-32,lsx+6,lsy-26]).endFill();
 }
 
 export function drawPoolTable(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
@@ -430,18 +504,18 @@ export function drawPoolTable(g: PIXI.Graphics, wx: number, wy: number, wz: numb
   qfill(g,[proj(wx,wy,wz+0.82),proj(wx+4.0,wy,wz+0.82),proj(wx+4.0,wy,wz+0.85),proj(wx,wy,wz+0.85)],0x0d4015);
   [[wx,wy],[wx+4.0,wy],[wx,wy+3.0],[wx+4.0,wy+3.0],[wx+2.0,wy],[wx+2.0,wy+3.0]].forEach(([px,py])=>{
     const [hx,hy]=proj(px!,py!,wz+0.83);
-    g.circle(hx,hy,4).fill(0x0a2010);
+    g.beginFill(0x0a2010, 1).drawCircle(hx,hy,4).endFill();
   });
   const ballColors=[0xffffff,0xf5c518,0x2255cc,0xdd2222,0x7722aa,0xff7700,0x116611,0xaa1111];
   const rb={wx:wx+2.32,wy:wy+1.05};
   const rackPos:[[number,number]][]=[[[rb.wx,rb.wy]],[[rb.wx-0.22,rb.wy+0.22]],[[rb.wx+0.22,rb.wy+0.22]],[[rb.wx-0.44,rb.wy+0.44]],[[rb.wx,rb.wy+0.44]],[[rb.wx+0.44,rb.wy+0.44]]];
   rackPos.forEach(([[bwx,bwy]],i)=>{
     const [bpx,bpy]=proj(bwx,bwy,wz+0.84);
-    g.circle(bpx,bpy,4.5).fill(ballColors[i%ballColors.length]!);
-    g.circle(bpx-1.5,bpy-1.5,1.5).fill({color:0xffffff,alpha:0.4});
+    g.beginFill(ballColors[i%ballColors.length]!, 1).drawCircle(bpx, bpy, 4.5).endFill();
+    g.beginFill(0xffffff, 0.4).drawCircle(bpx-1.5,bpy-1.5,1.5).endFill();
   });
   const [cbx,cby]=proj(wx+1.0,wy+1.85,wz+0.84);
-  g.circle(cbx,cby,4.5).fill(0xffffff);
+  g.beginFill(0xffffff, 1).drawCircle(cbx,cby,4.5).endFill();
   const [c1x,c1y]=proj(wx+0.35,wy+2.55,wz+0.84), [c2x,c2y]=proj(wx+3.4,wy+0.72,wz+0.84);
   ln(g,c1x,c1y,c2x,c2y,0xd4a054,3);
 }
@@ -450,14 +524,14 @@ export function drawLowTable(g: PIXI.Graphics, wx: number, wy: number, wz: numbe
   isoBox(g,wx,wy,wz,3.0,2.0,0.28,0x7a5030,0x6a4228,0x5a3420);
   isoBox(g,wx+0.06,wy+0.02,wz+0.28,2.88,1.96,0.05,0x3a7a9a,0x2e6080,0x245070);
   const [tpx,tpy]=proj(wx+1.4,wy+1.0,wz+0.35);
-  g.circle(tpx,tpy,11).fill(0x1a1a1a);
-  g.circle(tpx,tpy-11,5).fill(0x222222);
-  g.moveTo(tpx+8,tpy-2).lineTo(tpx+18,tpy-8).stroke({color:0x1a1a1a,width:3.5});
-  g.moveTo(tpx-8,tpy-5).lineTo(tpx-16,tpy-10).lineTo(tpx-16,tpy+2).stroke({color:0x1a1a1a,width:2.5});
+  g.beginFill(0x1a1a1a, 1).drawCircle(tpx,tpy,11).endFill();
+  g.beginFill(0x222222, 1).drawCircle(tpx,tpy-11,5).endFill();
+  g.lineStyle(3.5, 0x1a1a1a, 1).moveTo(tpx+8,tpy-2).lineTo(tpx+18,tpy-8);
+  g.lineStyle(2.5, 0x1a1a1a, 1).moveTo(tpx-8,tpy-5).lineTo(tpx-16,tpy-10).lineTo(tpx-16,tpy+2);
   [[wx+0.4,wy+1.1],[wx+0.8,wy+0.6],[wx+1.9,wy+0.5]].forEach(([cwx,cwy])=>{
     const [cx,cy]=proj(cwx!,cwy!,wz+0.34);
-    g.circle(cx,cy,6).fill(0x4a7a8a);
-    g.circle(cx,cy+1,2.5).fill({color:0xa0c8d0,alpha:0.5});
+    g.beginFill(0x4a7a8a, 1).drawCircle(cx,cy,6).endFill();
+    g.beginFill(0xa0c8d0, 0.5).drawCircle(cx,cy+1,2.5).endFill();
   });
 }
 
@@ -472,9 +546,9 @@ export function drawPlant(g: PIXI.Graphics, wx: number, wy: number, wz: number) 
     const ang=(li/7)*Math.PI*2-0.3;
     const ex=psx+Math.cos(ang)*24, ey=psy+Math.sin(ang)*11-28;
     ln(g,psx,psy-5,ex,ey,0x1a7030,2.2);
-    g.ellipse(ex,ey,11,7).fill({color:0x22a43a,alpha:0.88});
+    g.beginFill(0x22a43a, 0.88).drawEllipse(ex,ey,11,7).endFill();
   }
-  g.circle(psx,psy-18,14).fill({color:0x1e8a34,alpha:0.6});
+  g.beginFill(0x1e8a34, 0.6).drawCircle(psx,psy-18,14).endFill();
 }
 
 // ─── Dispatch by furniture type ───────────────────────────────────────────────
@@ -526,7 +600,7 @@ export function drawHighlight(g: PIXI.Graphics, obj: RoomObject) {
   qfill(g, top, 0xffffff, 0.18);
   qstroke(g, top, 0xffd060, 2.5, 0.9);
   top.forEach(([px, py]) => {
-    g.circle(px, py, 4).fill({ color: 0xffd060, alpha: 0.85 });
+    g.beginFill(0xffd060, 0.85 ).drawCircle(px, py, 4).endFill();
   });
 }
 
@@ -566,8 +640,8 @@ export function drawStationAmbient(
     proj,
     fillQuad:   (points, color, a) => qfill(g, points, color, a),
     strokeQuad: (points, color, lineWidth, a) => qstroke(g, points, color, lineWidth, a),
-    circle:     (cx, cy, r, color, a) => { g.circle(cx, cy, r).fill({ color, alpha: a }); },
-    ellipse:    (cx, cy, rx, ry, color, a) => { g.ellipse(cx, cy, rx, ry).fill({ color, alpha: a }); },
+    circle:     (cx, cy, r, color, a) => { g.beginFill(color, a).drawCircle(cx, cy, r).endFill(); },
+    ellipse:    (cx, cy, rx, ry, color, a) => { g.beginFill(color, a).drawEllipse(cx, cy, rx, ry).endFill(); },
     dim:        getStationDim(obj.furnitureType),
   };
   applyStationAmbient(ctx, obj, alpha);
@@ -597,7 +671,7 @@ export function drawHighlightCollision(g: PIXI.Graphics, obj: RoomObject) {
   qfill(g, top, 0xff2222, 0.18);
   qstroke(g, top, 0xff4444, 2.5, 0.9);
   top.forEach(([px, py]) => {
-    g.circle(px, py, 4).fill({ color: 0xff3333, alpha: 0.9 });
+    g.beginFill(0xff3333, 0.9 ).drawCircle(px, py, 4).endFill();
   });
 }
 
@@ -614,16 +688,16 @@ export function drawTileGrid(g: PIXI.Graphics, cols = ROOM_TILES_X, rows = ROOM_
         proj(tx + 1, ty + 1, 0.002),
         proj(tx,     ty + 1, 0.002),
       ];
-      g.poly(pts.flatMap(([x, y]) => [x, y]))
-        .fill({ color: 0x88ccff, alpha: 0.08 })
-        .stroke({ color: 0x44aaff, width: 1.5, alpha: 0.7 });
+      const flatPts = pts.flatMap(([x, y]) => [x, y]);
+      g.beginFill(0x88ccff, 0.08).drawPolygon(flatPts).endFill();
+      g.lineStyle(1.5, 0x44aaff, 0.7).drawPolygon(flatPts);
     }
   }
   // Corner dots
   for (let tx = 0; tx <= cols; tx++) {
     for (let ty = 0; ty <= rows; ty++) {
       const [px, py] = proj(tx, ty, 0.003);
-      g.circle(px, py, 2.5).fill({ color: 0x44aaff, alpha: 0.8 });
+      g.beginFill(0x44aaff, 0.8 ).drawCircle(px, py, 2.5).endFill();
     }
   }
 }

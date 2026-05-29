@@ -26,6 +26,7 @@ export interface FurnitureItem {
 }
 
 export interface RoomScene {
+  roomBgSprite: PIXI.Sprite;
   backgroundGraphics: PIXI.Graphics;
   tileGridGraphics: PIXI.Graphics;
   furnitureLayer: PIXI.Container;
@@ -71,10 +72,11 @@ function createFurnitureItem(
 
   drawFurnitureByType(graphics, obj.furnitureType, obj.wx, obj.wy, obj.wz);
 
-  // Depth sort key: screen Y of the footprint back edge
+  // Depth sort: screen Y of back edge (closer = higher zIndex = on top).
+  // wx term breaks ties horizontally (right-over-left), wz lifts wall items.
   const fp = FURNITURE_TILES[obj.furnitureType] ?? { w: 1, d: 1 };
   const [, backY] = proj(obj.wx + fp.w / 2, obj.wy + fp.d, obj.wz);
-  container.zIndex = -backY;
+  container.zIndex = backY + obj.wx * 4 + obj.wz * 25;
 
   // Hit area: floor footprint
   container.hitArea = furnitureHitPolygon(obj.furnitureType, obj.wx, obj.wy, obj.wz);
@@ -106,8 +108,11 @@ export function buildRoomScene(
   stage: PIXI.Container,
   objects: RoomObject[],
   handlers: FurnitureHandlers,
+  roomBgUrl?: string,
 ): RoomScene {
-  // Five layers in draw order
+  // Layers in draw order: room bg sprite → graphics → tile grid → furniture → active station → highlight
+  const roomBgSprite = new PIXI.Sprite();
+  roomBgSprite.visible = false;
   const backgroundGraphics = new PIXI.Graphics();
   const tileGridGraphics = new PIXI.Graphics();
   const furnitureLayer = new PIXI.Container();
@@ -116,11 +121,24 @@ export function buildRoomScene(
 
   tileGridGraphics.visible = false;
   furnitureLayer.sortableChildren = true;
+  stage.addChild(roomBgSprite);
   stage.addChild(backgroundGraphics);
   stage.addChild(tileGridGraphics);
   stage.addChild(furnitureLayer);
   stage.addChild(activeStationGraphics);
   stage.addChild(highlightGraphics);
+
+  // Load Azur Lane room background if URL provided
+  if (roomBgUrl) {
+    PIXI.Assets.load(roomBgUrl).then((texture) => {
+      roomBgSprite.texture = texture;
+      roomBgSprite.width = CANVAS_W;
+      roomBgSprite.height = CANVAS_H;
+      roomBgSprite.visible = true;
+    }).catch(() => {
+      // Fallback: keep PixiJS-drawn room
+    });
+  }
 
   // Make stage interactive so drag events propagate
   stage.eventMode = "static";
@@ -150,9 +168,11 @@ export function buildRoomScene(
     item.graphics.clear();
     drawFurnitureByType(item.graphics, item.obj.furnitureType, wx, wy, wz);
 
+    // Depth sort: screen Y of back edge (closer = higher zIndex = on top).
+    // wx term breaks ties horizontally (right-over-left), wz lifts wall items.
     const fp2 = FURNITURE_TILES[item.obj.furnitureType] ?? { w: 1, d: 1 };
     const [, backY2] = proj(wx + fp2.w / 2, wy + fp2.d, wz);
-    item.container.zIndex = -backY2;
+    item.container.zIndex = backY2 + wx * 4 + wz * 25;
     item.container.hitArea = furnitureHitPolygon(item.obj.furnitureType, wx, wy, wz);
   }
 
@@ -221,6 +241,7 @@ export function buildRoomScene(
   }
 
   return {
+    roomBgSprite,
     backgroundGraphics,
     tileGridGraphics,
     furnitureLayer,
