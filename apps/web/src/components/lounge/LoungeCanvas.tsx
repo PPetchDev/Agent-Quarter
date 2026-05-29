@@ -560,20 +560,20 @@ export function LoungeCanvas() {
   // ── Active station pulse (driven by agent work lifecycle) ───────────────────
   const working = agent.workDurationMs !== undefined;
   const stationId = agent.targetStationId as LoungeStationId | undefined;
+  // Resolve the furniture id once per object/station change so the pulse RAF
+  // only restarts when the matching furniture itself is added, removed, or
+  // swapped — not on every unrelated edit to the objects array.
+  const activeStationFurnitureId = useMemo<number | null>(() => {
+    if (!working || !stationId) return null;
+    const station = loungeStations[stationId];
+    if (!station) return null;
+    const match = objects.find((o) => o.furnitureType === station.furnitureType);
+    return match ? match.id : null;
+  }, [working, stationId, objects]);
   useEffect(() => {
     const scene = sceneRef.current;
     if (!scene) return;
-    if (!working || !stationId) {
-      scene.setActiveStation(null, 0);
-      return;
-    }
-    const station = loungeStations[stationId];
-    if (!station) {
-      scene.setActiveStation(null, 0);
-      return;
-    }
-    const target = objects.find((o) => o.furnitureType === station.furnitureType);
-    if (!target) {
+    if (activeStationFurnitureId === null) {
       scene.setActiveStation(null, 0);
       return;
     }
@@ -583,7 +583,7 @@ export function LoungeCanvas() {
     const loop = () => {
       const elapsed = performance.now() - start;
       const alpha = 0.55 + 0.35 * Math.sin(elapsed / 220);
-      sceneRef.current?.setActiveStation(target.id, alpha);
+      sceneRef.current?.setActiveStation(activeStationFurnitureId, alpha);
       rafId = requestAnimationFrame(loop);
     };
     rafId = requestAnimationFrame(loop);
@@ -592,7 +592,7 @@ export function LoungeCanvas() {
       cancelAnimationFrame(rafId);
       sceneRef.current?.setActiveStation(null, 0);
     };
-  }, [working, stationId, objects]);
+  }, [activeStationFurnitureId]);
 
   // ── Scale / camera ───────────────────────────────────────────────────────────
   useEffect(() => {

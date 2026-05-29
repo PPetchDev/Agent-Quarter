@@ -7,7 +7,12 @@ import { moveTowardsTarget } from '@/game/movement/moveToTarget';
 import { planLoungeGridRoute } from '@/game/scene/loungePathGrid';
 import type { GridCell, IsoRoutePoint } from '@/game/movement/gridPath';
 import { resolveWalkingAnimation, resolveStateAnimation } from '@/game/animation/animationResolver';
+import { resolveDirection } from '@/game/movement/direction';
 import { enqueueTask as enqueueTaskPure, dequeueTask } from '@/game/agents/taskQueue';
+import {
+  resolveLoungeStation,
+  type LoungeStationId,
+} from '@/game/scene/loungeStations';
 import type { RoomObject } from '@/components/lounge/roomDefs';
 import {
   computeRoomProjection,
@@ -299,10 +304,30 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
       const arrivedAnim    = resolveStateAnimation(arrivedState);
       const startsWork     = (current.workDurationMs ?? 0) > 0;
 
+      // Face the station body, not the last approach direction. Project the
+      // station's iso position to screen and snap to dominant axis.
+      let arriveDirection = result.direction;
+      if (current.targetStationId) {
+        const station = resolveLoungeStation(
+          current.targetStationId as LoungeStationId,
+          roomObjects,
+        );
+        const stationScreen = projectIsoPoint(
+          { wx: station.isoPosition.x, wy: station.isoPosition.y, wz: station.isoPosition.z ?? 0 },
+          roomWidth,
+          roomHeight,
+        );
+        const dx = stationScreen.x - result.position.x;
+        const dy = stationScreen.y - result.position.y;
+        if (dx !== 0 || dy !== 0) {
+          arriveDirection = resolveDirection(dx, dy);
+        }
+      }
+
       updateAgent((prev) => ({
         ...prev,
         position:        result.position,
-        direction:       result.direction,
+        direction:       arriveDirection,
         state:           arrivedState,
         animation:       arrivedAnim,
         bubbleText:      arrivedBubble,
@@ -336,7 +361,7 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
         animation: walkAnim,
       }));
     }
-  }, [clearRoute, updateAgent, updateRouteDebug]);
+  }, [clearRoute, roomHeight, roomObjects, roomWidth, updateAgent, updateRouteDebug]);
 
   const tickWork = useCallback((deltaSeconds: number) => {
     const current = agentRef.current;
@@ -358,12 +383,15 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
         }));
         assignTask(nextTask);
       } else {
+        const doneBubble = current.taskType
+          ? resolveAgentTask(current.taskType, roomObjects).doneBubbleText
+          : 'Idle.';
         updateAgent((prev) => ({
           ...prev,
           state:           'idle',
           taskType:        'idle',
           animation:       resolveStateAnimation('idle'),
-          bubbleText:      'Done. Idle.',
+          bubbleText:      doneBubble,
           targetStationId: undefined,
           arriveState:     undefined,
           arriveBubbleText: undefined,
@@ -377,7 +405,7 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
         workElapsedMs: next,
       }));
     }
-  }, [assignTask, updateAgent]);
+  }, [assignTask, roomObjects, updateAgent]);
 
   // RAF game loop
   useEffect(() => {

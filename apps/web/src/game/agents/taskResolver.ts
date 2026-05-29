@@ -18,6 +18,11 @@ export type ResolvedAgentTask = {
   walkingBubbleText: string;
   bubbleText: string;
   /**
+   * Bubble text shown when the work timer auto-completes and the agent
+   * returns to idle. Per task type so the post-work message reads naturally.
+   */
+  doneBubbleText: string;
+  /**
    * Deterministic duration the agent should remain in the arrival state
    * before auto-returning to idle. 0 means no work loop (idle task).
    */
@@ -79,6 +84,17 @@ const taskWorkDurationMap: Record<AgentTaskType, number> = {
   idle:     0,
 };
 
+const taskDoneBubbleMap: Record<AgentTaskType, string> = {
+  code:     'Code session done.',
+  research: 'Finished reading.',
+  meeting:  'Wrapped up the meeting.',
+  document: 'Document ready.',
+  review:   'Review complete.',
+  print:    'Print job sent.',
+  rest:     'Feeling refreshed.',
+  idle:     'Idle.',
+};
+
 export function resolveAgentTask(
   taskType: AgentTaskType,
   roomObjects: LoungeStationFurniture[] = [],
@@ -94,6 +110,7 @@ export function resolveAgentTask(
     arriveState:       taskArrivalStateMap[taskType],
     walkingBubbleText: taskWalkingBubbleMap[taskType],
     bubbleText:        taskBubbleMap[taskType],
+    doneBubbleText:    taskDoneBubbleMap[taskType],
     workDurationMs:    taskWorkDurationMap[taskType],
   };
 }
