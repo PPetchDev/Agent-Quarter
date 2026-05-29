@@ -9,6 +9,7 @@ _Updated: C-FURNITURE-GRID-001_
 | Isometric projection | `apps/web/src/game/isometric/isoProjection.test.ts` |
 | Task resolver mapping | `apps/web/src/game/agents/taskResolver.test.ts` |
 | Task queue helpers | `apps/web/src/game/agents/taskQueue.test.ts` |
+| Station ambient shape table invariants | `apps/web/src/components/lounge/stationAmbients.test.ts` |
 | Direction resolver | `apps/web/src/game/movement/direction.test.ts` |
 | Movement helper | `apps/web/src/game/movement/moveToTarget.test.ts` |
 | Grid path planner | `apps/web/src/game/movement/gridPath.test.ts` |

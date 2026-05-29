@@ -19,8 +19,8 @@ _Updated: C-FURNITURE-GRID-001_
 | `drawDocumentBoard` | function | Draws the wall planning/document board |
 | `drawActiveStationHighlight` | function | Draws a gold floor ring + dispatches ambient body glow at a parameterised alpha used to pulse the active work station |
 | `drawStationAmbient` | function | Interpreter that walks the `STATION_AMBIENTS` table for the given furniture type and draws each shape with coordinates scaled by `FURNITURE_DIMS` |
-| `STATION_AMBIENTS` | constant | Per-station ambient shape table (`face`/`halo`/`point`/`topOutline`) with proportional w/h offsets |
-| `AmbientShape` | type | Union of ambient shape kinds for `STATION_AMBIENTS` entries |
+| `STATION_AMBIENTS` | constant | Per-station ambient shape table (`face`/`halo`/`point`/`topOutline`) with proportional w/h offsets — lives in `stationAmbients.ts` (PIXI-free, unit-tested) |
+| `AmbientShape` | type | Union of ambient shape kinds for `STATION_AMBIENTS` entries — defined in `stationAmbients.ts` |
 | `RoomScene.setActiveStation` | method | Draws or clears the pulsing active-station highlight on its own graphics layer |
 | `activeStationGraphics` | PIXI layer | Scene layer hosting the active-station pulse, drawn below `highlightGraphics` |
 | `FURNITURE_CATALOG` | constant | Furniture shop metadata, including role-aligned station types |
