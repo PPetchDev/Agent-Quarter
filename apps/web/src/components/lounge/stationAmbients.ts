@@ -18,7 +18,7 @@
  *     express any shape without extending the union or the interpreter.
  */
 
-import type { RoomObject } from "./roomDefs";
+import { FURNITURE_DIMS, type RoomObject } from "./roomDefs";
 
 export type AmbientDrawContext = {
   /** Project iso world coords to screen pixels. */
@@ -41,6 +41,70 @@ export type AmbientShape =
   | { kind: "point"; fx: number; yOff: number; fz: number; r: number; color: number; alpha: number }
   | { kind: "topOutline"; color: number; alpha: number; lineWidth: number; fillAlpha: number }
   | { kind: "custom"; draw: (ctx: AmbientDrawContext, obj: RoomObject, alpha: number) => void };
+
+/**
+ * Pure interpreter that walks the `STATION_AMBIENTS` table for the given
+ * furniture type and routes each shape through the supplied draw context.
+ * The PIXI renderer in `pixiRoom.ts` calls this with a PIXI-backed context;
+ * tests can call it with a recording stub.
+ */
+export function applyStationAmbient(
+  ctx: AmbientDrawContext,
+  obj: RoomObject,
+  alpha: number,
+): void {
+  const shapes = STATION_AMBIENTS[obj.furnitureType];
+  if (!shapes) return;
+  const { wx, wy, wz } = obj;
+  const { dim } = ctx;
+
+  for (const shape of shapes) {
+    switch (shape.kind) {
+      case "face": {
+        const x0 = wx + shape.fx0 * dim.w;
+        const x1 = wx + shape.fx1 * dim.w;
+        const z0 = wz + shape.fz0 * dim.h;
+        const z1 = wz + shape.fz1 * dim.h;
+        const y  = wy + shape.yOff;
+        ctx.fillQuad(
+          [ctx.proj(x0, y, z0), ctx.proj(x1, y, z0), ctx.proj(x1, y, z1), ctx.proj(x0, y, z1)],
+          shape.color,
+          shape.alpha * alpha,
+        );
+        break;
+      }
+      case "halo": {
+        const [cx, cy] = ctx.proj(wx + shape.fx * dim.w, wy + shape.yOff, wz + shape.fz * dim.h);
+        ctx.ellipse(cx, cy, shape.rx, shape.ry, shape.color, shape.alpha * alpha);
+        break;
+      }
+      case "point": {
+        const [cx, cy] = ctx.proj(wx + shape.fx * dim.w, wy + shape.yOff, wz + shape.fz * dim.h);
+        ctx.circle(cx, cy, shape.r, shape.color, shape.alpha * alpha);
+        break;
+      }
+      case "topOutline": {
+        const top: [number, number][] = [
+          ctx.proj(wx,            wy,            wz + dim.h),
+          ctx.proj(wx + dim.w,    wy,            wz + dim.h),
+          ctx.proj(wx + dim.w,    wy + dim.d,    wz + dim.h),
+          ctx.proj(wx,            wy + dim.d,    wz + dim.h),
+        ];
+        ctx.strokeQuad(top, shape.color, shape.lineWidth, shape.alpha * alpha);
+        ctx.fillQuad(top, shape.color, shape.fillAlpha * alpha);
+        break;
+      }
+      case "custom":
+        shape.draw(ctx, obj, alpha);
+        break;
+    }
+  }
+}
+
+/** Look up the bounding box used by ambient shape proportions. */
+export function getStationDim(furnitureType: string): { w: number; d: number; h: number } {
+  return FURNITURE_DIMS[furnitureType] ?? { w: 1, d: 1, h: 1 };
+}
 
 export const STATION_AMBIENTS: Record<string, AmbientShape[]> = {
   computer_desk: [
