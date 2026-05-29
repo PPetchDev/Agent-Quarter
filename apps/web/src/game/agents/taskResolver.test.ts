@@ -116,4 +116,20 @@ describe('resolveAgentTask', () => {
     expect(print).toBeLessThan(code);
     expect(print).toBeLessThan(rest);
   });
+
+  it('exposes a non-empty doneBubbleText for every task', () => {
+    const tasks = ['code', 'research', 'meeting', 'document', 'review', 'print', 'rest', 'idle'] as const;
+    for (const task of tasks) {
+      const r = resolveAgentTask(task);
+      expect(r.doneBubbleText.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('done bubble text differs from arrival bubble text for work tasks', () => {
+    const workTasks = ['code', 'research', 'meeting', 'document', 'review', 'print', 'rest'] as const;
+    for (const task of workTasks) {
+      const r = resolveAgentTask(task);
+      expect(r.doneBubbleText).not.toBe(r.bubbleText);
+    }
+  });
 });
