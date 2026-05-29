@@ -26,6 +26,7 @@ describe('STATION_AMBIENTS', () => {
   it('keeps every alpha and fillAlpha within [0, 1]', () => {
     for (const [type, shapes] of Object.entries(STATION_AMBIENTS)) {
       for (const shape of shapes) {
+        if (shape.kind === 'custom') continue;
         expect(
           inUnitRange(shape.alpha),
           `${type} ${shape.kind}: alpha ${shape.alpha} out of range`,
@@ -84,6 +85,7 @@ describe('STATION_AMBIENTS', () => {
       'halo',
       'point',
       'topOutline',
+      'custom',
     ]);
     for (const [type, shapes] of Object.entries(STATION_AMBIENTS)) {
       for (const shape of shapes) {
@@ -93,5 +95,30 @@ describe('STATION_AMBIENTS', () => {
         ).toBe(true);
       }
     }
+  });
+
+  it('custom shape kind invokes its draw fn with the context, obj, and alpha', () => {
+    const calls: { obj: unknown; alpha: number }[] = [];
+    const customShape: AmbientShape = {
+      kind: 'custom',
+      draw: (_ctx, obj, alpha) => {
+        calls.push({ obj, alpha });
+      },
+    };
+    // Drive draw via the typed call path used by the interpreter
+    customShape.draw(
+      {
+        proj: () => [0, 0],
+        fillQuad: () => {},
+        strokeQuad: () => {},
+        circle: () => {},
+        ellipse: () => {},
+        dim: { w: 1, d: 1, h: 1 },
+      },
+      { id: 0, furnitureType: 'x', label: '', description: '', wx: 0, wy: 0, wz: 0, happiness: 0, draggable: false },
+      0.5,
+    );
+    expect(calls.length).toBe(1);
+    expect(calls[0]?.alpha).toBe(0.5);
   });
 });

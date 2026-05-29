@@ -1,21 +1,26 @@
 import type { AgentTaskType } from './agentTypes';
 
 /**
- * Hard cap on the agent's pending task queue length. Enqueuing past this
- * limit drops the new task; the existing queue is returned unchanged.
+ * Default hard cap on the agent's pending task queue length. Callers can pass
+ * a custom `maxLength` to `enqueueTask` or to `useAgentWalk` options.
  * Chosen to keep the queue chip row readable in the compact HUD.
  */
 export const MAX_TASK_QUEUE_LENGTH = 8;
 
 /**
  * Append a task to the back of the queue. Returns a new array; never mutates.
- * Returns the queue unchanged when already at `MAX_TASK_QUEUE_LENGTH`.
+ * Returns the queue unchanged when already at the cap.
+ *
+ * @param maxLength Optional override for the queue cap. Defaults to
+ *   `MAX_TASK_QUEUE_LENGTH`. Values < 1 are treated as 1.
  */
 export function enqueueTask(
   queue: readonly AgentTaskType[],
   task: AgentTaskType,
+  maxLength: number = MAX_TASK_QUEUE_LENGTH,
 ): AgentTaskType[] {
-  if (queue.length >= MAX_TASK_QUEUE_LENGTH) return queue.slice();
+  const cap = Math.max(1, Math.floor(maxLength));
+  if (queue.length >= cap) return queue.slice();
   return [...queue, task];
 }
 

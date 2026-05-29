@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js";
 import type { RoomObject } from "./roomDefs";
 import { FURNITURE_DIMS, FURNITURE_TILES } from "./roomDefs";
-import { STATION_AMBIENTS } from "./stationAmbients";
+import { STATION_AMBIENTS, type AmbientDrawContext } from "./stationAmbients";
 
 export const CANVAS_W = 1080;
 export const CANVAS_H = 620;
@@ -607,6 +607,18 @@ export function drawStationAmbient(
         ];
         qstroke(g, top, shape.color, shape.lineWidth, shape.alpha * alpha);
         qfill(g, top, shape.color, shape.fillAlpha * alpha);
+        break;
+      }
+      case "custom": {
+        const ctx: AmbientDrawContext = {
+          proj,
+          fillQuad:   (points, color, a) => qfill(g, points, color, a),
+          strokeQuad: (points, color, lineWidth, a) => qstroke(g, points, color, lineWidth, a),
+          circle:     (cx, cy, r, color, a) => { g.circle(cx, cy, r).fill({ color, alpha: a }); },
+          ellipse:    (cx, cy, rx, ry, color, a) => { g.ellipse(cx, cy, rx, ry).fill({ color, alpha: a }); },
+          dim,
+        };
+        shape.draw(ctx, obj, alpha);
         break;
       }
     }
