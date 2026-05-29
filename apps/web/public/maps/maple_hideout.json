@@ -1,0 +1,202 @@
+{
+  "version": "1.10",
+  "tiledversion": "1.10.2",
+  "name": "Maple Hideout",
+  "orientation": "isometric",
+  "renderorder": "right-down",
+  "tilewidth": 40,
+  "tileheight": 20,
+  "type": "map",
+  "nextlayerid": 3,
+  "nextobjectid": 14,
+  "layers": [
+    {
+      "id": 1,
+      "name": "Furniture",
+      "type": "objectgroup",
+      "draworder": "topdown",
+      "visible": true,
+      "opacity": 1,
+      "x": 0,
+      "y": 0,
+      "objects": [
+        {
+          "id": 1,
+          "name": "document_board",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 4 },
+            { "name": "wy",          "type": "float",  "value": 8 },
+            { "name": "wz",          "type": "float",  "value": 2.25 },
+            { "name": "label",       "type": "string", "value": "Document Board" },
+            { "name": "description", "type": "string", "value": "A wall-mounted document board for planning and notes" },
+            { "name": "happiness",   "type": "int",    "value": 7 },
+            { "name": "draggable",   "type": "bool",   "value": false }
+          ]
+        },
+        {
+          "id": 2,
+          "name": "printer",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 9 },
+            { "name": "wy",          "type": "float",  "value": 5 },
+            { "name": "wz",          "type": "float",  "value": 0 },
+            { "name": "label",       "type": "string", "value": "Printer Station" },
+            { "name": "description", "type": "string", "value": "A compact printer and utility station for exports and paperwork" },
+            { "name": "happiness",   "type": "int",    "value": 8 },
+            { "name": "draggable",   "type": "bool",   "value": true }
+          ]
+        },
+        {
+          "id": 3,
+          "name": "bookcase",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 1 },
+            { "name": "wy",          "type": "float",  "value": 7 },
+            { "name": "wz",          "type": "float",  "value": 0 },
+            { "name": "label",       "type": "string", "value": "Bookcase" },
+            { "name": "description", "type": "string", "value": "A tall bookcase packed with colorful books and a small plant on top" },
+            { "name": "happiness",   "type": "int",    "value": 10 },
+            { "name": "draggable",   "type": "bool",   "value": true }
+          ]
+        },
+        {
+          "id": 4,
+          "name": "computer_desk",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 6 },
+            { "name": "wy",          "type": "float",  "value": 6 },
+            { "name": "wz",          "type": "float",  "value": 0 },
+            { "name": "label",       "type": "string", "value": "Computer Workstation" },
+            { "name": "description", "type": "string", "value": "A coding workstation with desk, monitor, keyboard, and notes" },
+            { "name": "happiness",   "type": "int",    "value": 14 },
+            { "name": "draggable",   "type": "bool",   "value": true }
+          ]
+        },
+        {
+          "id": 6,
+          "name": "bed",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 6 },
+            { "name": "wy",          "type": "float",  "value": 0 },
+            { "name": "wz",          "type": "float",  "value": 0 },
+            { "name": "label",       "type": "string", "value": "Wooden Bed" },
+            { "name": "description", "type": "string", "value": "A cozy bed with dark wood frame, blue bedding and floral pillows" },
+            { "name": "happiness",   "type": "int",    "value": 15 },
+            { "name": "draggable",   "type": "bool",   "value": true }
+          ]
+        },
+        {
+          "id": 7,
+          "name": "nightstand",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 5 },
+            { "name": "wy",          "type": "float",  "value": 0 },
+            { "name": "wz",          "type": "float",  "value": 0 },
+            { "name": "label",       "type": "string", "value": "Bedside Cabinet" },
+            { "name": "description", "type": "string", "value": "A small bedside cabinet with a glowing lantern" },
+            { "name": "happiness",   "type": "int",    "value": 5 },
+            { "name": "draggable",   "type": "bool",   "value": true }
+          ]
+        },
+        {
+          "id": 9,
+          "name": "low_table",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 2 },
+            { "name": "wy",          "type": "float",  "value": 3 },
+            { "name": "wz",          "type": "float",  "value": 0 },
+            { "name": "label",       "type": "string", "value": "Meeting Table" },
+            { "name": "description", "type": "string", "value": "A low meeting table with teapot and planning notes" },
+            { "name": "happiness",   "type": "int",    "value": 8 },
+            { "name": "draggable",   "type": "bool",   "value": true }
+          ]
+        },
+        {
+          "id": 10,
+          "name": "zabuton",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 2 },
+            { "name": "wy",          "type": "float",  "value": 2 },
+            { "name": "wz",          "type": "float",  "value": 0 },
+            { "name": "label",       "type": "string", "value": "Meeting Cushion" },
+            { "name": "description", "type": "string", "value": "A soft Japanese zabuton floor cushion" },
+            { "name": "happiness",   "type": "int",    "value": 4 },
+            { "name": "draggable",   "type": "bool",   "value": true }
+          ]
+        },
+        {
+          "id": 11,
+          "name": "zabuton",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 2 },
+            { "name": "wy",          "type": "float",  "value": 5 },
+            { "name": "wz",          "type": "float",  "value": 0 },
+            { "name": "label",       "type": "string", "value": "Meeting Cushion" },
+            { "name": "description", "type": "string", "value": "A soft Japanese zabuton floor cushion" },
+            { "name": "happiness",   "type": "int",    "value": 4 },
+            { "name": "draggable",   "type": "bool",   "value": true }
+          ]
+        },
+        {
+          "id": 12,
+          "name": "zabuton",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 0 },
+            { "name": "wy",          "type": "float",  "value": 6 },
+            { "name": "wz",          "type": "float",  "value": 0 },
+            { "name": "label",       "type": "string", "value": "Reading Cushion" },
+            { "name": "description", "type": "string", "value": "A soft Japanese zabuton floor cushion" },
+            { "name": "happiness",   "type": "int",    "value": 4 },
+            { "name": "draggable",   "type": "bool",   "value": true }
+          ]
+        },
+        {
+          "id": 13,
+          "name": "plant",
+          "type": "furniture",
+          "visible": true,
+          "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0,
+          "properties": [
+            { "name": "wx",          "type": "float",  "value": 9 },
+            { "name": "wy",          "type": "float",  "value": 6 },
+            { "name": "wz",          "type": "float",  "value": 0 },
+            { "name": "label",       "type": "string", "value": "Tropical Plant" },
+            { "name": "description", "type": "string", "value": "A lush tropical plant in a terracotta pot" },
+            { "name": "happiness",   "type": "int",    "value": 7 },
+            { "name": "draggable",   "type": "bool",   "value": true }
+          ]
+        }
+      ]
+    }
+  ]
+}

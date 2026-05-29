@@ -1,0 +1,157 @@
+<h2>เลือกชุดชื่อสำหรับระบบ</h2>
+<p class="subtitle">concept เหมือนกัน — แต่ชื่อต่าง ทั้ง 3 ชุดใช้ theme anime/squad</p>
+
+<style>
+.name-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 16px; }
+.name-table th { padding: 8px 12px; text-align: left; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 800; border-bottom: 2px solid rgba(255,255,255,0.05); }
+.name-table td { padding: 7px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.name-table tr:hover td { background: rgba(255,255,255,0.02); }
+.orig { color: #475569; font-family: monospace; font-size: 10px; }
+.th-orig { color: #475569; }
+.th-a { color: #f0abfc; }
+.th-b { color: #a8f0c8; }
+.th-c { color: #fde68a; }
+.name-a { color: #f0abfc; font-family: monospace; font-weight: 600; }
+.name-b { color: #a8f0c8; font-family: monospace; font-weight: 600; }
+.name-c { color: #fde68a; font-family: monospace; font-weight: 600; }
+.concept { color: #94a3b8; }
+</style>
+
+<table class="name-table">
+  <tr>
+    <th class="th-orig">Concept</th>
+    <th class="th-orig">Repo เดิม</th>
+    <th class="th-a">✦ ชุด A — Military/Mecha</th>
+    <th class="th-b">✦ ชุด B — RPG/Fantasy</th>
+    <th class="th-c">✦ ชุด C — Idol/Pop</th>
+  </tr>
+  <tr>
+    <td class="concept">Job context folder</td>
+    <td class="orig">Tentacle</td>
+    <td class="name-a">Mission</td>
+    <td class="name-b">Quest</td>
+    <td class="name-c">Project</td>
+  </tr>
+  <tr>
+    <td class="concept">Runtime agent instance</td>
+    <td class="orig">Terminal / Session</td>
+    <td class="name-a">Sortie</td>
+    <td class="name-b">Summon</td>
+    <td class="name-c">Stage</td>
+  </tr>
+  <tr>
+    <td class="concept">Child agent on one task</td>
+    <td class="orig">Worker</td>
+    <td class="name-a">Operative</td>
+    <td class="name-b">Ally</td>
+    <td class="name-c">Member</td>
+  </tr>
+  <tr>
+    <td class="concept">Coordinator agent</td>
+    <td class="orig">Parent</td>
+    <td class="name-a">Commander</td>
+    <td class="name-b">Sage</td>
+    <td class="name-c">Lead</td>
+  </tr>
+  <tr>
+    <td class="concept">Message between agents</td>
+    <td class="orig">Channel message</td>
+    <td class="name-a">Relay</td>
+    <td class="name-b">Signal</td>
+    <td class="name-c">Memo</td>
+  </tr>
+  <tr>
+    <td class="concept">Job context document</td>
+    <td class="orig">Tentacle context / CONTEXT.md</td>
+    <td class="name-a">Briefing</td>
+    <td class="name-b">Lore</td>
+    <td class="name-c">Brief</td>
+  </tr>
+  <tr>
+    <td class="concept">Task checklist</td>
+    <td class="orig">todo.md</td>
+    <td class="name-a">Objectives</td>
+    <td class="name-b">Quests</td>
+    <td class="name-c">Checklist</td>
+  </tr>
+  <tr>
+    <td class="concept">Agent processing/idle</td>
+    <td class="orig">AgentRuntimeState</td>
+    <td class="name-a">SortieState</td>
+    <td class="name-b">SummonState</td>
+    <td class="name-c">StageState</td>
+  </tr>
+  <tr>
+    <td class="concept">State tracker class</td>
+    <td class="orig">AgentStateTracker</td>
+    <td class="name-a">SortieTracker</td>
+    <td class="name-b">SummonTracker</td>
+    <td class="name-c">StageTracker</td>
+  </tr>
+  <tr>
+    <td class="concept">Idle tier: fresh 0–30s</td>
+    <td class="orig">fresh</td>
+    <td class="name-a">standby</td>
+    <td class="name-b">alert</td>
+    <td class="name-c">ready</td>
+  </tr>
+  <tr>
+    <td class="concept">Idle tier: lingering 30–90s</td>
+    <td class="orig">lingering</td>
+    <td class="name-a">resting</td>
+    <td class="name-b">drowsy</td>
+    <td class="name-c">winding-down</td>
+  </tr>
+  <tr>
+    <td class="concept">Idle tier: deep 90s+</td>
+    <td class="orig">deep</td>
+    <td class="name-a">dormant</td>
+    <td class="name-b">slumbering</td>
+    <td class="name-c">offline</td>
+  </tr>
+  <tr>
+    <td class="concept">Emotion resolver fn</td>
+    <td class="orig">resolveCharacterEmotion()</td>
+    <td class="name-a">readCharacterAura()</td>
+    <td class="name-b">senseCharacterMood()</td>
+    <td class="name-c">getCharacterVibes()</td>
+  </tr>
+  <tr>
+    <td class="concept">Emotion catalog const</td>
+    <td class="orig">CHARACTER_EMOTION_CATALOG</td>
+    <td class="name-a">CHARACTER_AURA_REGISTRY</td>
+    <td class="name-b">CHARACTER_MOOD_ATLAS</td>
+    <td class="name-c">CHARACTER_VIBE_MAP</td>
+  </tr>
+  <tr>
+    <td class="concept">Project folder</td>
+    <td class="orig">.octogent/</td>
+    <td class="name-a">.squad/</td>
+    <td class="name-b">.guild/</td>
+    <td class="name-c">.studio/</td>
+  </tr>
+</table>
+
+<div class="options">
+  <div class="option" data-choice="military" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Military/Mecha — Mission, Sortie, Operative, Commander, Relay</h3>
+      <p>ฟีล Evangelion/Symphogear — tactical, mecha aesthetic เข้ากับ "magical mecha" ของ repo เดิม</p>
+    </div>
+  </div>
+  <div class="option" data-choice="rpg" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>RPG/Fantasy — Quest, Summon, Ally, Sage, Signal</h3>
+      <p>ฟีล JRPG — เข้ากับ anime character ที่เป็น chibi น่ารัก ฟีลเหมือน party RPG</p>
+    </div>
+  </div>
+  <div class="option" data-choice="idol" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Idol/Pop — Project, Stage, Member, Lead, Memo</h3>
+      <p>ฟีลนุ่มๆ เรียบง่าย ชื่อสั้น เข้าใจง่ายสำหรับ developer ทั่วไป</p>
+    </div>
+  </div>
+</div>

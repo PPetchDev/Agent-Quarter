@@ -1,0 +1,246 @@
+<h2>System Architecture Design</h2>
+<p class="subtitle">Anime Agent Squad — Next.js + Nest.js + Socket.io + PostgreSQL</p>
+
+<style>
+  .arch-diagram {
+    background: #0f172a;
+    border-radius: 12px;
+    padding: 20px;
+    font-family: monospace;
+    font-size: 12px;
+    color: #94a3b8;
+    margin-bottom: 16px;
+  }
+  .layer {
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+  }
+  .layer-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .layer-frontend { background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.3); }
+  .layer-backend  { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.25); }
+  .layer-db       { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.25); }
+  .layer-external { background: rgba(251,146,60,0.08); border: 1px solid rgba(251,146,60,0.25); }
+  .layer-shared   { background: rgba(240,171,252,0.08); border: 1px solid rgba(240,171,252,0.3); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .chip-purple { background: rgba(167,139,250,0.2); color: #a78bfa; }
+  .chip-green  { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .chip-blue   { background: rgba(59,130,246,0.2); color: #60a5fa; }
+  .chip-orange { background: rgba(251,146,60,0.2); color: #fb923c; }
+  .chip-pink   { background: rgba(240,171,252,0.2); color: #f0abfc; }
+  .chip-yellow { background: rgba(253,224,71,0.2); color: #fde047; }
+  .chip-gray   { background: rgba(148,163,184,0.15); color: #94a3b8; }
+
+  .arrow {
+    text-align: center;
+    color: #334155;
+    font-size: 16px;
+    margin: 4px 0;
+  }
+  .arrow-label {
+    font-size: 9px;
+    color: #475569;
+    text-align: center;
+    margin-top: -2px;
+    margin-bottom: 4px;
+  }
+
+  .data-flow {
+    background: #0f172a;
+    border-radius: 12px;
+    padding: 20px;
+    font-size: 11px;
+  }
+  .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: #1e293b;
+    border-left: 3px solid #334155;
+  }
+  .flow-num {
+    background: #334155;
+    color: #94a3b8;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .flow-text { flex: 1; color: #cbd5e1; }
+  .flow-tag { font-size: 9px; padding: 1px 5px; border-radius: 3px; margin-left: 4px; }
+  .tag-ws  { background: rgba(167,139,250,0.25); color: #a78bfa; }
+  .tag-api { background: rgba(34,197,94,0.2); color: #4ade80; }
+  .tag-db  { background: rgba(59,130,246,0.2); color: #60a5fa; }
+  .tag-anim { background: rgba(240,171,252,0.2); color: #f0abfc; }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin: 16px 0 8px;
+  }
+
+  .emotion-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+    background: #0f172a;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .emotion-table th {
+    background: #1e293b;
+    padding: 6px 10px;
+    text-align: left;
+    color: #64748b;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-size: 9px;
+  }
+  .emotion-table td {
+    padding: 5px 10px;
+    border-top: 1px solid #1e293b;
+    color: #94a3b8;
+  }
+  .emotion-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .state-live   { color: #4ade80; }
+  .state-wait   { color: #f59e0b; }
+  .state-error  { color: #f87171; }
+  .state-idle   { color: #64748b; }
+  .state-done   { color: #a78bfa; }
+</style>
+
+<div class="section-title">▸ Stack Overview</div>
+<div class="arch-diagram">
+  <div class="layer layer-frontend">
+    <div class="layer-title" style="color:#a78bfa;">▸ Frontend — Next.js 15 + Tailwind + anime.js</div>
+    <div class="chips">
+      <span class="chip chip-purple">CharacterSidebar</span>
+      <span class="chip chip-purple">CharacterAvatar + anime.js</span>
+      <span class="chip chip-purple">ChatPanel (tabs)</span>
+      <span class="chip chip-purple">useCharacterEmotion hook</span>
+      <span class="chip chip-purple">useAnimeLoop hook</span>
+      <span class="chip chip-gray">Socket.io client</span>
+    </div>
+  </div>
+  <div class="arrow">⇅</div>
+  <div class="arrow-label">WebSocket (emotion events, message chunks) + REST (CRUD)</div>
+  <div class="layer layer-backend">
+    <div class="layer-title" style="color:#4ade80;">▸ Backend — Nest.js + Socket.io + Prisma</div>
+    <div class="chips">
+      <span class="chip chip-green">ConversationsModule</span>
+      <span class="chip chip-green">MessagesModule</span>
+      <span class="chip chip-green">ClaudeGateway (WebSocket)</span>
+      <span class="chip chip-green">CharactersModule</span>
+      <span class="chip chip-green">AgentStateTracker ← ported</span>
+      <span class="chip chip-green">resolveCharacterEmotion ← ported</span>
+    </div>
+  </div>
+  <div class="arrow">⇅ ⇅</div>
+  <div class="arrow-label" style="display:flex;justify-content:center;gap:80px;">
+    <span>PostgreSQL (Prisma)</span>
+    <span>Claude API (streaming)</span>
+  </div>
+  <div style="display:flex;gap:10px;margin-top:4px;">
+    <div class="layer layer-db" style="flex:1;margin:0;">
+      <div class="layer-title" style="color:#60a5fa;">▸ Database</div>
+      <div class="chips">
+        <span class="chip chip-blue">Conversation</span>
+        <span class="chip chip-blue">Message</span>
+      </div>
+    </div>
+    <div class="layer layer-external" style="flex:1;margin:0;">
+      <div class="layer-title" style="color:#fb923c;">▸ External</div>
+      <div class="chips">
+        <span class="chip chip-orange">Claude API (claude-sonnet-4-6)</span>
+      </div>
+    </div>
+  </div>
+  <div class="arrow" style="margin-top:10px;">↕</div>
+  <div class="arrow-label">shared types + character catalog</div>
+  <div class="layer layer-shared">
+    <div class="layer-title" style="color:#f0abfc;">▸ Shared — packages/core (ported จาก reference repo)</div>
+    <div class="chips">
+      <span class="chip chip-pink">CharacterEmotion types</span>
+      <span class="chip chip-pink">CHARACTER_EMOTION_CATALOG (7 chars)</span>
+      <span class="chip chip-pink">resolveCharacterEmotion()</span>
+      <span class="chip chip-pink">AgentStateTracker class</span>
+      <span class="chip chip-pink">Idle tier: fresh→lingering→deep</span>
+    </div>
+  </div>
+</div>
+
+<div class="section-title">▸ Data Flow — ส่งข้อความ 1 ครั้ง</div>
+<div class="data-flow">
+  <div class="flow-step" style="border-left-color:#a78bfa;">
+    <div class="flow-num">1</div>
+    <div class="flow-text">User พิมพ์ข้อความ → emit <code>send_message</code><span class="flow-tag tag-ws">WS</span></div>
+  </div>
+  <div class="flow-step" style="border-left-color:#4ade80;">
+    <div class="flow-num">2</div>
+    <div class="flow-text">Nest.js บันทึก user message → DB, เปลี่ยน state เป็น <code>processing</code><span class="flow-tag tag-db">DB</span></div>
+  </div>
+  <div class="flow-step" style="border-left-color:#f0abfc;">
+    <div class="flow-num">3</div>
+    <div class="flow-text">emit <code>agent_state</code>: processing → frontend แสดง <strong>thinking</strong> emotion + anime.js loop<span class="flow-tag tag-anim">ANIM</span></div>
+  </div>
+  <div class="flow-step" style="border-left-color:#fb923c;">
+    <div class="flow-num">4</div>
+    <div class="flow-text">Nest.js stream Claude API → emit <code>message_chunk</code> ทุก chunk<span class="flow-tag tag-api">API</span><span class="flow-tag tag-ws">WS</span></div>
+  </div>
+  <div class="flow-step" style="border-left-color:#f0abfc;">
+    <div class="flow-num">5</div>
+    <div class="flow-text">ถ้า chunk มี <code>[emotion:X]</code> → emit <code>emotion_override</code> → anime.js burst + swap image<span class="flow-tag tag-anim">ANIM</span></div>
+  </div>
+  <div class="flow-step" style="border-left-color:#4ade80;">
+    <div class="flow-num">6</div>
+    <div class="flow-text">Stream จบ → บันทึก assistant message → DB, state = <code>idle</code><span class="flow-tag tag-db">DB</span></div>
+  </div>
+  <div class="flow-step" style="border-left-color:#a78bfa;">
+    <div class="flow-num">7</div>
+    <div class="flow-text">emit <code>agent_state</code>: idle_fresh → resolveEmotion() → <strong>idle</strong> emotion + float loop<span class="flow-tag tag-anim">ANIM</span></div>
+  </div>
+</div>
+
+<div class="section-title">▸ Emotion State Map (ported จาก reference repo)</div>
+<table class="emotion-table">
+  <tr>
+    <th>Agent State</th>
+    <th>Emotion</th>
+    <th>anime.js Loop</th>
+    <th>Entrance Burst</th>
+  </tr>
+  <tr><td class="state-live">processing (streaming)</td><td>thinking 🤔</td><td>gentle tilt ±3° 2.5s</td><td>fade-in up</td></tr>
+  <tr><td class="state-wait">waiting_for_user</td><td>idle / listening 👀</td><td>float -6px 3s</td><td>scale 1.05</td></tr>
+  <tr><td class="state-done">exited_success</td><td>victory / happy 🎉</td><td>bounce -16px 0.8s</td><td>pop scale 1.2 + rotate 5°</td></tr>
+  <tr><td class="state-error">exited_failure</td><td>crying 😢</td><td>droop +4px slow 4s</td><td>shake X ±3px</td></tr>
+  <tr><td class="state-live">[emotion:excited]</td><td>excited ✨</td><td>fast bounce 0.6s</td><td>jump -20px + glow burst</td></tr>
+  <tr><td class="state-live">[emotion:angry]</td><td>angry 😠</td><td>subtle shake 1s</td><td>shake X ±5px rapid</td></tr>
+  <tr><td class="state-idle">idle_fresh (0-30s)</td><td>idle 😊</td><td>float -6px 3s ease</td><td>fade-in</td></tr>
+  <tr><td class="state-idle">idle_lingering (30-90s)</td><td>sleepy 😴</td><td>slow sway ±2° 5s</td><td>slow sink +3px</td></tr>
+  <tr><td class="state-idle">idle_deep (90s+)</td><td>sleepy 😴</td><td>very slow sway 7s</td><td>yawn scale 0.95</td></tr>
+</table>
