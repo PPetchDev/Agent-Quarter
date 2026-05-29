@@ -2,8 +2,11 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import * as PIXI from "pixi.js";
+import "pixi-spine";
+import { Spine } from "pixi-spine";
 import {
   drawBackground,
+  proj,
   worldDeltaFromScreen,
   DEFAULT_OBJECTS,
   CANVAS_W,
@@ -22,6 +25,7 @@ import { FurnitureInspector } from "./FurnitureInspector";
 import { ShopModal } from "./ShopModal";
 import { getDefaultSpawnPosition, type CatalogItem } from "./furnitureCatalog";
 import { useAgentWalk } from "@/hooks/useAgentWalk";
+import { useCountdown } from "@/hooks/useCountdown";
 import type { AgentTaskType } from "@/game/agents/agentTypes";
 import { loungeStations, type LoungeStationId } from "@/game/scene/loungeStations";
 import Image from "next/image";
@@ -265,6 +269,7 @@ export function LoungeCanvas() {
   const viewportRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<PIXI.Application | null>(null);
   const sceneRef = useRef<RoomScene | null>(null);
+  const charSpritesRef = useRef<Map<string, PIXI.Container>>(new Map());
   const dragRef = useRef<{
     id: number;
     screenX: number;
@@ -289,14 +294,21 @@ export function LoungeCanvas() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [scale, setScale] = useState(1);
   const [cameraY, setCameraY] = useState(20);
+  const [panX, setPanX] = useState(0);
+  const [panY, setPanY] = useState(0);
+  const [isPanning, setIsPanning] = useState(false);
+  const panStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
   const [roomName, setRoomName] = useState("Maple Hideout");
   const [happiness, setHappiness] = useState(128);
   const [coins, setCoins] = useState(INITIAL_COINS);
   const [floor, setFloor] = useState(1);
   const [trainCount, setTrainCount] = useState(2);
   const [trainMax] = useState(4);
-  const [suppliesProgress] = useState(28640);
+  const [suppliesProgress, setSuppliesProgress] = useState(28640);
   const [suppliesMax] = useState(40000);
+  const [agentBubble, setAgentBubble] = useState<string | null>(null);
+  const [floatingHearts, setFloatingHearts] = useState<{id:number,x:number,y:number,createdAt:number}[]>([]);
+  const heartIdRef = useRef(0);
   const [shopOpen, setShopOpen] = useState(false);
   const theme = useMemo<RoomTheme>(() => getTimeTheme(), []);
   const [showRoomSettings, setShowRoomSettings] = useState(false);
@@ -330,10 +342,35 @@ export function LoungeCanvas() {
     const handle = window.setTimeout(() => aki.assignTask(next), 1500);
     return () => window.clearTimeout(handle);
   }, [aki, aki.agent.state]);
+  // Track character positions
+  useEffect(() => {
+    const update = (id: string, pos: {x:number;y:number}, dir: string) => {
+      const c = charSpritesRef.current.get(id);
+      if (c) { c.x = pos.x; c.y = pos.y - 40; c.scale.x = dir === 'left' ? -Math.abs(c.scale.x) : Math.abs(c.scale.x); }
+    };
+    update('agent-1', agent.position, agent.direction);
+    update('agent-2', aki.agent.position, aki.agent.direction);
+  }, [agent.position, agent.direction, aki.agent.position, aki.agent.direction]);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const timer = useTimer();
-  const suppliesTimer = useSuppliesTimer();
+  const timer = useCountdown(8 * 3600 + 23 * 60 + 17);
+  const suppliesTimer = useCountdown(12 * 3600 + 45 * 60 + 30);
+
+  // ── Game mechanics ──────────────────────────────────────────────────────────
+  // Food drain
+  useEffect(() => {
+    const id = setInterval(() => setSuppliesProgress(p => Math.max(0, p - 3)), 3000);
+    return () => clearInterval(id);
+  }, []);
+  // Speech bubbles
+  const CHATTER = ["Hmm~", "I wonder...", "Ah, an idea!", "So cozy!", "Working hard!", "Zzz... oh!", "Need supplies~", "Let's go!"];
+  useEffect(() => {
+    const tick = () => { setAgentBubble(CHATTER[Math.floor(Math.random()*CHATTER.length)]!); setTimeout(() => setAgentBubble(null), 2500); };
+    const t = setTimeout(() => { tick(); setInterval(() => { if (!document.hidden) tick(); }, 15000); }, 8000);
+    return () => clearTimeout(t);
+  }, []);
+  // Heart cleanup
+  useEffect(() => { if (!floatingHearts.length) return; const id = setInterval(() => setFloatingHearts(h => h.filter(x => performance.now()-x.createdAt<1500)), 200); return () => clearInterval(id); }, [floatingHearts.length]);
 
   // Keep refs in sync
   useEffect(() => {
@@ -361,32 +398,27 @@ export function LoungeCanvas() {
     if (!canvas) return;
 
     let mounted = true;
-    const app = new PIXI.Application();
+    const app = new PIXI.Application({
+      view: canvas,
+      width: CANVAS_W,
+      height: CANVAS_H,
+      backgroundAlpha: 0,
+      antialias: true,
+      resolution: window.devicePixelRatio || 1,
+      autoDensity: true,
+    });
+    appRef.current = app;
 
-    app
-      .init({
-        canvas,
-        width: CANVAS_W,
-        height: CANVAS_H,
-        backgroundAlpha: 0,
-        antialias: true,
-      })
-      .then(async () => {
-        if (!mounted) {
-          app.destroy();
-          return;
-        }
-        appRef.current = app;
+    (async () => {
+    let roomObjects = DEFAULT_OBJECTS;
+    try {
+      const loaded = await loadRoomJSON(ROOM_MAP_URL);
+      if (loaded.length > 0) roomObjects = loaded.map((o) => snapObj(o));
+    } catch {
+      /* use defaults */
+    }
 
-        let roomObjects = DEFAULT_OBJECTS;
-        try {
-          const loaded = await loadRoomJSON(ROOM_MAP_URL);
-          if (loaded.length > 0) roomObjects = loaded.map((o) => snapObj(o));
-        } catch {
-          /* use defaults */
-        }
-
-        try {
+    try {
           const saved = localStorage.getItem(STORAGE_KEY);
           if (saved) {
             const parsed = JSON.parse(saved) as {
@@ -488,6 +520,49 @@ export function LoungeCanvas() {
           theme,
         );
 
+        // ── Load real Spine 3.8 characters ────────────────────────────────────
+        const CHAR_DEFS = [
+          { skel: '/azur-char/qiye/qiye_h.skel',
+            atlas: '/azur-char/qiye/qiye_h.atlas',
+            wx: 3.0, wy: 0.65, wz: 0.2, id: 'agent-1', name: 'qiye' },
+          { skel: '/azur-char/dunkeerke/dunkeerke.skel',
+            atlas: '/azur-char/dunkeerke/dunkeerke.atlas',
+            wx: 7.0, wy: 0.65, wz: 0.2, id: 'agent-2', name: 'dunkeerke' },
+        ];
+
+        for (const def of CHAR_DEFS) {
+          PIXI.Assets.load([def.skel, def.atlas])
+            .then((loaded: Record<string, any>) => {
+              const skelKey = def.skel; // PIXI.Assets resolves by URL
+              const spineData = loaded[skelKey]?.spineData;
+              if (!spineData) {
+                console.warn(`[Spine] No spineData for ${def.name}`);
+                return;
+              }
+              const spine = new Spine(spineData);
+              const [sx, sy] = proj(def.wx, def.wy, def.wz);
+              spine.x = sx;
+              spine.y = sy - 50;
+              spine.scale.set(0.3);
+              app.stage.addChild(spine);
+              charSpritesRef.current.set(def.id, spine);
+
+              // Log animation names + play calm lounge default
+              const animNames = spine.spineData.animations.map(
+                (a: any) => a.name,
+              );
+              console.log(`[Spine] ${def.name} animations:`, animNames);
+              if (animNames.length > 0) {
+                const priority = ['normal', 'stand', 'stand2', 'sit', 'sleep'];
+                const target = priority.find((a) => animNames.includes(a)) ?? animNames[0];
+                spine.state.setAnimation(0, target, true);
+              }
+            })
+            .catch((e: Error) => {
+              console.error(`[Spine] Failed to load ${def.name}:`, e.message);
+            });
+        }
+
         app.stage.on("pointermove", (e: PIXI.FederatedPointerEvent) => {
           const drag = dragRef.current;
           if (!drag) return;
@@ -549,7 +624,8 @@ export function LoungeCanvas() {
         };
         app.stage.on("pointerup", endDrag);
         app.stage.on("pointerupoutside", endDrag);
-      });
+
+    })(); // close async IIFE
 
     return () => {
       mounted = false;
@@ -629,11 +705,36 @@ export function LoungeCanvas() {
           : Math.max(0.88, Math.min(baseScale * 1.22, 1.42)),
       );
       setCameraY(isMobile ? -8 : -18);
+      setPanX(0); setPanY(0);
     };
     updateScale();
     window.addEventListener("resize", updateScale);
     return () => window.removeEventListener("resize", updateScale);
   }, []);
+
+  // ── Pan & Zoom ───────────────────────────────────────────────────────────────
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    const d = e.deltaY > 0 ? -0.08 : 0.08;
+    const ns = Math.max(0.5, Math.min(2.5, scale + d));
+    const r = ns / scale;
+    const rect = e.currentTarget.getBoundingClientRect();
+    setPanX(p => e.clientX - rect.left - (e.clientX - rect.left - p) * r);
+    setPanY(p => e.clientY - rect.top - (e.clientY - rect.top - p) * r);
+    setScale(ns); scaleRef.current = ns;
+  }, [scale]);
+  const handlePanStart = useCallback((e: React.MouseEvent) => {
+    if (modeRef.current !== 'visit') return;
+    if ((e.target as HTMLElement).closest('button,input,a')) return;
+    setIsPanning(true);
+    panStartRef.current = { x: e.clientX, y: e.clientY, panX, panY };
+  }, [panX, panY]);
+  const handlePanMove = useCallback((e: React.MouseEvent) => {
+    if (!isPanning) return;
+    setPanX(panStartRef.current.panX + e.clientX - panStartRef.current.x);
+    setPanY(panStartRef.current.panY + e.clientY - panStartRef.current.y);
+  }, [isPanning]);
+  const handlePanEnd = useCallback(() => setIsPanning(false), []);
 
   // ── Persist ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -852,12 +953,18 @@ export function LoungeCanvas() {
   return (
     <div
       ref={viewportRef}
-      className="relative flex-1 w-full overflow-hidden"
+      className="relative flex-1 w-full overflow-hidden select-none"
       style={{
         height: "calc(100vh - 45px)",
         minHeight: "calc(100vh - 45px)",
         background: `linear-gradient(180deg,${theme.skyTop} 0%,${theme.skyBot} 100%)`,
+        cursor: isPanning ? 'grabbing' : mode === 'visit' ? 'grab' : 'default',
       }}
+      onWheel={handleWheel}
+      onMouseDown={handlePanStart}
+      onMouseMove={handlePanMove}
+      onMouseUp={handlePanEnd}
+      onMouseLeave={handlePanEnd}
     >
       {/* ── Top-left: Back + Room name ───────────────────────────────── */}
       <div className="absolute left-3 top-3 z-30 flex items-center gap-2">
@@ -1034,7 +1141,7 @@ export function LoungeCanvas() {
           style={{
             width: CANVAS_W,
             height: CANVAS_H,
-            transform: `translateY(${cameraY}px) scale(${scale})`,
+            transform: `translate(${panX}px, ${panY + cameraY}px) scale(${scale})`,
             transformOrigin: "center center",
           }}
         >
@@ -1216,7 +1323,33 @@ export function LoungeCanvas() {
         )}
         <span className="text-[9px] font-semibold text-[#8b6030]/80 tracking-wide">
           {agent.name} · {agent.state}
+          <button type="button" onClick={() => {
+            setHappiness(h => h + 3); setCoins(c => c + 15);
+            setSuppliesProgress(p => Math.min(40000, p + 50));
+            setFloatingHearts(prev => [...prev, { id: ++heartIdRef.current, x: 45 + Math.random()*10, y: 50, createdAt: performance.now() }]);
+            showToast("♡+3 🪙+15 🍱+50");
+          }} className="ml-1 text-[9px] font-bold text-[#ff69b4] hover:text-[#d4708a] active:scale-95 transition">Collect</button>
         </span>
+
+        {/* Character roster cards */}
+        <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-1.5 rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-2 py-1">
+            <div className="w-7 h-7 rounded-full overflow-hidden bg-[#ffe4ec]">
+              <Image src="/azur-char/qiye_h.png" alt="Mai" width={28} height={28}
+                className="object-cover scale-[3] translate-x-[2px] translate-y-[4px]" />
+            </div>
+            <span className="text-[10px] font-bold text-[#5a3c18]">Mai</span>
+            <span className="text-[9px] text-[#8b6030]">{agent.state}</span>
+          </div>
+          <div className="flex items-center gap-1.5 rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-2 py-1">
+            <div className="w-7 h-7 rounded-full overflow-hidden bg-[#e8f0ff]">
+              <Image src="/azur-char/dunkeerke.png" alt="Aki" width={28} height={28}
+                className="object-cover scale-[3] translate-x-[2px] translate-y-[4px]" />
+            </div>
+            <span className="text-[10px] font-bold text-[#5a3c18]">Aki</span>
+            <span className="text-[9px] text-[#8b6030]">{aki.agent.state}</span>
+          </div>
+        </div>
         {agent.workDurationMs !== undefined &&
           agent.workElapsedMs !== undefined && (
             <div className="relative h-1 w-32 overflow-hidden rounded-full bg-[#e8d0a0]">
@@ -1273,6 +1406,20 @@ export function LoungeCanvas() {
             {suppliesProgress.toLocaleString()}/{suppliesMax.toLocaleString()}
           </div>
         </div>
+
+        {/* Speech bubble */}
+        {agentBubble && (
+          <div className="absolute bottom-28 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-[#ffb6c1] bg-white/90 px-3 py-1 text-[10px] font-bold text-[#8b4c6e] shadow-md animate-bounce pointer-events-none z-50">
+            {agentBubble}
+          </div>
+        )}
+        {/* Floating hearts */}
+        {floatingHearts.map(h => (
+          <div key={h.id} className="absolute pointer-events-none text-lg animate-ping z-50"
+            style={{ left: h.x + '%', top: h.y + '%', animation: 'floatUp 1.5s ease-out forwards' }}>
+            💕
+          </div>
+        ))}
       </div>
 
       {/* ── Bottom-right: Action dock ──────────────────────────────── */}

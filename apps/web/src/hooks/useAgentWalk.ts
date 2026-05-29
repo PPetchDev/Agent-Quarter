@@ -20,6 +20,7 @@ import {
 import type { RoomObject } from '@/components/lounge/roomDefs';
 import {
   computeRoomProjection,
+  projAt,
   ROOM_TILES_X,
   ROOM_TILES_Y,
 } from '@/components/lounge/pixiRoom';
@@ -55,24 +56,12 @@ export type AgentRouteDebug = {
   activeIndex: number;
 };
 
-function projectStartIso(iso: IsoWorldPoint): { x: number; y: number } {
-  const { S, OX, OY } = computeRoomProjection(ROOM_TILES_X, ROOM_TILES_Y);
-  return {
-    x: OX + iso.wx * S + iso.wy * S * 0.65,
-    y: OY - iso.wy * S * 0.65 - iso.wz * S,
-  };
-}
-
-function projectIsoPoint(
+function projectIsoToScreen(
   point: IsoWorldPoint,
-  roomWidth: number,
-  roomHeight: number,
+  S: number, OX: number, OY: number,
 ): Position {
-  const { S, OX, OY } = computeRoomProjection(roomWidth, roomHeight);
-  return {
-    x: OX + point.wx * S + point.wy * S * 0.65,
-    y: OY - point.wy * S * 0.65 - point.wz * S,
-  };
+  const [x, y] = projAt(point.wx, point.wy, point.wz, S, OX, OY);
+  return { x, y };
 }
 
 function buildWaypoints(
@@ -80,13 +69,10 @@ function buildWaypoints(
   roomWidth: number,
   roomHeight: number,
 ): RouteWaypoint[] {
+  const { S, OX, OY } = computeRoomProjection(roomWidth, roomHeight);
   return route.map((point) => ({
-    iso: {
-      wx: point.wx,
-      wy: point.wy,
-      wz: point.wz,
-    },
-    position: projectIsoPoint(point, roomWidth, roomHeight),
+    iso: { wx: point.wx, wy: point.wy, wz: point.wz },
+    position: projectIsoToScreen(point, S, OX, OY),
     cell: point.cell,
   }));
 }
@@ -122,7 +108,7 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
     name:        agentName,
     characterId,
     state:       'idle',
-    position:    projectStartIso(startIso),
+    position:    (() => { const { S, OX, OY } = computeRoomProjection(ROOM_TILES_X, ROOM_TILES_Y); const [x, y] = projAt(startIso.wx, startIso.wy, startIso.wz, S, OX, OY); return { x, y }; })(),
     direction:   'down',
     animation:   'idle',
     bubbleText:  undefined,
@@ -327,18 +313,17 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
       const arrivedAnim    = resolveStateAnimation(arrivedState);
       const startsWork     = (current.workDurationMs ?? 0) > 0;
 
-      // Face the station body, not the last approach direction. Project the
-      // station's iso position to screen and snap to dominant axis.
+      // Face the station body. Project station iso → screen, snap to dominant axis.
       let arriveDirection = result.direction;
       if (current.targetStationId) {
         const station = resolveLoungeStation(
           current.targetStationId as LoungeStationId,
           roomObjects,
         );
-        const stationScreen = projectIsoPoint(
+        const { S, OX, OY } = computeRoomProjection(roomWidth, roomHeight);
+        const stationScreen = projectIsoToScreen(
           { wx: station.isoPosition.x, wy: station.isoPosition.y, wz: station.isoPosition.z ?? 0 },
-          roomWidth,
-          roomHeight,
+          S, OX, OY,
         );
         const dx = stationScreen.x - result.position.x;
         const dy = stationScreen.y - result.position.y;

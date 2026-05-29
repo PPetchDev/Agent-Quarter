@@ -1,0 +1,46 @@
+{
+  "id": "office-ai-agent-mascot",
+  "name": "Office AI Agent Mascot",
+  "version": "walk-right-24-fixedbox-game-ready",
+  "animations": {
+    "walk_right": {
+      "type": "spritesheet",
+      "image": "/characters/office-ai-agent-mascot/walk-right-24-game-ready.png",
+      "preview": "/characters/office-ai-agent-mascot/walk-right-24-game-ready-preview.gif",
+      "debugPreview": "/characters/office-ai-agent-mascot/walk-right-24-game-ready-anchor-debug.gif",
+      "framesPath": "/characters/office-ai-agent-mascot/walk-right-24-game-ready-frames/frame_{index}.png",
+      "frameIndexPad": 2,
+      "frameCount": 24,
+      "columns": 6,
+      "rows": 4,
+      "frameWidth": 400,
+      "frameHeight": 400,
+      "fps": 24,
+      "frameDurationMs": 41.667,
+      "loop": true,
+      "direction": "right",
+      "pivotPx": {
+        "x": 196,
+        "y": 226
+      },
+      "pivotNormalized": {
+        "x": 0.49,
+        "y": 0.565
+      },
+      "baselineY": 372,
+      "contentBoxPx": {
+        "x": 0,
+        "y": 24,
+        "width": 400,
+        "height": 348
+      },
+      "lockMetrics": {
+        "contentBoxTopDriftPx": 0,
+        "contentBoxBottomDriftPx": 0,
+        "coreAnchorXDriftPx": 1.43,
+        "coreAnchorYDriftPx": 1.73
+      },
+      "notes": "Frames are normalized to a fixed content box and torso/chest core pivot. Use pivotPx or pivotNormalized as the sprite anchor to prevent visual drift."
+    }
+  }
+}

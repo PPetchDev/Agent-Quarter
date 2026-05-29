@@ -27,6 +27,7 @@ AnimeAgentSquad/
 │       │   ├── movement/          # Direction, linear segment movement, grid pathfinding
 │       │   └── scene/             # Lounge stations and furniture-blocked path grid
 │       ├── src/hooks/useAgentWalk.ts
+│       ├── src/hooks/useCountdown.ts
 │       └── tsconfig.json
 └── packages/
     └── core/

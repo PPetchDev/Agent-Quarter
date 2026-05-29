@@ -16,3 +16,4 @@ dist
 /*.png
 ai
 graphify-out
+apps/web/src/components/resource
