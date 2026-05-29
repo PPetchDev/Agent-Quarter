@@ -524,16 +524,16 @@ export function LoungeCanvas() {
         const CHAR_DEFS = [
           { skel: '/azur-char/qiye/qiye_h.skel',
             atlas: '/azur-char/qiye/qiye_h.atlas',
-            wx: 3.0, wy: 0.65, wz: 0.2, id: 'agent-1', name: 'qiye' },
+            wx: 3.0, wy: 0.65, wz: 0.0, id: 'agent-1', name: 'qiye' },
           { skel: '/azur-char/dunkeerke/dunkeerke.skel',
             atlas: '/azur-char/dunkeerke/dunkeerke.atlas',
-            wx: 7.0, wy: 0.65, wz: 0.2, id: 'agent-2', name: 'dunkeerke' },
+            wx: 7.0, wy: 0.65, wz: 0.0, id: 'agent-2', name: 'dunkeerke' },
         ];
 
         for (const def of CHAR_DEFS) {
           PIXI.Assets.load([def.skel, def.atlas])
             .then((loaded: Record<string, any>) => {
-              const skelKey = def.skel; // PIXI.Assets resolves by URL
+              const skelKey = def.skel;
               const spineData = loaded[skelKey]?.spineData;
               if (!spineData) {
                 console.warn(`[Spine] No spineData for ${def.name}`);
@@ -542,9 +542,12 @@ export function LoungeCanvas() {
               const spine = new Spine(spineData);
               const [sx, sy] = proj(def.wx, def.wy, def.wz);
               spine.x = sx;
-              spine.y = sy - 50;
-              spine.scale.set(0.3);
-              app.stage.addChild(spine);
+              spine.y = sy - 30;
+              spine.scale.set(0.28);
+              // Depth sort with furniture: character footprint ~1×1 tile
+              const [, backY] = proj(def.wx + 0.5, def.wy + 1.0, def.wz);
+              spine.zIndex = backY + def.wx * 4 + def.wz * 25;
+              scene.furnitureLayer.addChild(spine);
               charSpritesRef.current.set(def.id, spine);
 
               // Log animation names + play calm lounge default
