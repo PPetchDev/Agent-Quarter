@@ -8,7 +8,11 @@ import { planLoungeGridRoute } from '@/game/scene/loungePathGrid';
 import type { GridCell, IsoRoutePoint } from '@/game/movement/gridPath';
 import { resolveWalkingAnimation, resolveStateAnimation } from '@/game/animation/animationResolver';
 import { resolveDirection } from '@/game/movement/direction';
-import { enqueueTask as enqueueTaskPure, dequeueTask } from '@/game/agents/taskQueue';
+import {
+  enqueueTask as enqueueTaskPure,
+  dequeueTask,
+  MAX_TASK_QUEUE_LENGTH,
+} from '@/game/agents/taskQueue';
 import {
   resolveLoungeStation,
   type LoungeStationId,
@@ -27,6 +31,8 @@ type UseAgentWalkOptions = {
   roomObjects?: RoomObject[];
   roomWidth?: number;
   roomHeight?: number;
+  /** Override the agent's task queue cap. Defaults to `MAX_TASK_QUEUE_LENGTH`. */
+  maxQueueLength?: number;
 };
 
 export type AgentRouteDebugPoint = {
@@ -112,6 +118,7 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
     roomObjects = EMPTY_ROOM_OBJECTS,
     roomWidth = ROOM_TILES_X,
     roomHeight = ROOM_TILES_Y,
+    maxQueueLength = MAX_TASK_QUEUE_LENGTH,
   } = options;
   const [agent, setAgent] = useState<Agent>(DEFAULT_AGENT);
   const [routeDebug, setRouteDebug] = useState<AgentRouteDebug>({
@@ -471,9 +478,9 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
   const enqueueTask = useCallback((task: AgentTaskType) => {
     updateAgent((prev) => ({
       ...prev,
-      taskQueue: enqueueTaskPure(prev.taskQueue, task),
+      taskQueue: enqueueTaskPure(prev.taskQueue, task, maxQueueLength),
     }));
-  }, [updateAgent]);
+  }, [maxQueueLength, updateAgent]);
 
   const clearQueue = useCallback(() => {
     updateAgent((prev) => ({ ...prev, taskQueue: [] }));

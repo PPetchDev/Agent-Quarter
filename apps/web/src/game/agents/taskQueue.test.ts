@@ -40,6 +40,19 @@ describe('enqueueTask', () => {
     const result = enqueueTask(full, 'rest');
     expect(result).toEqual(full);
   });
+
+  it('respects a custom maxLength override', () => {
+    const queue: AgentTaskType[] = ['code', 'rest'];
+    const result = enqueueTask(queue, 'print', 2);
+    expect(result).toEqual(queue);
+  });
+
+  it('clamps maxLength below 1 to 1', () => {
+    const result = enqueueTask([], 'code', 0);
+    expect(result).toEqual(['code']);
+    const result2 = enqueueTask(['code'], 'rest', 0);
+    expect(result2).toEqual(['code']);
+  });
 });
 
 describe('dequeueTask', () => {
