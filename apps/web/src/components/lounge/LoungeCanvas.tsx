@@ -598,6 +598,24 @@ export function LoungeCanvas() {
               scene.furnitureLayer.addChild(spine);
               charSpritesRef.current.set(def.id, spine);
 
+              // ── Tap interaction ──────────────────────────────────────────
+              spine.eventMode = 'static';
+              spine.cursor = 'pointer';
+              spine.hitArea = new PIXI.Circle(0, -15, 40);
+              spine.on('pointertap', () => {
+                const state = (spine as any).state;
+                const anims = ((spine as any).spineData.animations as any[]).map((a:any) => a.name);
+                const oneShotAnims = new Set(['victory', 'break']);
+                const current = state.getCurrent(0);
+                if (current && oneShotAnims.has(current.animation.name)) return;
+                const tap = ['touch','motou'].find((a) => anims.includes(a));
+                if (!tap) return;
+                if (current?.animation?.name === tap) return;
+                state.setAnimation(0, tap, false);
+                const calm = ['normal','stand','stand2','sit','sleep'].find((c) => anims.includes(c)) ?? anims[0];
+                if (calm) state.addAnimation(0, calm, true, 0);
+              });
+
               // Log animation names + play calm lounge default
               const animNames = spine.spineData.animations.map(
                 (a: any) => a.name,
