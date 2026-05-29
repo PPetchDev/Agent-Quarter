@@ -26,6 +26,7 @@ import {
 
 const DEFAULT_START_ISO = { wx: 3.0, wy: 0.65, wz: 0.2 };
 const EMPTY_ROOM_OBJECTS: RoomObject[] = [];
+const WORK_PUBLISH_INTERVAL_MS = 50;
 
 type UseAgentWalkOptions = {
   roomObjects?: RoomObject[];
@@ -136,6 +137,12 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
   const routeRef = useRef<RouteWaypoint[]>([]);
   const routeIndexRef = useRef(0);
   const routeDebugRef = useRef<AgentRouteDebug>({ points: [], activeIndex: 0 });
+  // Work timer ticks every RAF frame in a ref so the auto-pop transition is
+  // precise. `agent.workElapsedMs` (React state) only re-publishes at most
+  // every WORK_PUBLISH_INTERVAL_MS — enough for a smooth progress bar without
+  // a 60 Hz re-render storm.
+  const workElapsedMsRef = useRef(0);
+  const lastWorkPublishRef = useRef(0);
 
   const updateAgent = useCallback((updater: (prev: Agent) => Agent) => {
     setAgent((prev) => {
@@ -162,6 +169,8 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
     targetStationId?: string;
   }) => {
     clearRoute();
+    workElapsedMsRef.current = 0;
+    lastWorkPublishRef.current = 0;
     updateAgent((prev) => ({
       ...prev,
       state: 'error',
@@ -331,6 +340,8 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
         }
       }
 
+      workElapsedMsRef.current = 0;
+      lastWorkPublishRef.current = performance.now();
       updateAgent((prev) => ({
         ...prev,
         position:        result.position,
@@ -372,14 +383,13 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
 
   const tickWork = useCallback((deltaSeconds: number) => {
     const current = agentRef.current;
-    if (
-      current.workDurationMs === undefined ||
-      current.workElapsedMs === undefined
-    ) {
-      return;
-    }
-    const next = current.workElapsedMs + deltaSeconds * 1000;
-    if (next >= current.workDurationMs) {
+    if (current.workDurationMs === undefined) return;
+
+    workElapsedMsRef.current += deltaSeconds * 1000;
+
+    if (workElapsedMsRef.current >= current.workDurationMs) {
+      workElapsedMsRef.current = 0;
+      lastWorkPublishRef.current = 0;
       const { next: nextTask, rest } = dequeueTask(current.taskQueue);
       if (nextTask) {
         updateAgent((prev) => ({
@@ -406,11 +416,15 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
           workElapsedMs:   undefined,
         }));
       }
-    } else {
-      updateAgent((prev) => ({
-        ...prev,
-        workElapsedMs: next,
-      }));
+      return;
+    }
+
+    // Throttle React state publishes for the progress bar.
+    const now = performance.now();
+    if (now - lastWorkPublishRef.current >= WORK_PUBLISH_INTERVAL_MS) {
+      lastWorkPublishRef.current = now;
+      const published = workElapsedMsRef.current;
+      updateAgent((prev) => ({ ...prev, workElapsedMs: published }));
     }
   }, [assignTask, roomObjects, updateAgent]);
 
@@ -429,11 +443,7 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
       const a = agentRef.current;
       if (a.targetPosition) {
         tickAgent(delta);
-      } else if (
-        a.workDurationMs !== undefined &&
-        a.workElapsedMs !== undefined &&
-        a.workElapsedMs < a.workDurationMs
-      ) {
+      } else if (a.workDurationMs !== undefined) {
         tickWork(delta);
       }
 
@@ -459,6 +469,8 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, agentId = 'agent
 
   const clearAgentTask = useCallback(() => {
     clearRoute();
+    workElapsedMsRef.current = 0;
+    lastWorkPublishRef.current = 0;
     updateAgent((prev) => ({
       ...prev,
       taskType:        undefined,
