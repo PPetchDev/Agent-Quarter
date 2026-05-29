@@ -11,7 +11,7 @@ _Updated: C-FURNITURE-GRID-001_
 | Furniture dimensions and tile footprints | `apps/web/src/components/lounge/roomDefs.ts` |
 | Furniture catalog / shop metadata | `apps/web/src/components/lounge/furnitureCatalog.ts` |
 | PixiJS scene construction, depth sorting, active-station pulse layer | `apps/web/src/components/lounge/roomLoader.ts` |
-| Active station pulse highlight (gold floor ring during work) | `apps/web/src/components/lounge/pixiRoom.ts` (`drawActiveStationHighlight`), `apps/web/src/components/lounge/LoungeCanvas.tsx` (RAF pulse loop) |
+| Active station pulse highlight (gold floor ring + per-station body ambient during work) | `apps/web/src/components/lounge/pixiRoom.ts` (`drawActiveStationHighlight`, `drawStationAmbient`), `apps/web/src/components/lounge/LoungeCanvas.tsx` (RAF pulse loop) |
 | Lounge canvas, compact HUD, route debug overlay, single walking agent overlay | `apps/web/src/components/lounge/LoungeCanvas.tsx` |
 | Agent task-to-station resolution + per-task work duration | `apps/web/src/game/agents/taskResolver.ts` |
 | Agent work timer lifecycle (walk → work → auto-idle) and progress fields | `apps/web/src/hooks/useAgentWalk.ts`, `apps/web/src/game/agents/agentTypes.ts` |

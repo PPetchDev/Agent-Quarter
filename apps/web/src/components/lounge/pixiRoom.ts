@@ -542,6 +542,111 @@ export function drawActiveStationHighlight(
   ];
   qfill(g, floor, 0xfacc15, 0.18 * alpha);
   qstroke(g, floor, 0xfacc15, 3, alpha);
+  drawStationAmbient(g, obj, alpha);
+}
+
+// ─── Per-station ambient body glow (drawn above the floor ring) ──────────────
+
+function drawComputerDeskAmbient(
+  g: PIXI.Graphics, wx: number, wy: number, wz: number, alpha: number,
+) {
+  // Brighter blue overlay on the monitor face
+  qfill(
+    g,
+    [
+      proj(wx + 0.40, wy + 1.49, wz + 0.95),
+      proj(wx + 1.70, wy + 1.49, wz + 0.95),
+      proj(wx + 1.70, wy + 1.49, wz + 1.75),
+      proj(wx + 0.40, wy + 1.49, wz + 1.75),
+    ],
+    0xbce7ff, 0.45 * alpha,
+  );
+  // Soft glow halo behind the monitor
+  const [gx, gy] = proj(wx + 1.05, wy + 1.49, wz + 1.35);
+  g.ellipse(gx, gy, 38, 26).fill({ color: 0x60a5fa, alpha: 0.22 * alpha });
+}
+
+function drawPrinterAmbient(
+  g: PIXI.Graphics, wx: number, wy: number, wz: number, alpha: number,
+) {
+  const [ledX, ledY] = proj(wx + 0.82, wy + 0.02, wz + 0.55);
+  g.circle(ledX, ledY, 14).fill({ color: 0xfacc15, alpha: 0.28 * alpha });
+  g.circle(ledX, ledY, 5).fill({ color: 0xfde68a, alpha: 0.9 * alpha });
+}
+
+function drawBookcaseAmbient(
+  g: PIXI.Graphics, wx: number, wy: number, wz: number, alpha: number,
+) {
+  // Cream halo above the bookshelf top
+  const [cx, cy] = proj(wx + 1.5, wy + 0.5, wz + 3.7);
+  g.ellipse(cx, cy, 52, 22).fill({ color: 0xfde68a, alpha: 0.32 * alpha });
+  // Soft front-shelf tint
+  qfill(
+    g,
+    [
+      proj(wx,        wy - 0.01, wz + 0.7),
+      proj(wx + 3.0,  wy - 0.01, wz + 0.7),
+      proj(wx + 3.0,  wy - 0.01, wz + 3.5),
+      proj(wx,        wy - 0.01, wz + 3.5),
+    ],
+    0xfacc15, 0.12 * alpha,
+  );
+}
+
+function drawDocumentBoardAmbient(
+  g: PIXI.Graphics, wx: number, wy: number, wz: number, alpha: number,
+) {
+  // Amber tint over the entire board face
+  qfill(
+    g,
+    [
+      proj(wx + 0.08, wy - 0.04, wz + 0.08),
+      proj(wx + 2.92, wy - 0.04, wz + 0.08),
+      proj(wx + 2.92, wy - 0.04, wz + 1.52),
+      proj(wx + 0.08, wy - 0.04, wz + 1.52),
+    ],
+    0xfacc15, 0.20 * alpha,
+  );
+  // Pin pulse
+  const [pinX, pinY] = proj(wx + 1.4, wy - 0.05, wz + 1.45);
+  g.circle(pinX, pinY, 8).fill({ color: 0xfde68a, alpha: 0.7 * alpha });
+}
+
+function drawLowTableAmbient(
+  g: PIXI.Graphics, wx: number, wy: number, wz: number, alpha: number,
+) {
+  // Gold outline on the table top
+  const top: [number, number][] = [
+    proj(wx,       wy,       wz + 0.34),
+    proj(wx + 3.0, wy,       wz + 0.34),
+    proj(wx + 3.0, wy + 2.0, wz + 0.34),
+    proj(wx,       wy + 2.0, wz + 0.34),
+  ];
+  qstroke(g, top, 0xfacc15, 3, 0.9 * alpha);
+  qfill(g, top, 0xfacc15, 0.10 * alpha);
+}
+
+function drawBedAmbient(
+  g: PIXI.Graphics, wx: number, wy: number, wz: number, alpha: number,
+) {
+  // Cream halo above the pillows
+  const [cx, cy] = proj(wx + 2.0, wy + 0.65, wz + 1.05);
+  g.ellipse(cx, cy, 46, 18).fill({ color: 0xfde68a, alpha: 0.40 * alpha });
+}
+
+/** Dispatch per furniture type. Unknown types draw nothing extra. */
+export function drawStationAmbient(
+  g: PIXI.Graphics, obj: RoomObject, alpha: number,
+) {
+  const { wx, wy, wz } = obj;
+  switch (obj.furnitureType) {
+    case "computer_desk":   drawComputerDeskAmbient(g, wx, wy, wz, alpha); break;
+    case "printer":         drawPrinterAmbient(g, wx, wy, wz, alpha); break;
+    case "bookcase":        drawBookcaseAmbient(g, wx, wy, wz, alpha); break;
+    case "document_board":  drawDocumentBoardAmbient(g, wx, wy, wz, alpha); break;
+    case "low_table":       drawLowTableAmbient(g, wx, wy, wz, alpha); break;
+    case "bed":             drawBedAmbient(g, wx, wy, wz, alpha); break;
+  }
 }
 
 /** Red collision highlight — drawn during drag when placement is invalid */
