@@ -40,7 +40,10 @@ _Updated: C-FURNITURE-GRID-001_
 | `dequeueTask` | function | Pure helper that pops the queue head and returns `{ next, rest }` |
 | `useAgentWalk.enqueueTask` | hook API | Append a task to the agent's queue without interrupting the current task |
 | `useAgentWalk.clearQueue` | hook API | Empty the agent's task queue without affecting the active task |
-| `MAX_TASK_QUEUE_LENGTH` | constant | Hard cap on the agent's pending task queue (8); enqueuing past it is a silent no-op |
+| `MAX_TASK_QUEUE_LENGTH` | constant | Default hard cap on the agent's pending task queue (8); `enqueueTask` and `useAgentWalk` accept `maxLength` / `maxQueueLength` overrides |
+| `AmbientDrawContext` | type | PIXI-free draw context (`proj`, `fillQuad`, `strokeQuad`, `circle`, `ellipse`, `dim`) supplied to `applyStationAmbient` and to `custom`-kind shape draw fns |
+| `applyStationAmbient` | function | Pure interpreter — walks `STATION_AMBIENTS[type]` and dispatches each shape through a draw context |
+| `getStationDim` | function | Returns `FURNITURE_DIMS[type]` with a `{w:1,d:1,h:1}` fallback for unknown types |
 | `ResolvedAgentTask.doneBubbleText` | field | Per-task completion bubble shown when the work timer auto-completes |
 
 ## Routes
