@@ -546,106 +546,103 @@ export function drawActiveStationHighlight(
 }
 
 // ─── Per-station ambient body glow (drawn above the floor ring) ──────────────
+//
+// Shape coordinates are proportional to `FURNITURE_DIMS[type]` width/height so
+// that resizing the furniture in `roomDefs.ts` also shifts the ambient. Face
+// and halo `yOff` use absolute world units because station front/back faces sit
+// at small near-zero depths regardless of box size.
 
-function drawComputerDeskAmbient(
-  g: PIXI.Graphics, wx: number, wy: number, wz: number, alpha: number,
-) {
-  // Brighter blue overlay on the monitor face
-  qfill(
-    g,
-    [
-      proj(wx + 0.40, wy + 1.49, wz + 0.95),
-      proj(wx + 1.70, wy + 1.49, wz + 0.95),
-      proj(wx + 1.70, wy + 1.49, wz + 1.75),
-      proj(wx + 0.40, wy + 1.49, wz + 1.75),
-    ],
-    0xbce7ff, 0.45 * alpha,
-  );
-  // Soft glow halo behind the monitor
-  const [gx, gy] = proj(wx + 1.05, wy + 1.49, wz + 1.35);
-  g.ellipse(gx, gy, 38, 26).fill({ color: 0x60a5fa, alpha: 0.22 * alpha });
-}
+type AmbientShape =
+  | { kind: "face"; fx0: number; fz0: number; fx1: number; fz1: number; yOff: number; color: number; alpha: number }
+  | { kind: "halo"; fx: number; yOff: number; fz: number; rx: number; ry: number; color: number; alpha: number }
+  | { kind: "point"; fx: number; yOff: number; fz: number; r: number; color: number; alpha: number }
+  | { kind: "topOutline"; color: number; alpha: number; lineWidth: number; fillAlpha: number };
 
-function drawPrinterAmbient(
-  g: PIXI.Graphics, wx: number, wy: number, wz: number, alpha: number,
-) {
-  const [ledX, ledY] = proj(wx + 0.82, wy + 0.02, wz + 0.55);
-  g.circle(ledX, ledY, 14).fill({ color: 0xfacc15, alpha: 0.28 * alpha });
-  g.circle(ledX, ledY, 5).fill({ color: 0xfde68a, alpha: 0.9 * alpha });
-}
+const STATION_AMBIENTS: Record<string, AmbientShape[]> = {
+  computer_desk: [
+    // Monitor face — wx+[0.40..1.70] / wz+[0.95..1.75] on a 3.0 × 2.0 × 2.35 box.
+    { kind: "face", fx0: 0.133, fz0: 0.404, fx1: 0.567, fz1: 0.745, yOff: 1.49, color: 0xbce7ff, alpha: 0.58 },
+    { kind: "halo", fx: 0.35, yOff: 1.49, fz: 0.574, rx: 44, ry: 30, color: 0x60a5fa, alpha: 0.32 },
+  ],
+  printer: [
+    { kind: "halo", fx: 0.82, yOff: 0.02, fz: 0.44, rx: 18, ry: 18, color: 0xfacc15, alpha: 0.42 },
+    { kind: "point", fx: 0.82, yOff: 0.02, fz: 0.44, r: 7, color: 0xfde68a, alpha: 1.0 },
+  ],
+  bookcase: [
+    { kind: "halo", fx: 0.5, yOff: 0.5, fz: 1.028, rx: 60, ry: 26, color: 0xfde68a, alpha: 0.42 },
+    { kind: "face", fx0: 0.0, fz0: 0.194, fx1: 1.0, fz1: 0.972, yOff: -0.01, color: 0xfacc15, alpha: 0.16 },
+  ],
+  document_board: [
+    { kind: "face", fx0: 0.027, fz0: 0.05, fx1: 0.973, fz1: 0.95, yOff: -0.04, color: 0xfacc15, alpha: 0.28 },
+    { kind: "point", fx: 0.467, yOff: -0.05, fz: 0.906, r: 10, color: 0xfde68a, alpha: 0.9 },
+  ],
+  low_table: [
+    { kind: "topOutline", color: 0xfacc15, alpha: 1.0, lineWidth: 3.5, fillAlpha: 0.16 },
+  ],
+  bed: [
+    { kind: "halo", fx: 0.5, yOff: 0.65, fz: 0.677, rx: 54, ry: 22, color: 0xfde68a, alpha: 0.52 },
+  ],
+};
 
-function drawBookcaseAmbient(
-  g: PIXI.Graphics, wx: number, wy: number, wz: number, alpha: number,
-) {
-  // Cream halo above the bookshelf top
-  const [cx, cy] = proj(wx + 1.5, wy + 0.5, wz + 3.7);
-  g.ellipse(cx, cy, 52, 22).fill({ color: 0xfde68a, alpha: 0.32 * alpha });
-  // Soft front-shelf tint
-  qfill(
-    g,
-    [
-      proj(wx,        wy - 0.01, wz + 0.7),
-      proj(wx + 3.0,  wy - 0.01, wz + 0.7),
-      proj(wx + 3.0,  wy - 0.01, wz + 3.5),
-      proj(wx,        wy - 0.01, wz + 3.5),
-    ],
-    0xfacc15, 0.12 * alpha,
-  );
-}
-
-function drawDocumentBoardAmbient(
-  g: PIXI.Graphics, wx: number, wy: number, wz: number, alpha: number,
-) {
-  // Amber tint over the entire board face
-  qfill(
-    g,
-    [
-      proj(wx + 0.08, wy - 0.04, wz + 0.08),
-      proj(wx + 2.92, wy - 0.04, wz + 0.08),
-      proj(wx + 2.92, wy - 0.04, wz + 1.52),
-      proj(wx + 0.08, wy - 0.04, wz + 1.52),
-    ],
-    0xfacc15, 0.20 * alpha,
-  );
-  // Pin pulse
-  const [pinX, pinY] = proj(wx + 1.4, wy - 0.05, wz + 1.45);
-  g.circle(pinX, pinY, 8).fill({ color: 0xfde68a, alpha: 0.7 * alpha });
-}
-
-function drawLowTableAmbient(
-  g: PIXI.Graphics, wx: number, wy: number, wz: number, alpha: number,
-) {
-  // Gold outline on the table top
-  const top: [number, number][] = [
-    proj(wx,       wy,       wz + 0.34),
-    proj(wx + 3.0, wy,       wz + 0.34),
-    proj(wx + 3.0, wy + 2.0, wz + 0.34),
-    proj(wx,       wy + 2.0, wz + 0.34),
-  ];
-  qstroke(g, top, 0xfacc15, 3, 0.9 * alpha);
-  qfill(g, top, 0xfacc15, 0.10 * alpha);
-}
-
-function drawBedAmbient(
-  g: PIXI.Graphics, wx: number, wy: number, wz: number, alpha: number,
-) {
-  // Cream halo above the pillows
-  const [cx, cy] = proj(wx + 2.0, wy + 0.65, wz + 1.05);
-  g.ellipse(cx, cy, 46, 18).fill({ color: 0xfde68a, alpha: 0.40 * alpha });
-}
-
-/** Dispatch per furniture type. Unknown types draw nothing extra. */
+/**
+ * Walk the per-type ambient shape table and draw each shape at the given alpha.
+ * Unknown furniture types contribute nothing.
+ */
 export function drawStationAmbient(
   g: PIXI.Graphics, obj: RoomObject, alpha: number,
 ) {
+  const shapes = STATION_AMBIENTS[obj.furnitureType];
+  if (!shapes) return;
+  const dim = FURNITURE_DIMS[obj.furnitureType] ?? { w: 1, d: 1, h: 1 };
   const { wx, wy, wz } = obj;
-  switch (obj.furnitureType) {
-    case "computer_desk":   drawComputerDeskAmbient(g, wx, wy, wz, alpha); break;
-    case "printer":         drawPrinterAmbient(g, wx, wy, wz, alpha); break;
-    case "bookcase":        drawBookcaseAmbient(g, wx, wy, wz, alpha); break;
-    case "document_board":  drawDocumentBoardAmbient(g, wx, wy, wz, alpha); break;
-    case "low_table":       drawLowTableAmbient(g, wx, wy, wz, alpha); break;
-    case "bed":             drawBedAmbient(g, wx, wy, wz, alpha); break;
+
+  for (const shape of shapes) {
+    switch (shape.kind) {
+      case "face": {
+        const x0 = wx + shape.fx0 * dim.w;
+        const x1 = wx + shape.fx1 * dim.w;
+        const z0 = wz + shape.fz0 * dim.h;
+        const z1 = wz + shape.fz1 * dim.h;
+        const y  = wy + shape.yOff;
+        qfill(
+          g,
+          [proj(x0, y, z0), proj(x1, y, z0), proj(x1, y, z1), proj(x0, y, z1)],
+          shape.color, shape.alpha * alpha,
+        );
+        break;
+      }
+      case "halo": {
+        const [cx, cy] = proj(
+          wx + shape.fx * dim.w,
+          wy + shape.yOff,
+          wz + shape.fz * dim.h,
+        );
+        g.ellipse(cx, cy, shape.rx, shape.ry)
+          .fill({ color: shape.color, alpha: shape.alpha * alpha });
+        break;
+      }
+      case "point": {
+        const [cx, cy] = proj(
+          wx + shape.fx * dim.w,
+          wy + shape.yOff,
+          wz + shape.fz * dim.h,
+        );
+        g.circle(cx, cy, shape.r)
+          .fill({ color: shape.color, alpha: shape.alpha * alpha });
+        break;
+      }
+      case "topOutline": {
+        const top: [number, number][] = [
+          proj(wx,            wy,            wz + dim.h),
+          proj(wx + dim.w,    wy,            wz + dim.h),
+          proj(wx + dim.w,    wy + dim.d,    wz + dim.h),
+          proj(wx,            wy + dim.d,    wz + dim.h),
+        ];
+        qstroke(g, top, shape.color, shape.lineWidth, shape.alpha * alpha);
+        qfill(g, top, shape.color, shape.fillAlpha * alpha);
+        break;
+      }
+    }
   }
 }
 
