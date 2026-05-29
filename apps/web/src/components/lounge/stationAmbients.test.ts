@@ -1,6 +1,46 @@
 import { describe, it, expect } from 'vitest';
-import { STATION_AMBIENTS, type AmbientShape } from './stationAmbients';
+import {
+  STATION_AMBIENTS,
+  applyStationAmbient,
+  getStationDim,
+  type AmbientShape,
+  type AmbientDrawContext,
+} from './stationAmbients';
 import { loungeStations } from '../../game/scene/loungeStations';
+import type { RoomObject } from './roomDefs';
+
+type RecordedOp =
+  | { op: 'fillQuad'; points: [number, number][]; color: number; alpha: number }
+  | { op: 'strokeQuad'; points: [number, number][]; color: number; lineWidth: number; alpha: number }
+  | { op: 'circle'; cx: number; cy: number; r: number; color: number; alpha: number }
+  | { op: 'ellipse'; cx: number; cy: number; rx: number; ry: number; color: number; alpha: number };
+
+function buildRecordingCtx(furnitureType: string): { ctx: AmbientDrawContext; ops: RecordedOp[] } {
+  const ops: RecordedOp[] = [];
+  const ctx: AmbientDrawContext = {
+    proj: (wx, wy, wz) => [wx * 100 + wz * 10, wy * 100 + wz * 10],
+    fillQuad: (points, color, alpha) => ops.push({ op: 'fillQuad', points, color, alpha }),
+    strokeQuad: (points, color, lineWidth, alpha) => ops.push({ op: 'strokeQuad', points, color, lineWidth, alpha }),
+    circle: (cx, cy, r, color, alpha) => ops.push({ op: 'circle', cx, cy, r, color, alpha }),
+    ellipse: (cx, cy, rx, ry, color, alpha) => ops.push({ op: 'ellipse', cx, cy, rx, ry, color, alpha }),
+    dim: getStationDim(furnitureType),
+  };
+  return { ctx, ops };
+}
+
+function buildObj(furnitureType: string): RoomObject {
+  return {
+    id: 1,
+    furnitureType,
+    label: '',
+    description: '',
+    wx: 2,
+    wy: 3,
+    wz: 0,
+    happiness: 0,
+    draggable: false,
+  };
+}
 
 function inUnitRange(value: number): boolean {
   return value >= 0 && value <= 1;
@@ -95,6 +135,30 @@ describe('STATION_AMBIENTS', () => {
         ).toBe(true);
       }
     }
+  });
+
+  it('applyStationAmbient records at least one draw op for every defined station type', () => {
+    for (const type of Object.keys(STATION_AMBIENTS)) {
+      const { ctx, ops } = buildRecordingCtx(type);
+      applyStationAmbient(ctx, buildObj(type), 0.8);
+      expect(ops.length, `${type}: no ops recorded`).toBeGreaterThan(0);
+    }
+  });
+
+  it('applyStationAmbient yields no ops for unknown furniture types', () => {
+    const { ctx, ops } = buildRecordingCtx('not_a_real_station');
+    applyStationAmbient(ctx, buildObj('not_a_real_station'), 0.8);
+    expect(ops).toEqual([]);
+  });
+
+  it('applyStationAmbient scales final alpha by the pulse alpha', () => {
+    const { ctx, ops } = buildRecordingCtx('printer');
+    applyStationAmbient(ctx, buildObj('printer'), 0.5);
+    // Printer shapes include a halo and a point; the point's shape alpha is 1.0,
+    // so the recorded op alpha should equal the pulse alpha exactly.
+    const pointOp = ops.find((o) => o.op === 'circle');
+    expect(pointOp).toBeDefined();
+    expect(pointOp?.alpha).toBeCloseTo(0.5, 5);
   });
 
   it('custom shape kind invokes its draw fn with the context, obj, and alpha', () => {

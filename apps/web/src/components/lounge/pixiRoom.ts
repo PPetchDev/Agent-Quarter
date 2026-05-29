@@ -1,7 +1,11 @@
 import * as PIXI from "pixi.js";
 import type { RoomObject } from "./roomDefs";
 import { FURNITURE_DIMS, FURNITURE_TILES } from "./roomDefs";
-import { STATION_AMBIENTS, type AmbientDrawContext } from "./stationAmbients";
+import {
+  applyStationAmbient,
+  getStationDim,
+  type AmbientDrawContext,
+} from "./stationAmbients";
 
 export const CANVAS_W = 1080;
 export const CANVAS_H = 620;
@@ -552,77 +556,21 @@ export function drawActiveStationHighlight(
 // unit-tested). Only the interpreter that draws each shape lives here.
 
 /**
- * Walk the per-type ambient shape table and draw each shape at the given alpha.
- * Unknown furniture types contribute nothing.
+ * Build a PIXI-backed `AmbientDrawContext` and hand it to the pure interpreter
+ * in `stationAmbients.ts`. Unknown furniture types contribute nothing.
  */
 export function drawStationAmbient(
   g: PIXI.Graphics, obj: RoomObject, alpha: number,
 ) {
-  const shapes = STATION_AMBIENTS[obj.furnitureType];
-  if (!shapes) return;
-  const dim = FURNITURE_DIMS[obj.furnitureType] ?? { w: 1, d: 1, h: 1 };
-  const { wx, wy, wz } = obj;
-
-  for (const shape of shapes) {
-    switch (shape.kind) {
-      case "face": {
-        const x0 = wx + shape.fx0 * dim.w;
-        const x1 = wx + shape.fx1 * dim.w;
-        const z0 = wz + shape.fz0 * dim.h;
-        const z1 = wz + shape.fz1 * dim.h;
-        const y  = wy + shape.yOff;
-        qfill(
-          g,
-          [proj(x0, y, z0), proj(x1, y, z0), proj(x1, y, z1), proj(x0, y, z1)],
-          shape.color, shape.alpha * alpha,
-        );
-        break;
-      }
-      case "halo": {
-        const [cx, cy] = proj(
-          wx + shape.fx * dim.w,
-          wy + shape.yOff,
-          wz + shape.fz * dim.h,
-        );
-        g.ellipse(cx, cy, shape.rx, shape.ry)
-          .fill({ color: shape.color, alpha: shape.alpha * alpha });
-        break;
-      }
-      case "point": {
-        const [cx, cy] = proj(
-          wx + shape.fx * dim.w,
-          wy + shape.yOff,
-          wz + shape.fz * dim.h,
-        );
-        g.circle(cx, cy, shape.r)
-          .fill({ color: shape.color, alpha: shape.alpha * alpha });
-        break;
-      }
-      case "topOutline": {
-        const top: [number, number][] = [
-          proj(wx,            wy,            wz + dim.h),
-          proj(wx + dim.w,    wy,            wz + dim.h),
-          proj(wx + dim.w,    wy + dim.d,    wz + dim.h),
-          proj(wx,            wy + dim.d,    wz + dim.h),
-        ];
-        qstroke(g, top, shape.color, shape.lineWidth, shape.alpha * alpha);
-        qfill(g, top, shape.color, shape.fillAlpha * alpha);
-        break;
-      }
-      case "custom": {
-        const ctx: AmbientDrawContext = {
-          proj,
-          fillQuad:   (points, color, a) => qfill(g, points, color, a),
-          strokeQuad: (points, color, lineWidth, a) => qstroke(g, points, color, lineWidth, a),
-          circle:     (cx, cy, r, color, a) => { g.circle(cx, cy, r).fill({ color, alpha: a }); },
-          ellipse:    (cx, cy, rx, ry, color, a) => { g.ellipse(cx, cy, rx, ry).fill({ color, alpha: a }); },
-          dim,
-        };
-        shape.draw(ctx, obj, alpha);
-        break;
-      }
-    }
-  }
+  const ctx: AmbientDrawContext = {
+    proj,
+    fillQuad:   (points, color, a) => qfill(g, points, color, a),
+    strokeQuad: (points, color, lineWidth, a) => qstroke(g, points, color, lineWidth, a),
+    circle:     (cx, cy, r, color, a) => { g.circle(cx, cy, r).fill({ color, alpha: a }); },
+    ellipse:    (cx, cy, rx, ry, color, a) => { g.ellipse(cx, cy, rx, ry).fill({ color, alpha: a }); },
+    dim:        getStationDim(obj.furnitureType),
+  };
+  applyStationAmbient(ctx, obj, alpha);
 }
 
 /** Red collision highlight — drawn during drag when placement is invalid */
