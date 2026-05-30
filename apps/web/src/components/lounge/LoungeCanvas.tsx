@@ -123,7 +123,7 @@ const TASK_ICON_LABEL: Record<AgentTaskType, string> = {
   idle:     "Idle",
 };
 
-const STORAGE_KEY = "squad:lounge:v6";
+const STORAGE_KEY = "squad:lounge:v7";
 const ROOM_MAP_URL = "/maps/maple_hideout.json";
 const INITIAL_COINS = 500;
 const TRAIN_REWARD = 25;
