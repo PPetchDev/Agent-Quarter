@@ -574,10 +574,10 @@ export function LoungeCanvas() {
         const CHAR_DEFS = [
           { skel: '/azur-char/qiye/qiye_h.skel',
             atlas: '/azur-char/qiye/qiye_h.atlas',
-            wx: 3.0, wy: 0.65, wz: 0.0, id: 'agent-1', name: 'qiye' },
+            wx: 5.0, wy: 0.65, wz: 0.0, id: 'agent-1', name: 'qiye' },
           { skel: '/azur-char/dunkeerke/dunkeerke.skel',
             atlas: '/azur-char/dunkeerke/dunkeerke.atlas',
-            wx: 7.0, wy: 0.65, wz: 0.0, id: 'agent-2', name: 'dunkeerke' },
+            wx: 8.0, wy: 0.65, wz: 0.0, id: 'agent-2', name: 'dunkeerke' },
         ];
 
         for (const def of CHAR_DEFS) {
