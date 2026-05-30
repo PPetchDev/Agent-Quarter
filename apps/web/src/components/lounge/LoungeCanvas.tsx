@@ -1115,17 +1115,6 @@ export function LoungeCanvas() {
           </span>
         </div>
         <span className="my-1.5 w-px self-stretch bg-[#c8a870]/60" />
-        <button
-          type="button"
-          onClick={() => setFloor((f) => (f === 1 ? 2 : 1))}
-          title="Change floor"
-          className="flex items-center px-2.5 py-1.5 hover:bg-[#f0d8a8] transition"
-        >
-          <span className="text-[11px] font-bold text-[#5a3c18] tabular-nums">
-            {floor}F
-          </span>
-        </button>
-        <span className="my-1.5 w-px self-stretch bg-[#c8a870]/60" />
         <div
           className="flex items-center gap-1 px-2.5 py-1.5"
           title="Next meal"
@@ -1225,7 +1214,7 @@ export function LoungeCanvas() {
 
       {/* ── Toast ─────────────────────────────────────────────────────── */}
       {toast && (
-        <div className="absolute left-1/2 top-16 z-40 -translate-x-1/2 rounded-full bg-[#fdf6e8] border border-[#c8a870] px-4 py-1.5 shadow-lg animate-pulse">
+        <div className={`absolute left-1/2 z-40 -translate-x-1/2 rounded-full bg-[#fdf6e8] border border-[#c8a870] px-4 py-1.5 shadow-lg animate-pulse ${mode === "move" ? "top-20" : "top-16"}`}>
           <span className="text-[11px] font-black text-[#5a3c18]">{toast}</span>
         </div>
       )}
@@ -1362,7 +1351,7 @@ export function LoungeCanvas() {
       </div>
 
       {/* ── Agent task buttons ───────────────────────────────────── */}
-      <div className="absolute bottom-3 left-1/2 z-40 -translate-x-1/2 flex flex-col items-center gap-1">
+      <div className="absolute bottom-2 left-1/2 z-40 -translate-x-1/2 flex flex-col items-center gap-0.5">
         <div className="flex items-center gap-0.5 rounded-2xl border border-[#c8a870] bg-[#f5e4c0]/95 px-2 py-1.5 shadow-lg backdrop-blur-sm">
           {TASK_DEFS.map(({ task, icon, label }) => (
             <button
@@ -1419,13 +1408,13 @@ export function LoungeCanvas() {
         )}
         <span className="text-[9px] font-semibold text-[#8b6030]/80 tracking-wide">
           {agent.name} · {agent.state}
-          <button type="button" onClick={() => {
+        </span>
+        <button type="button" onClick={() => {
             setHappiness(h => h + 3); setCoins(c => c + 15);
             setSuppliesProgress(p => Math.min(40000, p + 50));
             setFloatingHearts(prev => [...prev, { id: ++heartIdRef.current, x: 45 + Math.random()*10, y: 50, createdAt: performance.now() }]);
             showToast("♡+3 🪙+15 🍱+50");
-          }} className="ml-1 text-[9px] font-bold text-[#ff69b4] hover:text-[#d4708a] active:scale-95 transition">Collect</button>
-        </span>
+          }} className="rounded-full bg-[#ff69b4]/15 border border-[#ff69b4]/30 px-2.5 py-0.5 text-[9px] font-bold text-[#d4708a] hover:bg-[#ff69b4]/25 active:scale-95 transition">♡ Collect</button>
 
         {/* Character roster cards */}
         <div className="flex items-center gap-2 mt-1">
@@ -1466,7 +1455,7 @@ export function LoungeCanvas() {
       </div>
 
       {/* ── Bottom-left: Train + Supplies ───────────────────────────── */}
-      <div className="absolute left-3 bottom-3 z-30 flex flex-col gap-1.5">
+      <div className="absolute left-2 bottom-2 z-30 flex flex-col gap-1">
         <div className="flex items-center gap-1.5">
           <button
             type="button"
@@ -1519,7 +1508,7 @@ export function LoungeCanvas() {
       </div>
 
       {/* ── Bottom-right: Action dock ──────────────────────────────── */}
-      <div className="absolute right-3 bottom-3 z-30 flex items-center gap-1.5">
+      <div className="absolute right-2 bottom-2 z-30 flex items-center gap-1">
         <button
           type="button"
           onClick={() => setMode((m) => (m === "visit" ? "move" : "visit"))}
