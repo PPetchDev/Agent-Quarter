@@ -24,6 +24,7 @@ import { checkCollision, FURNITURE_TILES } from "./roomDefs";
 import { FurnitureInspector } from "./FurnitureInspector";
 import { ShopModal } from "./ShopModal";
 import { getDefaultSpawnPosition, type CatalogItem } from "./furnitureCatalog";
+import { selectPurchasePlacement } from "./purchasePlacement";
 import { useAgentWalk } from "@/hooks/useAgentWalk";
 import { useCountdown } from "@/hooks/useCountdown";
 import type { AgentState, AgentTaskType } from "@/game/agents/agentTypes";
@@ -942,48 +943,13 @@ export function LoungeCanvas() {
       }
 
       const spawn = getDefaultSpawnPosition(item.type);
-      const footprint = FURNITURE_TILES[item.type] ?? { w: 1, d: 1 };
-      const maxX = Math.max(0, roomWRef.current - footprint.w);
-      const maxY = Math.max(0, roomHRef.current - footprint.d);
-
-      const tryPlace = (wx: number, wy: number): RoomObject | null => {
-        const candidate: RoomObject = {
-          id: -1,
-          furnitureType: item.type,
-          label: item.label,
-          description: item.description,
-          wx,
-          wy,
-          wz: spawn.wz,
-          happiness: item.happiness,
-          draggable: item.draggable,
-        };
-        const colliding = checkCollision(
-          [...objectsRef.current, candidate],
-          candidate.id,
-          candidate.wx,
-          candidate.wy,
-        );
-        return colliding ? null : candidate;
-      };
-
-      const clampedSpawnX = Math.max(0, Math.min(maxX, Math.round(spawn.wx)));
-      const clampedSpawnY = Math.max(0, Math.min(maxY, Math.round(spawn.wy)));
-
-      let placed = tryPlace(clampedSpawnX, clampedSpawnY);
-
-      if (!placed) {
-        const wallItem = spawn.wz >= 1.5;
-        const scanYStart = wallItem ? maxY : 0;
-        const scanYEnd = wallItem ? maxY : maxY;
-
-        for (let y = scanYStart; y <= scanYEnd && !placed; y++) {
-          for (let x = 0; x <= maxX; x++) {
-            placed = tryPlace(x, y);
-            if (placed) break;
-          }
-        }
-      }
+      const placed = selectPurchasePlacement({
+        item,
+        existingObjects: objectsRef.current,
+        defaultSpawn: spawn,
+        roomW: roomWRef.current,
+        roomH: roomHRef.current,
+      });
 
       if (!placed) {
         showToast("No free space");
