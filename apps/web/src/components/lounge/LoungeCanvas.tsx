@@ -270,6 +270,7 @@ export function LoungeCanvas() {
   const appRef = useRef<PIXI.Application | null>(null);
   const sceneRef = useRef<RoomScene | null>(null);
   const charSpritesRef = useRef<Map<string, PIXI.Container>>(new Map());
+  const lastCollectRef = useRef<Record<string, number>>({});
   const dragRef = useRef<{
     id: number;
     screenX: number;
@@ -603,6 +604,11 @@ export function LoungeCanvas() {
               spine.cursor = 'pointer';
               spine.hitArea = new PIXI.Circle(0, -15, 40);
               spine.on('pointertap', () => {
+                // ── Collect cooldown (3s per character) ──
+                const now = Date.now();
+                if (now - (lastCollectRef.current[def.id] ?? 0) < 3000) return;
+                lastCollectRef.current[def.id] = now;
+
                 const state = (spine as any).state;
                 const anims = ((spine as any).spineData.animations as any[]).map((a:any) => a.name);
                 const oneShotAnims = new Set(['victory', 'break']);
@@ -614,6 +620,16 @@ export function LoungeCanvas() {
                 state.setAnimation(0, tap, false);
                 const calm = ['normal','stand','stand2','sit','sleep'].find((c) => anims.includes(c)) ?? anims[0];
                 if (calm) state.addAnimation(0, calm, true, 0);
+
+                // ── Collect rewards ──
+                setHappiness(h => h + 3);
+                setCoins(c => c + 15);
+                setFloatingHearts(prev => [...prev, {
+                  id: ++heartIdRef.current,
+                  x: sx, y: sy - 60,
+                  createdAt: performance.now(),
+                }]);
+                showToast("♡+3 🪙+15");
               });
 
               // Log animation names + play calm lounge default
