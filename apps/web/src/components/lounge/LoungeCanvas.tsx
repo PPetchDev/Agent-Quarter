@@ -941,23 +941,61 @@ export function LoungeCanvas() {
         return;
       }
 
+      const spawn = getDefaultSpawnPosition(item.type);
+      const footprint = FURNITURE_TILES[item.type] ?? { w: 1, d: 1 };
+      const maxX = Math.max(0, roomWRef.current - footprint.w);
+      const maxY = Math.max(0, roomHRef.current - footprint.d);
+
+      const tryPlace = (wx: number, wy: number): RoomObject | null => {
+        const candidate: RoomObject = {
+          id: -1,
+          furnitureType: item.type,
+          label: item.label,
+          description: item.description,
+          wx,
+          wy,
+          wz: spawn.wz,
+          happiness: item.happiness,
+          draggable: item.draggable,
+        };
+        const colliding = checkCollision(
+          [...objectsRef.current, candidate],
+          candidate.id,
+          candidate.wx,
+          candidate.wy,
+        );
+        return colliding ? null : candidate;
+      };
+
+      const clampedSpawnX = Math.max(0, Math.min(maxX, Math.round(spawn.wx)));
+      const clampedSpawnY = Math.max(0, Math.min(maxY, Math.round(spawn.wy)));
+
+      let placed = tryPlace(clampedSpawnX, clampedSpawnY);
+
+      if (!placed) {
+        const wallItem = spawn.wz >= 1.5;
+        const scanYStart = wallItem ? maxY : 0;
+        const scanYEnd = wallItem ? maxY : maxY;
+
+        for (let y = scanYStart; y <= scanYEnd && !placed; y++) {
+          for (let x = 0; x <= maxX; x++) {
+            placed = tryPlace(x, y);
+            if (placed) break;
+          }
+        }
+      }
+
+      if (!placed) {
+        showToast("No free space");
+        return;
+      }
+
       pushHistorySnapshot(objectsRef.current);
       coinsRef.current -= item.cost;
       setCoins(coinsRef.current);
 
-      const spawn = getDefaultSpawnPosition(item.type);
       const newId = nextIdRef.current++;
-      const newObj: RoomObject = {
-        id: newId,
-        furnitureType: item.type,
-        label: item.label,
-        description: item.description,
-        wx: spawn.wx,
-        wy: spawn.wy,
-        wz: spawn.wz,
-        happiness: item.happiness,
-        draggable: item.draggable,
-      };
+      const newObj: RoomObject = { ...placed, id: newId };
       objectsRef.current = [...objectsRef.current, newObj];
       sceneRef.current?.addItem(newObj);
       setObjects([...objectsRef.current]);
