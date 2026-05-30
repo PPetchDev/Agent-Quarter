@@ -271,6 +271,7 @@ export function LoungeCanvas() {
   const sceneRef = useRef<RoomScene | null>(null);
   const charSpritesRef = useRef<Map<string, PIXI.Container>>(new Map());
   const lastCollectRef = useRef<Record<string, number>>({});
+  const lastCooldownToastRef = useRef(0);
   const dragRef = useRef<{
     id: number;
     screenX: number;
@@ -606,7 +607,13 @@ export function LoungeCanvas() {
               spine.on('pointertap', () => {
                 // ── Collect cooldown (3s per character) ──
                 const now = Date.now();
-                if (now - (lastCollectRef.current[def.id] ?? 0) < 3000) return;
+                if (now - (lastCollectRef.current[def.id] ?? 0) < 3000) {
+                  if (now - lastCooldownToastRef.current > 1000) {
+                    lastCooldownToastRef.current = now;
+                    showToast("Wait a moment~");
+                  }
+                  return;
+                }
                 lastCollectRef.current[def.id] = now;
 
                 const state = (spine as any).state;
