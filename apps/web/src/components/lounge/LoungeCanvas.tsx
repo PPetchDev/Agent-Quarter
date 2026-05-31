@@ -124,6 +124,17 @@ const TASK_ICON_LABEL: Record<AgentTaskType, string> = {
   idle:     "Idle",
 };
 
+const TASK_REWARDS: Record<AgentTaskType, { coins: number; happiness: number }> = {
+  code:     { coins: 40, happiness: 8 },
+  research: { coins: 25, happiness: 5 },
+  document: { coins: 20, happiness: 4 },
+  meeting:  { coins: 20, happiness: 4 },
+  review:   { coins: 30, happiness: 6 },
+  print:    { coins: 15, happiness: 3 },
+  rest:     { coins: 10, happiness: 10 },
+  idle:     { coins: 0,  happiness: 0 },
+};
+
 const STATE_LABEL: Record<string, string> = {
   idle:        "😴 Idle",
   walking:     "🚶 Moving",
@@ -355,6 +366,8 @@ export function LoungeCanvas() {
     roomWidth: roomW,
     roomHeight: roomH,
   });
+  const previousAgentStateRef = useRef(agent.state);
+  const previousTaskTypeRef = useRef(agent.taskType);
   // Second agent — autopilot demo. Cycles through tasks deterministically when
   // idle so the multi-agent foundation is visible without extra HUD chrome.
   const aki = useAgentWalk({
@@ -898,6 +911,29 @@ export function LoungeCanvas() {
     };
   }, []);
 
+  // ── Task completion reward ──────────────────────────────────────────────────
+  useEffect(() => {
+    const prevState = previousAgentStateRef.current;
+    const prevTaskType = previousTaskTypeRef.current;
+    if (
+      agent.state === "idle" &&
+      prevState !== "idle" &&
+      prevState !== "walking" &&
+      prevState !== "error" &&
+      prevTaskType &&
+      prevTaskType !== "idle"
+    ) {
+      const reward = TASK_REWARDS[prevTaskType] ?? { coins: 0, happiness: 0 };
+      if (reward.coins > 0 || reward.happiness > 0) {
+        setCoins((c) => c + reward.coins);
+        setHappiness((h) => h + reward.happiness);
+        showToast(`+${reward.coins} 🪙  +${reward.happiness} ♡`);
+      }
+    }
+    previousAgentStateRef.current = agent.state;
+    previousTaskTypeRef.current = agent.taskType;
+  }, [agent.state, agent.taskType, showToast]);
+
   const applyLayoutObjects = useCallback((nextObjects: RoomObject[]) => {
     const snapped = nextObjects.map((obj) =>
       snapObj(obj, roomWRef.current, roomHRef.current),
@@ -989,6 +1025,7 @@ export function LoungeCanvas() {
       pushHistorySnapshot(objectsRef.current);
       coinsRef.current -= item.cost;
       setCoins(coinsRef.current);
+      setHappiness((h) => h + item.happiness);
 
       const newId = nextIdRef.current++;
       const newObj: RoomObject = { ...placed, id: newId };
@@ -1153,6 +1190,11 @@ export function LoungeCanvas() {
           <span className="text-[10px] font-mono font-bold text-[#5a3c18] tabular-nums max-sm:text-[8px]">
             {timer}
           </span>
+          {suppliesProgress === 0 && (
+            <span className="text-[7px] font-black text-[#991b1b] bg-[#fecaca] rounded-full px-1 py-px animate-pulse max-sm:text-[6px]">
+              Empty
+            </span>
+          )}
         </div>
       </div>
 
