@@ -124,6 +124,36 @@ const TASK_ICON_LABEL: Record<AgentTaskType, string> = {
   idle:     "Idle",
 };
 
+const STATE_LABEL: Record<string, string> = {
+  idle:        "😴 Idle",
+  walking:     "🚶 Moving",
+  thinking:    "🤔 Thinking",
+  coding:      "💻 Coding",
+  researching: "📚 Reading",
+  meeting:     "🗣️ Meeting",
+  documenting: "📝 Docs",
+  reviewing:   "🔍 Review",
+  printing:    "🖨️ Print",
+  resting:     "🛋️ Resting",
+  done:        "✅ Done",
+  error:       "⚠️ Error",
+};
+
+const STATE_COLOR: Record<string, string> = {
+  idle:        "bg-[#86efac]/30 text-[#166534]",
+  walking:     "bg-[#93c5fd]/30 text-[#1e40af]",
+  thinking:    "bg-[#c4b5fd]/30 text-[#5b21b6]",
+  coding:      "bg-[#fde68a]/40 text-[#7a5000]",
+  researching: "bg-[#a5f3fc]/30 text-[#155e75]",
+  meeting:     "bg-[#f9a8d4]/30 text-[#831843]",
+  documenting: "bg-[#d9f99d]/30 text-[#3f6212]",
+  reviewing:   "bg-[#fca5a5]/30 text-[#7f1d1d]",
+  printing:    "bg-[#e9d5ff]/30 text-[#4c1d95]",
+  resting:     "bg-[#fed7aa]/30 text-[#7c2d12]",
+  done:        "bg-[#86efac]/40 text-[#14532d]",
+  error:       "bg-[#fca5a5]/50 text-[#991b1b]",
+};
+
 const STORAGE_KEY = "squad:lounge:v7";
 const ROOM_MAP_URL = "/maps/maple_hideout.json";
 const INITIAL_COINS = 500;
@@ -1363,7 +1393,7 @@ export function LoungeCanvas() {
               title={`${label} — shift-click to enqueue`}
               className={`flex flex-col items-center gap-0 rounded-xl px-2 py-1 text-[10px] font-bold transition active:scale-95 max-sm:px-1 max-sm:py-0.5 max-sm:text-[8px] ${
                 agent.taskType === task && agent.state !== "idle"
-                  ? "bg-[#e8a030] text-white shadow"
+                  ? "bg-[#e8a030] text-white shadow ring-2 ring-[#e8a030]/40"
                   : "text-[#5a3c18] hover:bg-[#f0d8a8]"
               }`}
             >
@@ -1406,9 +1436,6 @@ export function LoungeCanvas() {
             </button>
           </div>
         )}
-        <span className="text-[9px] font-semibold text-[#8b6030]/80 tracking-wide">
-          {agent.name} · {agent.state}
-        </span>
         <button type="button" onClick={() => {
             setHappiness(h => h + 3); setCoins(c => c + 15);
             setSuppliesProgress(p => Math.min(40000, p + 50));
@@ -1424,7 +1451,9 @@ export function LoungeCanvas() {
                 className="object-cover scale-[3] translate-x-[2px] translate-y-[4px]" />
             </div>
             <span className="text-[10px] font-bold text-[#5a3c18] max-sm:text-[8px]">Mai</span>
-            <span className="text-[9px] text-[#8b6030] max-sm:text-[7px]">{agent.state}</span>
+            <span className={`text-[9px] font-bold rounded-full px-2 py-0.5 max-sm:text-[7px] max-sm:px-1.5 ${STATE_COLOR[agent.state] ?? "bg-[#e8d0a0]/30 text-[#5a3c18]"}`}>
+              {STATE_LABEL[agent.state] ?? agent.state}
+            </span>
           </div>
           <div className="flex items-center gap-1.5 rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-2 py-1 max-sm:px-1.5 max-sm:py-0.5 max-sm:gap-1">
             <div className="w-7 h-7 rounded-full overflow-hidden bg-[#e8f0ff] max-sm:w-5 max-sm:h-5">
@@ -1432,7 +1461,9 @@ export function LoungeCanvas() {
                 className="object-cover scale-[3] translate-x-[2px] translate-y-[4px]" />
             </div>
             <span className="text-[10px] font-bold text-[#5a3c18] max-sm:text-[8px]">Aki</span>
-            <span className="text-[9px] text-[#8b6030] max-sm:text-[7px]">{aki.agent.state}</span>
+            <span className={`text-[9px] font-bold rounded-full px-2 py-0.5 max-sm:text-[7px] max-sm:px-1.5 ${STATE_COLOR[aki.agent.state] ?? "bg-[#e8d0a0]/30 text-[#5a3c18]"}`}>
+              {STATE_LABEL[aki.agent.state] ?? aki.agent.state}
+            </span>
           </div>
         </div>
         {agent.workDurationMs !== undefined &&
