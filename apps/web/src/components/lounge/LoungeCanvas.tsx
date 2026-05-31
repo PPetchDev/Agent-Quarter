@@ -1405,13 +1405,28 @@ export function LoungeCanvas() {
             <button
               type="button"
               onClick={clearAgentTask}
-              className="ml-0.5 rounded-xl px-2 py-1 text-[11px] font-bold text-[#9a3c18] hover:bg-[#fdd] active:scale-95 transition"
+              className={`ml-0.5 rounded-xl px-2 py-1 text-[11px] font-bold active:scale-95 transition ${
+                agent.state === "error"
+                  ? "bg-[#fca5a5]/60 text-[#7f1d1d] ring-1 ring-[#991b1b]/40 hover:bg-[#fca5a5]/80"
+                  : "text-[#9a3c18] hover:bg-[#fdd]"
+              }`}
               title="Stop agent and clear queue"
             >
-              ✕
+              {agent.state === "error" ? (
+                <>
+                  ✕<span className="ml-1 max-sm:hidden">Clear</span>
+                </>
+              ) : (
+                "✕"
+              )}
             </button>
           )}
         </div>
+        {agent.state === "error" && (
+          <span className="text-[8px] font-semibold text-[#991b1b]/70 max-sm:hidden">
+            ✕ to clear
+          </span>
+        )}
         {agent.taskQueue.length > 0 && (
           <div className="flex items-center gap-1 rounded-full border border-[#c8a870] bg-[#f5e4c0]/90 px-2 py-0.5 shadow-sm max-sm:px-1.5">
             <span className="text-[8px] font-bold text-[#7a5000] tracking-wide">
@@ -1469,9 +1484,10 @@ export function LoungeCanvas() {
             </span>
           </div>
         </div>
-        {agent.state === "error" && (
-          <span className="text-[8px] text-[#991b1b]/60 max-sm:text-[7px]">
-            ✕ to clear
+        {agent.state === "error" && agent.bubbleText && (
+          <span className="flex items-center gap-1 rounded-full border border-[#991b1b]/30 bg-[#fca5a5]/40 px-2 py-0.5 text-[8px] font-semibold text-[#991b1b] max-sm:text-[7px]">
+            <span aria-hidden>⚠️</span>
+            {agent.bubbleText}
           </span>
         )}
         {agent.workDurationMs !== undefined &&
