@@ -1413,19 +1413,22 @@ export function LoungeCanvas() {
           )}
         </div>
         {agent.taskQueue.length > 0 && (
-          <div className="flex items-center gap-1 rounded-full border border-[#c8a870] bg-[#f5e4c0]/90 px-2 py-0.5 shadow-sm">
-            <span className="text-[8px] font-bold text-[#8b6030] tracking-wider">
-              QUEUE
+          <div className="flex items-center gap-1 rounded-full border border-[#c8a870] bg-[#f5e4c0]/90 px-2 py-0.5 shadow-sm max-sm:px-1.5">
+            <span className="text-[8px] font-bold text-[#7a5000] tracking-wide">
+              Next:
             </span>
-            {agent.taskQueue.map((task, i) => (
-              <span
-                key={`${task}-${i}`}
-                title={TASK_ICON_LABEL[task]}
-                className="text-[12px] leading-none"
-              >
-                {TASK_ICON[task] ?? "·"}
-              </span>
-            ))}
+            <span
+              title={TASK_ICON_LABEL[agent.taskQueue[0]!]}
+              className="text-[11px] leading-none"
+            >
+              {TASK_ICON[agent.taskQueue[0]!] ?? "·"}
+            </span>
+            <span className="text-[8px] font-semibold text-[#5a3c18] max-sm:hidden">
+              {TASK_ICON_LABEL[agent.taskQueue[0]!]}
+            </span>
+            {agent.taskQueue.length > 1 && (
+              <span className="text-[8px] text-[#8b6030]">+{agent.taskQueue.length - 1}</span>
+            )}
             <button
               type="button"
               onClick={clearQueue}
@@ -1466,21 +1469,31 @@ export function LoungeCanvas() {
             </span>
           </div>
         </div>
+        {agent.state === "error" && (
+          <span className="text-[8px] text-[#991b1b]/60 max-sm:text-[7px]">
+            ✕ to clear
+          </span>
+        )}
         {agent.workDurationMs !== undefined &&
           agent.workElapsedMs !== undefined && (
-            <div className="relative h-1 w-32 overflow-hidden rounded-full bg-[#e8d0a0]">
-              <div
-                className="absolute inset-y-0 left-0 rounded-full bg-[#e8a030]"
-                style={{
-                  width: `${Math.min(
-                    100,
-                    Math.max(
-                      0,
-                      (agent.workElapsedMs / agent.workDurationMs) * 100,
-                    ),
-                  )}%`,
-                }}
-              />
+            <div className="flex flex-col items-center gap-0.5 mt-0.5">
+              <span className="text-[8px] font-semibold text-[#7a5000]/70 max-sm:text-[7px]">
+                Working · {Math.max(1, Math.ceil((agent.workDurationMs - agent.workElapsedMs) / 1000))}s left
+              </span>
+              <div className="relative h-1 w-32 overflow-hidden rounded-full bg-[#e8d0a0]">
+                <div
+                  className="absolute inset-y-0 left-0 rounded-full bg-[#e8a030]"
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      Math.max(
+                        0,
+                        (agent.workElapsedMs / agent.workDurationMs) * 100,
+                      ),
+                    )}%`,
+                  }}
+                />
+              </div>
             </div>
           )}
       </div>
