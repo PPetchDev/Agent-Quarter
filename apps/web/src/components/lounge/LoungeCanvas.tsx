@@ -1063,30 +1063,30 @@ export function LoungeCanvas() {
       onMouseLeave={handlePanEnd}
     >
       {/* ── Top-left: Back + Room name ───────────────────────────────── */}
-      <div className="absolute left-3 top-3 z-30 flex items-center gap-2">
+      <div className="absolute left-3 top-3 z-30 flex items-center gap-2 max-sm:left-1 max-sm:top-1 max-sm:gap-1">
         <button
           type="button"
           onClick={() => router.back()}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-[#c8a870] bg-[#f5e4c0] text-[#5a3c18] shadow-md hover:bg-[#f0d8a8] active:scale-95 transition"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-[#c8a870] bg-[#f5e4c0] text-[#5a3c18] shadow-md hover:bg-[#f0d8a8] active:scale-95 transition max-sm:h-8 max-sm:w-8 max-sm:text-[12px]"
         >
           ←
         </button>
-        <div className="flex items-center gap-1.5 rounded-2xl border border-[#c8a870] bg-[#f5e4c0]/90 px-3 py-2 shadow-md backdrop-blur-sm">
+        <div className="flex items-center gap-1.5 rounded-2xl border border-[#c8a870] bg-[#f5e4c0]/90 px-3 py-2 shadow-md backdrop-blur-sm max-sm:px-2 max-sm:py-1 max-sm:gap-1">
           {mode === "move" ? (
             <input
-              className="bg-transparent text-[13px] font-bold text-[#5a3c18] outline-none w-32"
+              className="bg-transparent text-[13px] font-bold text-[#5a3c18] outline-none w-32 max-sm:w-20 max-sm:text-[11px]"
               value={roomName}
               onChange={(e) => setRoomName(e.target.value)}
             />
           ) : (
-            <span className="text-[13px] font-bold text-[#5a3c18]">
+            <span className="text-[13px] font-bold text-[#5a3c18] max-sm:text-[11px]">
               {roomName}
             </span>
           )}
           <button
             type="button"
             onClick={() => setMode((m) => (m === "visit" ? "move" : "visit"))}
-            className="text-[#8b5e30] hover:text-[#5a3c18] transition text-[12px]"
+            className="text-[#8b5e30] hover:text-[#5a3c18] transition text-[12px] max-sm:text-[10px]"
           >
             ✏
           </button>
@@ -1094,33 +1094,33 @@ export function LoungeCanvas() {
       </div>
 
       {/* ── Top-right: combined stats bar ────────────────────────── */}
-      <div className="absolute right-3 top-3 z-30 flex items-stretch rounded-2xl border border-[#c8a870] bg-[#f5e4c0]/90 shadow-md backdrop-blur-sm overflow-hidden">
+      <div className="absolute right-3 top-3 z-30 flex items-stretch rounded-2xl border border-[#c8a870] bg-[#f5e4c0]/90 shadow-md backdrop-blur-sm overflow-hidden max-sm:right-1 max-sm:top-1 max-sm:rounded-xl">
         <div
-          className="flex items-center gap-1 px-2.5 py-1.5"
+          className="flex items-center gap-1 px-2.5 py-1.5 max-sm:px-1.5 max-sm:py-1"
           title="Happiness"
         >
-          <span className="text-[12px] leading-none">😊</span>
-          <span className="text-[11px] font-bold text-[#5a3c18] tabular-nums">
+          <span className="text-[12px] leading-none max-sm:text-[10px]">😊</span>
+          <span className="text-[11px] font-bold text-[#5a3c18] tabular-nums max-sm:text-[9px]">
             {totalHappiness}
           </span>
         </div>
         <span className="my-1.5 w-px self-stretch bg-[#c8a870]/60" />
         <div
-          className="flex items-center gap-1 bg-[#fde68a]/70 px-2.5 py-1.5"
+          className="flex items-center gap-1 bg-[#fde68a]/70 px-2.5 py-1.5 max-sm:px-1.5 max-sm:py-1"
           title="Coins"
         >
-          <span className="text-[12px] leading-none">🪙</span>
-          <span className="text-[11px] font-black text-[#7a5000] tabular-nums">
+          <span className="text-[12px] leading-none max-sm:text-[10px]">🪙</span>
+          <span className="text-[11px] font-black text-[#7a5000] tabular-nums max-sm:text-[9px]">
             {coins.toLocaleString()}
           </span>
         </div>
         <span className="my-1.5 w-px self-stretch bg-[#c8a870]/60" />
         <div
-          className="flex items-center gap-1 px-2.5 py-1.5"
+          className="flex items-center gap-1 px-2.5 py-1.5 max-sm:px-1.5 max-sm:py-1"
           title="Next meal"
         >
-          <span className="text-[11px] leading-none">🍱</span>
-          <span className="text-[10px] font-mono font-bold text-[#5a3c18] tabular-nums">
+          <span className="text-[11px] leading-none max-sm:text-[9px]">🍱</span>
+          <span className="text-[10px] font-mono font-bold text-[#5a3c18] tabular-nums max-sm:text-[8px]">
             {timer}
           </span>
         </div>
@@ -1128,14 +1128,14 @@ export function LoungeCanvas() {
 
       {/* ── Move-mode banner ────────────────────────────────────────── */}
       {mode === "move" && (
-        <div className="absolute left-1/2 top-3 z-30 -translate-x-1/2 flex items-center gap-1.5 rounded-full border border-[#e8b800] bg-[#fde68a] px-3 py-1 shadow-md">
-          <span className="text-[10px] font-black text-[#7a5000]">
+        <div className="absolute left-1/2 top-3 z-30 -translate-x-1/2 flex items-center gap-1.5 rounded-full border border-[#e8b800] bg-[#fde68a] px-3 py-1 shadow-md max-sm:flex-wrap max-sm:justify-center max-sm:gap-1 max-sm:px-2 max-sm:py-0.5 max-sm:rounded-2xl">
+          <span className="text-[10px] font-black text-[#7a5000] max-sm:text-[8px]">
             ✋ Move Mode
           </span>
           <button
             type="button"
             onClick={handleAutoArrange}
-            className="rounded-full bg-[#2563eb] px-2 py-0.5 text-[9px] font-black text-white hover:bg-[#1d4ed8] active:scale-95 transition"
+            className="rounded-full bg-[#2563eb] px-2 py-0.5 text-[9px] font-black text-white hover:bg-[#1d4ed8] active:scale-95 transition max-sm:px-1.5 max-sm:text-[7px]"
           >
             ✦ Auto
           </button>
@@ -1143,7 +1143,7 @@ export function LoungeCanvas() {
             type="button"
             onClick={handleUndo}
             disabled={!canUndo}
-            className={`rounded-full px-2 py-0.5 text-[9px] font-black active:scale-95 transition ${canUndo ? "bg-[#166534] text-white hover:bg-[#14532d]" : "bg-[#94a3b8] text-[#334155] cursor-not-allowed"}`}
+            className={`rounded-full px-2 py-0.5 text-[9px] font-black active:scale-95 transition max-sm:px-1.5 max-sm:text-[7px] ${canUndo ? "bg-[#166534] text-white hover:bg-[#14532d]" : "bg-[#94a3b8] text-[#334155] cursor-not-allowed"}`}
           >
             ↶ Undo
           </button>
@@ -1151,21 +1151,21 @@ export function LoungeCanvas() {
             type="button"
             onClick={handleRedo}
             disabled={!canRedo}
-            className={`rounded-full px-2 py-0.5 text-[9px] font-black active:scale-95 transition ${canRedo ? "bg-[#7c3aed] text-white hover:bg-[#6d28d9]" : "bg-[#94a3b8] text-[#334155] cursor-not-allowed"}`}
+            className={`rounded-full px-2 py-0.5 text-[9px] font-black active:scale-95 transition max-sm:px-1.5 max-sm:text-[7px] ${canRedo ? "bg-[#7c3aed] text-white hover:bg-[#6d28d9]" : "bg-[#94a3b8] text-[#334155] cursor-not-allowed"}`}
           >
             ↷ Redo
           </button>
           <button
             type="button"
             onClick={() => setShowRoomSettings((s) => !s)}
-            className="rounded-full bg-[#7a5000] px-2 py-0.5 text-[9px] font-black text-[#fde68a] hover:bg-[#5a3800] active:scale-95 transition"
+            className="rounded-full bg-[#7a5000] px-2 py-0.5 text-[9px] font-black text-[#fde68a] hover:bg-[#5a3800] active:scale-95 transition max-sm:px-1.5 max-sm:text-[7px]"
           >
             ⚙ Room
           </button>
           <button
             type="button"
             onClick={handleReset}
-            className="rounded-full bg-[#e84040] px-2 py-0.5 text-[9px] font-black text-white hover:bg-[#d03030] active:scale-95 transition"
+            className="rounded-full bg-[#e84040] px-2 py-0.5 text-[9px] font-black text-white hover:bg-[#d03030] active:scale-95 transition max-sm:px-1.5 max-sm:text-[7px]"
           >
             ↻ Reset
           </button>
@@ -1214,8 +1214,8 @@ export function LoungeCanvas() {
 
       {/* ── Toast ─────────────────────────────────────────────────────── */}
       {toast && (
-        <div className={`absolute left-1/2 z-40 -translate-x-1/2 rounded-full bg-[#fdf6e8] border border-[#c8a870] px-4 py-1.5 shadow-lg animate-pulse ${mode === "move" ? "top-20" : "top-16"}`}>
-          <span className="text-[11px] font-black text-[#5a3c18]">{toast}</span>
+        <div className={`absolute left-1/2 z-40 -translate-x-1/2 rounded-full bg-[#fdf6e8] border border-[#c8a870] px-4 py-1.5 shadow-lg animate-pulse max-sm:px-3 max-sm:py-1 ${mode === "move" ? "top-20 max-sm:top-24" : "top-16 max-sm:top-14"}`}>
+          <span className="text-[11px] font-black text-[#5a3c18] max-sm:text-[9px]">{toast}</span>
         </div>
       )}
 
@@ -1351,8 +1351,8 @@ export function LoungeCanvas() {
       </div>
 
       {/* ── Agent task buttons ───────────────────────────────────── */}
-      <div className="absolute bottom-2 left-1/2 z-40 -translate-x-1/2 flex flex-col items-center gap-0.5">
-        <div className="flex items-center gap-0.5 rounded-2xl border border-[#c8a870] bg-[#f5e4c0]/95 px-2 py-1.5 shadow-lg backdrop-blur-sm">
+      <div className="absolute bottom-2 left-1/2 z-40 -translate-x-1/2 flex flex-col items-center gap-0.5 max-sm:bottom-14">
+        <div className="flex items-center gap-0.5 rounded-2xl border border-[#c8a870] bg-[#f5e4c0]/95 px-2 py-1.5 shadow-lg backdrop-blur-sm max-sm:px-1 max-sm:py-1">
           {TASK_DEFS.map(({ task, icon, label }) => (
             <button
               key={task}
@@ -1361,14 +1361,14 @@ export function LoungeCanvas() {
                 e.shiftKey ? enqueueTask(task) : assignTask(task)
               }
               title={`${label} — shift-click to enqueue`}
-              className={`flex flex-col items-center gap-0 rounded-xl px-2 py-1 text-[10px] font-bold transition active:scale-95 ${
+              className={`flex flex-col items-center gap-0 rounded-xl px-2 py-1 text-[10px] font-bold transition active:scale-95 max-sm:px-1 max-sm:py-0.5 max-sm:text-[8px] ${
                 agent.taskType === task && agent.state !== "idle"
                   ? "bg-[#e8a030] text-white shadow"
                   : "text-[#5a3c18] hover:bg-[#f0d8a8]"
               }`}
             >
-              <span className="text-[15px] leading-none">{icon}</span>
-              <span className="leading-none mt-0.5">{label}</span>
+              <span className="text-[15px] leading-none max-sm:text-[13px]">{icon}</span>
+              <span className="leading-none mt-0.5 max-sm:mt-0">{label}</span>
             </button>
           ))}
           {agent.state !== "idle" && (
@@ -1414,25 +1414,25 @@ export function LoungeCanvas() {
             setSuppliesProgress(p => Math.min(40000, p + 50));
             setFloatingHearts(prev => [...prev, { id: ++heartIdRef.current, x: 45 + Math.random()*10, y: 50, createdAt: performance.now() }]);
             showToast("♡+3 🪙+15 🍱+50");
-          }} className="rounded-full bg-[#ff69b4]/15 border border-[#ff69b4]/30 px-2.5 py-0.5 text-[9px] font-bold text-[#d4708a] hover:bg-[#ff69b4]/25 active:scale-95 transition">♡ Collect</button>
+          }} className="rounded-full bg-[#ff69b4]/15 border border-[#ff69b4]/30 px-2.5 py-0.5 text-[9px] font-bold text-[#d4708a] hover:bg-[#ff69b4]/25 active:scale-95 transition max-sm:px-2 max-sm:text-[8px]">♡ Collect</button>
 
         {/* Character roster cards */}
-        <div className="flex items-center gap-2 mt-1">
-          <div className="flex items-center gap-1.5 rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-2 py-1">
-            <div className="w-7 h-7 rounded-full overflow-hidden bg-[#ffe4ec]">
+        <div className="flex items-center gap-2 mt-1 max-sm:gap-1 max-sm:mt-0.5">
+          <div className="flex items-center gap-1.5 rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-2 py-1 max-sm:px-1.5 max-sm:py-0.5 max-sm:gap-1">
+            <div className="w-7 h-7 rounded-full overflow-hidden bg-[#ffe4ec] max-sm:w-5 max-sm:h-5">
               <Image src="/azur-char/qiye_h.png" alt="Mai" width={28} height={28}
                 className="object-cover scale-[3] translate-x-[2px] translate-y-[4px]" />
             </div>
-            <span className="text-[10px] font-bold text-[#5a3c18]">Mai</span>
-            <span className="text-[9px] text-[#8b6030]">{agent.state}</span>
+            <span className="text-[10px] font-bold text-[#5a3c18] max-sm:text-[8px]">Mai</span>
+            <span className="text-[9px] text-[#8b6030] max-sm:text-[7px]">{agent.state}</span>
           </div>
-          <div className="flex items-center gap-1.5 rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-2 py-1">
-            <div className="w-7 h-7 rounded-full overflow-hidden bg-[#e8f0ff]">
+          <div className="flex items-center gap-1.5 rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-2 py-1 max-sm:px-1.5 max-sm:py-0.5 max-sm:gap-1">
+            <div className="w-7 h-7 rounded-full overflow-hidden bg-[#e8f0ff] max-sm:w-5 max-sm:h-5">
               <Image src="/azur-char/dunkeerke.png" alt="Aki" width={28} height={28}
                 className="object-cover scale-[3] translate-x-[2px] translate-y-[4px]" />
             </div>
-            <span className="text-[10px] font-bold text-[#5a3c18]">Aki</span>
-            <span className="text-[9px] text-[#8b6030]">{aki.agent.state}</span>
+            <span className="text-[10px] font-bold text-[#5a3c18] max-sm:text-[8px]">Aki</span>
+            <span className="text-[9px] text-[#8b6030] max-sm:text-[7px]">{aki.agent.state}</span>
           </div>
         </div>
         {agent.workDurationMs !== undefined &&
@@ -1455,7 +1455,7 @@ export function LoungeCanvas() {
       </div>
 
       {/* ── Bottom-left: Train + Supplies ───────────────────────────── */}
-      <div className="absolute left-2 bottom-2 z-30 flex flex-col gap-1">
+      <div className="absolute left-2 bottom-2 z-30 flex flex-col gap-1 max-sm:left-1 max-sm:bottom-1 max-sm:gap-0.5">
         <div className="flex items-center gap-1.5">
           <button
             type="button"
@@ -1508,15 +1508,15 @@ export function LoungeCanvas() {
       </div>
 
       {/* ── Bottom-right: Action dock ──────────────────────────────── */}
-      <div className="absolute right-2 bottom-2 z-30 flex items-center gap-1">
+      <div className="absolute right-2 bottom-2 z-30 flex items-center gap-1 max-sm:right-1 max-sm:bottom-1 max-sm:gap-0.5">
         <button
           type="button"
           onClick={() => setMode((m) => (m === "visit" ? "move" : "visit"))}
           title={mode === "move" ? "Done editing" : "Move furniture"}
-          className={`flex flex-col items-center justify-center gap-0 rounded-xl border px-2.5 py-1.5 shadow-md active:scale-95 transition min-w-[54px] ${mode === "move" ? "border-[#e8b800] bg-[#fde68a] text-[#7a5000]" : "border-[#c8a870] bg-[#f5e4c0]/90 text-[#5a3c18] hover:bg-[#f0d8a8]"}`}
+          className={`flex flex-col items-center justify-center gap-0 rounded-xl border px-2.5 py-1.5 shadow-md active:scale-95 transition min-w-[54px] max-sm:min-w-[44px] max-sm:px-2 max-sm:py-1 ${mode === "move" ? "border-[#e8b800] bg-[#fde68a] text-[#7a5000]" : "border-[#c8a870] bg-[#f5e4c0]/90 text-[#5a3c18] hover:bg-[#f0d8a8]"}`}
         >
-          <span className="text-[18px] leading-none">🪑</span>
-          <span className="text-[9px] font-bold mt-0.5">
+          <span className="text-[18px] leading-none max-sm:text-[16px]">🪑</span>
+          <span className="text-[9px] font-bold mt-0.5 max-sm:text-[7px]">
             {mode === "move" ? "Done" : "Move"}
           </span>
         </button>
@@ -1524,28 +1524,28 @@ export function LoungeCanvas() {
           type="button"
           onClick={() => setShopOpen(true)}
           title="Shop"
-          className="flex flex-col items-center justify-center gap-0 rounded-xl border border-[#e89830] bg-[#fad090]/90 px-2.5 py-1.5 shadow-md hover:bg-[#fac070] active:scale-95 transition min-w-[54px]"
+          className="flex flex-col items-center justify-center gap-0 rounded-xl border border-[#e89830] bg-[#fad090]/90 px-2.5 py-1.5 shadow-md hover:bg-[#fac070] active:scale-95 transition min-w-[54px] max-sm:min-w-[44px] max-sm:px-2 max-sm:py-1"
         >
-          <span className="text-[18px] leading-none">🏪</span>
-          <span className="text-[9px] font-bold text-[#7a4000] mt-0.5">Shop</span>
+          <span className="text-[18px] leading-none max-sm:text-[16px]">🏪</span>
+          <span className="text-[9px] font-bold text-[#7a4000] mt-0.5 max-sm:text-[7px]">Shop</span>
         </button>
         <button
           type="button"
           onClick={handleShare}
           title="Share lounge link"
-          className="flex flex-col items-center justify-center gap-0 rounded-xl border border-[#4a8acc] bg-[#b8d8f0]/90 px-2.5 py-1.5 shadow-md hover:bg-[#a0c8e8] active:scale-95 transition min-w-[54px]"
+          className="flex flex-col items-center justify-center gap-0 rounded-xl border border-[#4a8acc] bg-[#b8d8f0]/90 px-2.5 py-1.5 shadow-md hover:bg-[#a0c8e8] active:scale-95 transition min-w-[54px] max-sm:min-w-[44px] max-sm:px-2 max-sm:py-1"
         >
-          <span className="text-[18px] leading-none">☁️</span>
-          <span className="text-[9px] font-bold text-[#1a4870] mt-0.5">Share</span>
+          <span className="text-[18px] leading-none max-sm:text-[16px]">☁️</span>
+          <span className="text-[9px] font-bold text-[#1a4870] mt-0.5 max-sm:text-[7px]">Share</span>
         </button>
         <button
           type="button"
           onClick={() => setFloor((f) => (f === 1 ? 2 : 1))}
           title="Change floor"
-          className="flex flex-col items-center justify-center gap-0 rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-2.5 py-1.5 shadow-md hover:bg-[#f0d8a8] active:scale-95 transition min-w-[54px]"
+          className="flex flex-col items-center justify-center gap-0 rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-2.5 py-1.5 shadow-md hover:bg-[#f0d8a8] active:scale-95 transition min-w-[54px] max-sm:min-w-[44px] max-sm:px-2 max-sm:py-1"
         >
-          <span className="text-[18px] leading-none">🪜</span>
-          <span className="text-[9px] font-bold text-[#5a3c18] mt-0.5">Floor</span>
+          <span className="text-[18px] leading-none max-sm:text-[16px]">🪜</span>
+          <span className="text-[9px] font-bold text-[#5a3c18] mt-0.5 max-sm:text-[7px]">Floor</span>
         </button>
       </div>
 
