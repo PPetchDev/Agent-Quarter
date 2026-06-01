@@ -169,7 +169,18 @@ const STORAGE_KEY = "squad:lounge:v7";
 const ROOM_MAP_URL = "/maps/maple_hideout.json";
 const INITIAL_COINS = 500;
 const TRAIN_REWARD = 25;
+const TRAIN_MAX = 4;
+const TRAIN_DATE_KEY = "squad:lounge:trainDate";
+const TRAIN_COUNT_KEY = "squad:lounge:trainCount";
 const COLLECT_BUTTON_COOLDOWN_MS = 8000;
+
+function getLocalDateKey(): string {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
 const SUPPLIES_LOW_THRESHOLD_PCT = 20;
 const SUPPLIES_LOW_REWARD_MULT = 0.75;
 
@@ -319,6 +330,7 @@ export function LoungeCanvas() {
   const lastCooldownToastRef = useRef(0);
   const collectButtonCooldownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const suppliesProgressRef = useRef(28640);
+  const trainStorageLoadedRef = useRef(false);
   const dragRef = useRef<{
     id: number;
     screenX: number;
@@ -351,8 +363,7 @@ export function LoungeCanvas() {
   const [happiness, setHappiness] = useState(128);
   const [coins, setCoins] = useState(INITIAL_COINS);
   const [floor, setFloor] = useState(1);
-  const [trainCount, setTrainCount] = useState(2);
-  const [trainMax] = useState(4);
+  const [trainCount, setTrainCount] = useState(0);
   const [suppliesProgress, setSuppliesProgress] = useState(28640);
   const [suppliesMax] = useState(40000);
   const [agentBubble, setAgentBubble] = useState<string | null>(null);
@@ -464,6 +475,16 @@ export function LoungeCanvas() {
   }, []);
   // Keep suppliesProgressRef in sync for safe reads inside reward effect
   useEffect(() => { suppliesProgressRef.current = suppliesProgress; }, [suppliesProgress]);
+  // Persist Train daily state when trainCount changes (skip pre-load fire)
+  useEffect(() => {
+    if (!trainStorageLoadedRef.current) return;
+    try {
+      localStorage.setItem(TRAIN_DATE_KEY, getLocalDateKey());
+      localStorage.setItem(TRAIN_COUNT_KEY, String(trainCount));
+    } catch {
+      /* ignore */
+    }
+  }, [trainCount]);
   // Speech bubbles
   const CHATTER = ["Hmm~", "I wonder...", "Ah, an idea!", "So cozy!", "Working hard!", "Zzz... oh!", "Need supplies~", "Let's go!"];
   useEffect(() => {
@@ -565,6 +586,26 @@ export function LoungeCanvas() {
         } catch {
           /* ignore */
         }
+
+        // ── Train daily reset ───────────────────────────────────────────────
+        try {
+          const today = getLocalDateKey();
+          const savedDate = localStorage.getItem(TRAIN_DATE_KEY);
+          const savedCount = localStorage.getItem(TRAIN_COUNT_KEY);
+          if (savedDate === today && savedCount !== null) {
+              const parsed = parseInt(savedCount, 10);
+              const clamped = Number.isFinite(parsed) ? Math.min(TRAIN_MAX, Math.max(0, parsed)) : 0;
+              setTrainCount(clamped);
+          } else {
+              // New day or no data — reset
+              localStorage.setItem(TRAIN_DATE_KEY, today);
+              localStorage.setItem(TRAIN_COUNT_KEY, "0");
+              setTrainCount(0);
+          }
+        } catch {
+          /* ignore */
+        }
+        trainStorageLoadedRef.current = true;
 
         const shared = parseSharedLayoutFromUrl();
         if (shared) {
@@ -1007,15 +1048,15 @@ export function LoungeCanvas() {
 
   // ── Actions ──────────────────────────────────────────────────────────────────
   const handleTrain = useCallback(() => {
-    if (trainCount >= trainMax) {
-      showToast("Training complete! Wait for refresh.");
+    if (trainCount >= TRAIN_MAX) {
+      showToast("Training complete for today!");
       return;
     }
     setHappiness((h) => h + 5);
     setCoins((c) => c + TRAIN_REWARD);
     setTrainCount((t) => t + 1);
     showToast(`+${TRAIN_REWARD} 🪙  +5 😊`);
-  }, [trainCount, trainMax, showToast]);
+  }, [trainCount, showToast]);
 
   const handlePurchase = useCallback(
     (item: CatalogItem) => {
@@ -1602,16 +1643,16 @@ export function LoungeCanvas() {
           <button
             type="button"
             onClick={handleTrain}
-            disabled={trainCount >= trainMax}
+            disabled={trainCount >= TRAIN_MAX}
             className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-white shadow-md active:scale-95 transition ${
-              trainCount >= trainMax
+              trainCount >= TRAIN_MAX
                 ? "bg-[#a0a0a0] cursor-not-allowed"
                 : "bg-[#e84040] hover:bg-[#d03030]"
             }`}
           >
             <span className="text-[11px] font-black">Train</span>
             <span className="text-[10px] font-bold opacity-90 tabular-nums">
-              {trainCount}/{trainMax}
+              {trainCount}/{TRAIN_MAX}
             </span>
           </button>
         </div>
