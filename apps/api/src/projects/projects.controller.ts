@@ -1,5 +1,5 @@
 import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
-import { PROJECTS, TASKS } from '@squad/core';
+import { PROJECTS, TASKS, getProjectById, getTasksByProjectId } from '@squad/core';
 
 @Controller('projects')
 export class ProjectsController {
@@ -10,15 +10,15 @@ export class ProjectsController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    const project = PROJECTS.find((p) => p.id === id);
+    const project = getProjectById(PROJECTS, id);
     if (!project) throw new NotFoundException(`Project '${id}' not found`);
     return project;
   }
 
   @Get(':id/tasks')
   findTasks(@Param('id') id: string) {
-    const project = PROJECTS.find((p) => p.id === id);
+    const project = getProjectById(PROJECTS, id);
     if (!project) throw new NotFoundException(`Project '${id}' not found`);
-    return TASKS.filter((t) => t.projectId === id);
+    return getTasksByProjectId(TASKS, id);
   }
 }

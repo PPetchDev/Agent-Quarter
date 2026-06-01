@@ -119,6 +119,10 @@ export function getProjectByCharacterId(
   return projects.find((p) => p.characterId === characterId);
 }
 
+export function getProjectById(projects: Project[], projectId: string): Project | undefined {
+  return projects.find((p) => p.id === projectId);
+}
+
 export function getActiveProjectCount(projects: Project[]): number {
   return projects.filter((p) => p.status === 'active').length;
 }
@@ -137,8 +141,16 @@ export function getTasksByProjectId(tasks: Task[], projectId: string): Task[] {
   return tasks.filter((t) => t.projectId === projectId);
 }
 
+export function getTaskById(tasks: Task[], taskId: string): Task | undefined {
+  return tasks.find((t) => t.id === taskId);
+}
+
 export function getRunsByTaskId(runs: Run[], taskId: string): Run[] {
   return runs.filter((r) => r.taskId === taskId);
+}
+
+export function getRunById(runs: Run[], runId: string): Run | undefined {
+  return runs.find((r) => r.id === runId);
 }
 
 export function getLatestRunForTask(runs: Run[], taskId: string): Run | undefined {

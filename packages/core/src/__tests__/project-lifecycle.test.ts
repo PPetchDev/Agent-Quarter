@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
+  getProjectById,
+  getTaskById,
+  getRunById,
   getNextTaskForProject,
   canStartTask,
   canStartRun,
@@ -28,6 +31,40 @@ const makeRun = (overrides: Partial<Run> = {}): Run => ({
   status: 'running',
   startedAt: '2026-05-26T08:00:00Z',
   ...overrides,
+});
+
+// ─── Lookup helpers ──────────────────────────────────────────────────────────
+
+describe('lookup helpers', () => {
+  it('returns a project by id', () => {
+    const projects = [
+      { id: 'p-1', characterId: 'mai', title: 'One', status: 'active', summary: '', nextAction: '', updatedLabel: '' },
+      { id: 'p-2', characterId: 'ren', title: 'Two', status: 'paused', summary: '', nextAction: '', updatedLabel: '' },
+    ] as const;
+    expect(getProjectById([...projects], 'p-2')?.title).toBe('Two');
+  });
+
+  it('returns undefined for a missing project id', () => {
+    expect(getProjectById([], 'missing')).toBeUndefined();
+  });
+
+  it('returns a task by id', () => {
+    const tasks = makeTasks({ id: 't-1' }, { id: 't-2', title: 'Target' });
+    expect(getTaskById(tasks, 't-2')?.title).toBe('Target');
+  });
+
+  it('returns undefined for a missing task id', () => {
+    expect(getTaskById(makeTasks({ id: 't-1' }), 'missing')).toBeUndefined();
+  });
+
+  it('returns a run by id', () => {
+    const runs = [makeRun({ id: 'r-1' }), makeRun({ id: 'r-2', status: 'pending' })];
+    expect(getRunById(runs, 'r-2')?.status).toBe('pending');
+  });
+
+  it('returns undefined for a missing run id', () => {
+    expect(getRunById([makeRun({ id: 'r-1' })], 'missing')).toBeUndefined();
+  });
 });
 
 // ─── getNextTaskForProject ────────────────────────────────────────────────────
