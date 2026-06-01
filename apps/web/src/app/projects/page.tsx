@@ -9,6 +9,8 @@ import {
 } from "@squad/core";
 import { fetchProjects, fetchProjectTasks, fetchTaskRuns } from "@/lib/api";
 
+export const dynamic = "force-dynamic";
+
 // ─── Project data ─────────────────────────────────────────────────────────────
 const STATUS_COLOR: Record<ProjectStatus, string> = {
   active: "text-[#6ee7b7]",

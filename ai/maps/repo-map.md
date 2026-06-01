@@ -6,6 +6,10 @@ _Updated: C-FURNITURE-GRID-001_
 
 ```txt
 AnimeAgentSquad/
+├── package.json                 # Root pnpm scripts
+├── pnpm-workspace.yaml          # apps/* and packages/* workspace layout
+├── tsconfig.json                # Root TypeScript solution config
+├── tsconfig.base.json           # Shared TypeScript compiler defaults
 ├── apps/
 │   ├── api/                      # NestJS backend
 │   └── web/                      # Next.js frontend
