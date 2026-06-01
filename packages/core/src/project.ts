@@ -203,6 +203,16 @@ export interface RunStartInput {
   startedAt?: string;
 }
 
+type TerminalRunStatus = Extract<RunStatus, 'success' | 'failed' | 'cancelled'>;
+
+function finishRun(run: Run, status: TerminalRunStatus, completedAt?: string): Run {
+  return {
+    ...run,
+    status,
+    completedAt: completedAt ?? new Date().toISOString(),
+  };
+}
+
 /** Builds a new Run value in running state. Does not mutate any collection. */
 export function buildRunStartPatch(input: RunStartInput): Run {
   return {
@@ -216,15 +226,15 @@ export function buildRunStartPatch(input: RunStartInput): Run {
 
 /** Returns a new Run with status success. */
 export function completeRun(run: Run, completedAt?: string): Run {
-  return { ...run, status: 'success', completedAt: completedAt ?? new Date().toISOString() };
+  return finishRun(run, 'success', completedAt);
 }
 
 /** Returns a new Run with status failed. */
 export function failRun(run: Run, completedAt?: string): Run {
-  return { ...run, status: 'failed', completedAt: completedAt ?? new Date().toISOString() };
+  return finishRun(run, 'failed', completedAt);
 }
 
 /** Returns a new Run with status cancelled. */
 export function cancelRun(run: Run, completedAt?: string): Run {
-  return { ...run, status: 'cancelled', completedAt: completedAt ?? new Date().toISOString() };
+  return finishRun(run, 'cancelled', completedAt);
 }
