@@ -173,6 +173,7 @@ const TRAIN_MAX = 4;
 const TRAIN_DATE_KEY = "squad:lounge:trainDate";
 const TRAIN_COUNT_KEY = "squad:lounge:trainCount";
 const COLLECT_BUTTON_COOLDOWN_MS = 8000;
+const HAPPINESS_MAX = 200;
 
 function getLocalDateKey(): string {
     const d = new Date();
@@ -331,6 +332,8 @@ export function LoungeCanvas() {
   const collectButtonCooldownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const suppliesProgressRef = useRef(28640);
   const trainStorageLoadedRef = useRef(false);
+  const happinessRef = useRef(128);
+  const happinessMaxReachedRef = useRef(false);
   const dragRef = useRef<{
     id: number;
     screenX: number;
@@ -475,6 +478,8 @@ export function LoungeCanvas() {
   }, []);
   // Keep suppliesProgressRef in sync for safe reads inside reward effect
   useEffect(() => { suppliesProgressRef.current = suppliesProgress; }, [suppliesProgress]);
+  // Keep happinessRef in sync for safe reads inside addHappiness
+  useEffect(() => { happinessRef.current = happiness; }, [happiness]);
   // Persist Train daily state when trainCount changes (skip pre-load fire)
   useEffect(() => {
     if (!trainStorageLoadedRef.current) return;
@@ -724,7 +729,7 @@ export function LoungeCanvas() {
                 if (calm) state.addAnimation(0, calm, true, 0);
 
                 // ── Collect rewards ──
-                setHappiness(h => h + 3);
+                addHappiness(3);
                 setCoins(c => c + 15);
                 setFloatingHearts(prev => [...prev, {
                   id: ++heartIdRef.current,
@@ -962,6 +967,18 @@ export function LoungeCanvas() {
     };
   }, []);
 
+  // ── Happiness with cap ───────────────────────────────────────────────────────
+  const addHappiness = useCallback((amount: number) => {
+    const prev = happinessRef.current;
+    if (prev >= HAPPINESS_MAX) return;
+    const next = Math.min(HAPPINESS_MAX, prev + amount);
+    setHappiness(next);
+    if (next >= HAPPINESS_MAX && !happinessMaxReachedRef.current) {
+      happinessMaxReachedRef.current = true;
+      showToast("Max happiness! 🥳");
+    }
+  }, [showToast]);
+
   // ── Task completion reward ──────────────────────────────────────────────────
   useEffect(() => {
     const prevState = previousAgentStateRef.current;
@@ -982,7 +999,7 @@ export function LoungeCanvas() {
         const rewardCoins = Math.round(reward.coins * rewardMult);
         const rewardHappiness = Math.round(reward.happiness * rewardMult);
         setCoins((c) => c + rewardCoins);
-        setHappiness((h) => h + rewardHappiness);
+        addHappiness(rewardHappiness);
         const toastSuffix = isLowSupplies ? "  📉 Low supplies" : "";
         showToast(`+${rewardCoins} 🪙  +${rewardHappiness} ♡${toastSuffix}`);
       }
@@ -1052,7 +1069,7 @@ export function LoungeCanvas() {
       showToast("Training complete for today!");
       return;
     }
-    setHappiness((h) => h + 5);
+    addHappiness(5);
     setCoins((c) => c + TRAIN_REWARD);
     setTrainCount((t) => t + 1);
     showToast(`+${TRAIN_REWARD} 🪙  +5 😊`);
@@ -1082,7 +1099,7 @@ export function LoungeCanvas() {
       pushHistorySnapshot(objectsRef.current);
       coinsRef.current -= item.cost;
       setCoins(coinsRef.current);
-      setHappiness((h) => h + item.happiness);
+      addHappiness(item.happiness);
 
       const newId = nextIdRef.current++;
       const newObj: RoomObject = { ...placed, id: newId };
@@ -1569,7 +1586,7 @@ export function LoungeCanvas() {
               COLLECT_BUTTON_COOLDOWN_MS,
             );
             // Grant reward
-            setHappiness(h => h + 3);
+            addHappiness(3);
             setCoins(c => c + 15);
             setSuppliesProgress(p => Math.min(40000, p + 50));
             setFloatingHearts(prev => [...prev, { id: ++heartIdRef.current, x: 45 + Math.random() * 10, y: 50, createdAt: performance.now() }]);
