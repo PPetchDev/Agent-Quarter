@@ -17,3 +17,4 @@ dist
 ai
 graphify-out
 apps/web/src/components/resource
+.claude-flow/
