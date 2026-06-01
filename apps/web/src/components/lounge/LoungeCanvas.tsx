@@ -169,6 +169,7 @@ const STORAGE_KEY = "squad:lounge:v7";
 const ROOM_MAP_URL = "/maps/maple_hideout.json";
 const INITIAL_COINS = 500;
 const TRAIN_REWARD = 25;
+const COLLECT_BUTTON_COOLDOWN_MS = 8000;
 
 type Mode = "visit" | "move";
 
@@ -314,6 +315,7 @@ export function LoungeCanvas() {
   const charSpritesRef = useRef<Map<string, PIXI.Container>>(new Map());
   const lastCollectRef = useRef<Record<string, number>>({});
   const lastCooldownToastRef = useRef(0);
+  const collectButtonCooldownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragRef = useRef<{
     id: number;
     screenX: number;
@@ -352,6 +354,7 @@ export function LoungeCanvas() {
   const [suppliesMax] = useState(40000);
   const [agentBubble, setAgentBubble] = useState<string | null>(null);
   const [floatingHearts, setFloatingHearts] = useState<{id:number,x:number,y:number,createdAt:number}[]>([]);
+  const [collectButtonCooldownUntil, setCollectButtonCooldownUntil] = useState(0);
   const heartIdRef = useRef(0);
   const [shopOpen, setShopOpen] = useState(false);
   const theme = useMemo<RoomTheme>(() => getTimeTheme(), []);
@@ -465,6 +468,8 @@ export function LoungeCanvas() {
   }, []);
   // Heart cleanup
   useEffect(() => { if (!floatingHearts.length) return; const id = setInterval(() => setFloatingHearts(h => h.filter(x => performance.now()-x.createdAt<1500)), 200); return () => clearInterval(id); }, [floatingHearts.length]);
+  // Collect button cooldown cleanup on unmount
+  useEffect(() => () => { if (collectButtonCooldownTimeoutRef.current) clearTimeout(collectButtonCooldownTimeoutRef.current); }, []);
 
   // Keep refs in sync
   useEffect(() => {
@@ -1496,12 +1501,36 @@ export function LoungeCanvas() {
             </button>
           </div>
         )}
-        <button type="button" onClick={() => {
-            setHappiness(h => h + 3); setCoins(c => c + 15);
+        <button
+          type="button"
+          onClick={() => {
+            const now = Date.now();
+            if (now < collectButtonCooldownUntil) {
+              showToast("Wait a moment~");
+              return;
+            }
+            // Set cooldown
+            if (collectButtonCooldownTimeoutRef.current) clearTimeout(collectButtonCooldownTimeoutRef.current);
+            setCollectButtonCooldownUntil(now + COLLECT_BUTTON_COOLDOWN_MS);
+            collectButtonCooldownTimeoutRef.current = setTimeout(
+              () => setCollectButtonCooldownUntil(0),
+              COLLECT_BUTTON_COOLDOWN_MS,
+            );
+            // Grant reward
+            setHappiness(h => h + 3);
+            setCoins(c => c + 15);
             setSuppliesProgress(p => Math.min(40000, p + 50));
-            setFloatingHearts(prev => [...prev, { id: ++heartIdRef.current, x: 45 + Math.random()*10, y: 50, createdAt: performance.now() }]);
+            setFloatingHearts(prev => [...prev, { id: ++heartIdRef.current, x: 45 + Math.random() * 10, y: 50, createdAt: performance.now() }]);
             showToast("♡+3 🪙+15 🍱+50");
-          }} className="rounded-full bg-[#ff69b4]/15 border border-[#ff69b4]/30 px-2.5 py-0.5 text-[9px] font-bold text-[#d4708a] hover:bg-[#ff69b4]/25 active:scale-95 transition max-sm:px-2 max-sm:text-[8px]">♡ Collect</button>
+          }}
+          className={
+            Date.now() < collectButtonCooldownUntil
+              ? "rounded-full bg-[#ff69b4]/5 border border-[#ff69b4]/15 px-2.5 py-0.5 text-[9px] font-bold text-[#d4708a]/40 cursor-not-allowed opacity-50 transition max-sm:px-2 max-sm:text-[8px]"
+              : "rounded-full bg-[#ff69b4]/15 border border-[#ff69b4]/30 px-2.5 py-0.5 text-[9px] font-bold text-[#d4708a] hover:bg-[#ff69b4]/25 active:scale-95 transition max-sm:px-2 max-sm:text-[8px]"
+          }
+        >
+          {Date.now() < collectButtonCooldownUntil ? "♡ Wait…" : "♡ Collect"}
+        </button>
 
         {/* Character roster cards */}
         <div className="flex items-center gap-2 mt-1 max-sm:gap-1 max-sm:mt-0.5">
