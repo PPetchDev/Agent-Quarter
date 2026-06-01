@@ -170,6 +170,8 @@ const ROOM_MAP_URL = "/maps/maple_hideout.json";
 const INITIAL_COINS = 500;
 const TRAIN_REWARD = 25;
 const COLLECT_BUTTON_COOLDOWN_MS = 8000;
+const SUPPLIES_LOW_THRESHOLD_PCT = 20;
+const SUPPLIES_LOW_REWARD_MULT = 0.75;
 
 type Mode = "visit" | "move";
 
@@ -316,6 +318,7 @@ export function LoungeCanvas() {
   const lastCollectRef = useRef<Record<string, number>>({});
   const lastCooldownToastRef = useRef(0);
   const collectButtonCooldownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suppliesProgressRef = useRef(28640);
   const dragRef = useRef<{
     id: number;
     screenX: number;
@@ -459,6 +462,8 @@ export function LoungeCanvas() {
     const id = setInterval(() => setSuppliesProgress(p => Math.max(0, p - 3)), 3000);
     return () => clearInterval(id);
   }, []);
+  // Keep suppliesProgressRef in sync for safe reads inside reward effect
+  useEffect(() => { suppliesProgressRef.current = suppliesProgress; }, [suppliesProgress]);
   // Speech bubbles
   const CHATTER = ["Hmm~", "I wonder...", "Ah, an idea!", "So cozy!", "Working hard!", "Zzz... oh!", "Need supplies~", "Let's go!"];
   useEffect(() => {
@@ -930,9 +935,15 @@ export function LoungeCanvas() {
     ) {
       const reward = TASK_REWARDS[prevTaskType] ?? { coins: 0, happiness: 0 };
       if (reward.coins > 0 || reward.happiness > 0) {
-        setCoins((c) => c + reward.coins);
-        setHappiness((h) => h + reward.happiness);
-        showToast(`+${reward.coins} 🪙  +${reward.happiness} ♡`);
+        const currentPct = Math.round((suppliesProgressRef.current / 40000) * 100);
+        const isLowSupplies = currentPct <= SUPPLIES_LOW_THRESHOLD_PCT;
+        const rewardMult = isLowSupplies ? SUPPLIES_LOW_REWARD_MULT : 1;
+        const rewardCoins = Math.round(reward.coins * rewardMult);
+        const rewardHappiness = Math.round(reward.happiness * rewardMult);
+        setCoins((c) => c + rewardCoins);
+        setHappiness((h) => h + rewardHappiness);
+        const toastSuffix = isLowSupplies ? "  📉 Low supplies" : "";
+        showToast(`+${rewardCoins} 🪙  +${rewardHappiness} ♡${toastSuffix}`);
       }
     }
     previousAgentStateRef.current = agent.state;
@@ -1193,7 +1204,7 @@ export function LoungeCanvas() {
         >
           <span className="text-[11px] leading-none max-sm:text-[9px]">🍱</span>
           <span className="text-[10px] font-mono font-bold text-[#5a3c18] tabular-nums max-sm:text-[8px]">
-            {timer}
+            {suppliesPct}%
           </span>
           {suppliesProgress === 0 && (
             <span className="text-[7px] font-black text-[#991b1b] bg-[#fecaca] rounded-full px-1 py-px animate-pulse max-sm:text-[6px]">
