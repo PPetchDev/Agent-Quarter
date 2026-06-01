@@ -2,7 +2,7 @@ import type { RoomObject } from "../../components/lounge/roomDefs";
 import { FURNITURE_TILES } from "../../components/lounge/roomDefs";
 import type { IsoWorldPoint } from "../agents/agentTypes";
 import type { GridCell, IsoRoutePoint } from "../movement/gridPath";
-import { planIsoGridPath } from "../movement/gridPath";
+import { isCellInBounds, planIsoGridPath } from "../movement/gridPath";
 
 export type LoungeGridRouteParams = {
   objects: RoomObject[];
@@ -29,7 +29,7 @@ export function buildLoungeBlockedCells(
     for (let dx = 0; dx < footprint.w; dx++) {
       for (let dy = 0; dy < footprint.d; dy++) {
         const cell = { x: originX + dx, y: originY + dy };
-        if (cell.x >= 0 && cell.y >= 0 && cell.x < roomWidth && cell.y < roomHeight) {
+        if (isCellInBounds(cell, roomWidth, roomHeight)) {
           blocked.push(cell);
         }
       }
