@@ -1,0 +1,82 @@
+{
+  "agents": {
+    "refactor-project-1780279463134-467a": {
+      "agentId": "refactor-project-1780279463134-467a",
+      "agentType": "specialized",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "role": "specialist",
+        "hiveRole": "specialist"
+      },
+      "createdAt": "2026-06-01T02:04:23.134Z",
+      "domain": "hive-mind"
+    },
+    "refactor-project-1780279463134-wvgi": {
+      "agentId": "refactor-project-1780279463134-wvgi",
+      "agentType": "specialized",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "role": "specialist",
+        "hiveRole": "specialist"
+      },
+      "createdAt": "2026-06-01T02:04:23.134Z",
+      "domain": "hive-mind"
+    },
+    "refactor-project-1780279463135-19rr": {
+      "agentId": "refactor-project-1780279463135-19rr",
+      "agentType": "specialized",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "role": "specialist",
+        "hiveRole": "specialist"
+      },
+      "createdAt": "2026-06-01T02:04:23.135Z",
+      "domain": "hive-mind"
+    },
+    "refactor-project-1780279463135-a1en": {
+      "agentId": "refactor-project-1780279463135-a1en",
+      "agentType": "specialized",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "role": "specialist",
+        "hiveRole": "specialist"
+      },
+      "createdAt": "2026-06-01T02:04:23.135Z",
+      "domain": "hive-mind"
+    },
+    "refactor-project-1780279463135-igpt": {
+      "agentId": "refactor-project-1780279463135-igpt",
+      "agentType": "specialized",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "role": "specialist",
+        "hiveRole": "specialist"
+      },
+      "createdAt": "2026-06-01T02:04:23.135Z",
+      "domain": "hive-mind"
+    },
+    "refactor-project-1780279463135-4a61": {
+      "agentId": "refactor-project-1780279463135-4a61",
+      "agentType": "specialized",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "role": "specialist",
+        "hiveRole": "specialist"
+      },
+      "createdAt": "2026-06-01T02:04:23.135Z",
+      "domain": "hive-mind"
+    }
+  }
+}

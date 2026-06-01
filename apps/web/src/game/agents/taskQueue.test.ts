@@ -47,6 +47,12 @@ describe('enqueueTask', () => {
     expect(result).toEqual(queue);
   });
 
+  it('floors custom maxLength overrides', () => {
+    const queue: AgentTaskType[] = ['code'];
+    const result = enqueueTask(queue, 'rest', 1.9);
+    expect(result).toEqual(queue);
+  });
+
   it('clamps maxLength below 1 to 1', () => {
     const result = enqueueTask([], 'code', 0);
     expect(result).toEqual(['code']);

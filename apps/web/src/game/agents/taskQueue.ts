@@ -7,6 +7,10 @@ import type { AgentTaskType } from './agentTypes';
  */
 export const MAX_TASK_QUEUE_LENGTH = 8;
 
+function normalizeQueueCap(maxLength: number): number {
+  return Math.max(1, Math.floor(maxLength));
+}
+
 /**
  * Append a task to the back of the queue. Returns a new array; never mutates.
  * Returns the queue unchanged when already at the cap.
@@ -19,7 +23,7 @@ export function enqueueTask(
   task: AgentTaskType,
   maxLength: number = MAX_TASK_QUEUE_LENGTH,
 ): AgentTaskType[] {
-  const cap = Math.max(1, Math.floor(maxLength));
+  const cap = normalizeQueueCap(maxLength);
   if (queue.length >= cap) return queue.slice();
   return [...queue, task];
 }

@@ -1,13 +1,13 @@
 import type { AgentState, Direction } from '../agents/agentTypes';
 
-const WALK_ANIM: Record<Direction, string> = {
+const WALK_ANIM = {
   up:    'walk_up',
   down:  'walk_down',
   left:  'walk_left',
   right: 'walk_right',
-};
+} as const satisfies Readonly<Record<Direction, string>>;
 
-const STATE_ANIM: Record<AgentState, string> = {
+const STATE_ANIM = {
   idle:        'idle',
   walking:     'walk_down',
   thinking:    'thinking',
@@ -20,7 +20,7 @@ const STATE_ANIM: Record<AgentState, string> = {
   resting:     'resting',
   done:        'happy',
   error:       'confused',
-};
+} as const satisfies Readonly<Record<AgentState, string>>;
 
 export function resolveWalkingAnimation(direction: Direction): string {
   return WALK_ANIM[direction];
