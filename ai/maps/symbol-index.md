@@ -1,6 +1,23 @@
 # Symbol Index
 
-_Updated: C-FURNITURE-GRID-001_
+_Updated: C-DOMAIN-001_
+
+## Core Domain
+
+| Symbol | Kind | Description |
+|---|---|---|
+| `CHARACTER_TEMPLATES` | constant | Shared character roster, role metadata, avatars, traits, and system prompts in `packages/core/src/character.ts` |
+| `CHARACTER_MOOD_REGISTRY` | constant | Per-character mood availability, default mood, and image filename mapping in `packages/core/src/character.ts` |
+| `readCharacterMood` | function | Maps stage runtime state and idle tier to a character-safe mood in `packages/core/src/character.ts` |
+| `resolveCharacterMoodImagePath` | function | Resolves a registered character mood image path with default-avatar fallback |
+| `parseEmotionOverride` | function | Extracts the last valid `[emotion:x]` override from Claude text in `packages/core/src/emotion-parser.ts` |
+| `stripEmotionTags` | function | Removes `[emotion:x]` tags from text before user display |
+| `StageTracker` | class | Tracks `processing` / `idle` stage state and returns to idle after the streaming idle deadline in `packages/core/src/stage-tracker.ts` |
+| `Project` / `Task` / `Run` | types | Minimal orchestration domain primitives in `packages/core/src/project.ts` |
+| `getNextTaskForProject` | function | Selects the next actionable task, preferring `in_progress` over `todo` |
+| `canStartTask` / `canStartRun` | functions | Pure lifecycle guards for task and run starts |
+| `buildRunStartPatch` | function | Builds an immutable running `Run` value |
+| `completeRun` / `failRun` / `cancelRun` | functions | Immutable terminal run transitions preserving all other run fields |
 
 ## Lounge Room Layout
 

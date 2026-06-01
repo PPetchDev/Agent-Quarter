@@ -1,6 +1,22 @@
 # Test Map
 
-_Updated: C-FURNITURE-GRID-001_
+_Updated: C-DOMAIN-001_
+
+## Core Domain Tests
+
+| Area | File |
+|---|---|
+| Character registry and mood resolution | `packages/core/src/__tests__/character.test.ts` |
+| Stage runtime tracker | `packages/core/src/__tests__/stage-tracker.test.ts` |
+| Emotion override parser | `packages/core/src/__tests__/emotion-parser.test.ts` |
+| Project/task/run lifecycle helpers | `packages/core/src/__tests__/project-lifecycle.test.ts` |
+
+## Core Verification Commands
+
+```bash
+pnpm --filter @squad/core run test; echo "EXIT:$?"
+pnpm --filter @squad/core run build; echo "EXIT:$?"
+```
 
 ## Canonical Web Simulation Tests
 
