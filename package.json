@@ -9,6 +9,17 @@
     "format": "prettier --write .",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "unrs-resolver",
+      "esbuild",
+      "@nestjs/core",
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "sharp"
+    ]
+  },
   "devDependencies": {
     "eslint": "^9.0.0",
     "eslint-config-prettier": "^9.0.0",
