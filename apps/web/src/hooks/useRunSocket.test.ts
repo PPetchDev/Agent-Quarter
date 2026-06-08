@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Run } from '@squad/core';
 
 // ─── shared mocks via vi.hoisted (runs before vi.mock hoisting) ───
 

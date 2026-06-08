@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { io, type Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
 import type { Run } from '@squad/core';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';

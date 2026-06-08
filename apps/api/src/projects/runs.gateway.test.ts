@@ -2,10 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   RunsGateway,
   type RunExecutionStartedPayload,
-  type RunExecutionLogPayload,
-  type RunExecutionToolPayload,
-  type RunExecutionCompletedPayload,
-  type RunExecutionFailedPayload,
 } from './runs.gateway';
 
 function makeStarted(): RunExecutionStartedPayload {

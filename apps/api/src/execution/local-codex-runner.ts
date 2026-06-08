@@ -31,7 +31,6 @@ export type LocalCodexRunnerResult = {
 
 // ─── Spawn abstraction ────────────────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SpawnFn = (...args: any[]) => any;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -144,7 +143,7 @@ export class LocalCodexRunner {
     return new Promise((resolve) => {
       const events: LocalCodexRunnerEvent[] = [];
       let stdoutBytes = 0;
-      let stdoutChunks: string[] = [];
+      const stdoutChunks: string[] = [];
       let timedOut = false;
       let truncated = false;
       let killed = false;

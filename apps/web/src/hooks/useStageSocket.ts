@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { useSocket } from './useSocket';
-import { readCharacterMood, type CharacterMood, type StageRuntimeState, type IdleTier } from '@squad/core';
+import { type CharacterMood, type StageRuntimeState, type IdleTier } from '@squad/core';
 
 type StageState = {
   state: StageRuntimeState;

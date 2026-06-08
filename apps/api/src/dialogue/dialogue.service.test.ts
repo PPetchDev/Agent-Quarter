@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { DialogueService, buildOfficeDialoguePrompt } from './dialogue.service';
+import { DialogueService } from './dialogue.service';
 import type { GenerateOfficeDialogueInput, OfficeAgentId } from './dialogue.service';
 import type { LlmTextProvider, LlmTextProviderResult } from '../llm/llm-provider.interface';
 

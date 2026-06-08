@@ -81,7 +81,6 @@ export class ClaudeGateway implements OnGatewayInit {
   @SubscribeMessage('send_message')
   async handleSendMessage(
     @MessageBody() payload: SendMessagePayload,
-    @ConnectedSocket() client: Socket,
   ) {
     const { characterId, content } = payload;
     const tracker = this.getTracker(characterId);
