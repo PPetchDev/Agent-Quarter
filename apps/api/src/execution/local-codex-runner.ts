@@ -35,15 +35,9 @@ type SpawnFn = (...args: any[]) => any;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const CODE_GATES = Object.freeze([
-  'ENABLE_LOCAL_CODEX',
-  'ALLOW_LOCAL_PROCESS_EXECUTION',
-] as const);
+const CODE_GATES = Object.freeze(['ENABLE_LOCAL_CODEX', 'ALLOW_LOCAL_PROCESS_EXECUTION'] as const);
 
-const VALID_SANDBOX_MODES: ReadonlySet<string> = new Set([
-  'read-only',
-  'workspace-write',
-]);
+const VALID_SANDBOX_MODES: ReadonlySet<string> = new Set(['read-only', 'workspace-write']);
 
 const FORBIDDEN_SANDBOX = 'danger-full-access';
 
@@ -52,17 +46,11 @@ const DEFAULT_MAX_OUTPUT_BYTES = 256_000;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function buildCodexArgs(
-  sandbox: CodexSandboxMode,
-  cwd: string,
-  prompt: string,
-): string[] {
+function buildCodexArgs(sandbox: CodexSandboxMode, cwd: string, prompt: string): string[] {
   return ['exec', '--json', `--sandbox`, sandbox, `--cd`, cwd, prompt];
 }
 
-function parseJsonlLine(
-  line: string,
-): Record<string, unknown> | null {
+function parseJsonlLine(line: string): Record<string, unknown> | null {
   const trimmed = line.trim();
   if (!trimmed) return null;
   try {
