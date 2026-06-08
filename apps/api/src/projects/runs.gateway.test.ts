@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  RunsGateway,
-  type RunExecutionStartedPayload,
-} from './runs.gateway';
+import { RunsGateway, type RunExecutionStartedPayload } from './runs.gateway';
 
 function makeStarted(): RunExecutionStartedPayload {
   return {
@@ -22,9 +19,7 @@ describe('RunsGateway', () => {
   // ── No-server safety ────────────────────────────────────────────────────────
 
   it('emitRunExecutionStarted does not throw without server', () => {
-    expect(() =>
-      gateway.emitRunExecutionStarted(makeStarted()),
-    ).not.toThrow();
+    expect(() => gateway.emitRunExecutionStarted(makeStarted())).not.toThrow();
   });
 
   it('emitRunExecutionLog does not throw without server', () => {

@@ -1,13 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest';
 import {
   cellKey,
   findNearestWalkableCell,
   normalizeBlockedCells,
   planIsoGridPath,
-} from "./gridPath";
+} from './gridPath';
 
-describe("planIsoGridPath", () => {
-  it("routes around blocked cells", () => {
+describe('planIsoGridPath', () => {
+  it('routes around blocked cells', () => {
     const blockedCells = [
       { x: 2, y: 0 },
       { x: 2, y: 1 },
@@ -29,7 +29,7 @@ describe("planIsoGridPath", () => {
     }
   });
 
-  it("snaps a blocked target to the nearest walkable cell", () => {
+  it('snaps a blocked target to the nearest walkable cell', () => {
     const route = planIsoGridPath({
       cols: 4,
       rows: 4,
@@ -42,7 +42,7 @@ describe("planIsoGridPath", () => {
     expect(route?.at(-1)?.cell).not.toEqual({ x: 2, y: 2 });
   });
 
-  it("returns null when every cell is blocked", () => {
+  it('returns null when every cell is blocked', () => {
     const blockedCells = [
       { x: 0, y: 0 },
       { x: 1, y: 0 },
@@ -62,8 +62,8 @@ describe("planIsoGridPath", () => {
   });
 });
 
-describe("findNearestWalkableCell", () => {
-  it("finds an adjacent open cell deterministically", () => {
+describe('findNearestWalkableCell', () => {
+  it('finds an adjacent open cell deterministically', () => {
     const blocked = normalizeBlockedCells([{ x: 1, y: 1 }], 3, 3);
     const nearest = findNearestWalkableCell({
       cell: { x: 1, y: 1 },

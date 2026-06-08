@@ -5,7 +5,9 @@ const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 export async function getHistory(characterId: string) {
   const res = await fetch(`${BASE}/api/conversations/${characterId}/history`);
   if (!res.ok) return [];
-  return res.json() as Promise<Array<{ id: string; role: string; content: string; mood?: string; createdAt: string }>>;
+  return res.json() as Promise<
+    Array<{ id: string; role: string; content: string; mood?: string; createdAt: string }>
+  >;
 }
 
 export async function getCharacters() {
@@ -43,7 +45,7 @@ export type ExecuteRunDevResult =
 
 async function readApiErrorMessage(res: Response): Promise<string> {
   try {
-    const data = await res.json() as { message?: unknown; error?: unknown };
+    const data = (await res.json()) as { message?: unknown; error?: unknown };
     if (typeof data.message === 'string') return data.message;
     if (Array.isArray(data.message)) return data.message.join(', ');
     if (typeof data.error === 'string') return data.error;
@@ -54,10 +56,7 @@ async function readApiErrorMessage(res: Response): Promise<string> {
   return res.statusText || `Request failed with status ${res.status}`;
 }
 
-export async function executeRunDev(
-  runId: string,
-  prompt: string,
-): Promise<ExecuteRunDevResult> {
+export async function executeRunDev(runId: string, prompt: string): Promise<ExecuteRunDevResult> {
   if (!prompt.trim()) {
     return { ok: false, message: 'prompt is required' };
   }
@@ -80,7 +79,7 @@ export async function executeRunDev(
       };
     }
 
-    return { ok: true, data: await res.json() as ExecuteRunDevResponse };
+    return { ok: true, data: (await res.json()) as ExecuteRunDevResponse };
   } catch (err) {
     return {
       ok: false,

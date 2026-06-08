@@ -8,11 +8,7 @@ describe('enqueueTask', () => {
   });
 
   it('appends to a non-empty queue preserving order', () => {
-    expect(enqueueTask(['code', 'research'], 'print')).toEqual([
-      'code',
-      'research',
-      'print',
-    ]);
+    expect(enqueueTask(['code', 'research'], 'print')).toEqual(['code', 'research', 'print']);
   });
 
   it('does not mutate the input queue', () => {
@@ -23,20 +19,14 @@ describe('enqueueTask', () => {
   });
 
   it('accepts exactly MAX_TASK_QUEUE_LENGTH items', () => {
-    const full: AgentTaskType[] = Array.from(
-      { length: MAX_TASK_QUEUE_LENGTH - 1 },
-      () => 'code',
-    );
+    const full: AgentTaskType[] = Array.from({ length: MAX_TASK_QUEUE_LENGTH - 1 }, () => 'code');
     const filled = enqueueTask(full, 'rest');
     expect(filled.length).toBe(MAX_TASK_QUEUE_LENGTH);
     expect(filled[filled.length - 1]).toBe('rest');
   });
 
   it('drops the new task when already at the cap', () => {
-    const full: AgentTaskType[] = Array.from(
-      { length: MAX_TASK_QUEUE_LENGTH },
-      () => 'code',
-    );
+    const full: AgentTaskType[] = Array.from({ length: MAX_TASK_QUEUE_LENGTH }, () => 'code');
     const result = enqueueTask(full, 'rest');
     expect(result).toEqual(full);
   });

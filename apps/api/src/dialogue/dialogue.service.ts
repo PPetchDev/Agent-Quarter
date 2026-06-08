@@ -3,12 +3,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { LLM_TEXT_PROVIDER, type LlmTextProvider } from '../llm/llm-provider.interface';
 
-export type OfficeAgentId =
-  | 'agent-1'
-  | 'agent-2'
-  | 'agent-3'
-  | 'agent-4'
-  | 'agent-5';
+export type OfficeAgentId = 'agent-1' | 'agent-2' | 'agent-3' | 'agent-4' | 'agent-5';
 
 export type DialogueSource = 'deterministic' | 'llm';
 
@@ -43,11 +38,36 @@ export type DialogueResponse = {
 // ─── Agent personas ───────────────────────────────────────────────────────────
 
 const AGENTS: Record<OfficeAgentId, OfficeDialogueAgent> = {
-  'agent-1': { id: 'agent-1', name: 'Mai',   title: 'Cheerful frontend lead', focus: 'frontend polish, sprint energy' },
-  'agent-2': { id: 'agent-2', name: 'Aki',   title: 'Calm devops mechanic',   focus: 'builds, deploys, stability' },
-  'agent-3': { id: 'agent-3', name: 'Ren',   title: 'Precise backend samurai', focus: 'APIs, data integrity, contracts' },
-  'agent-4': { id: 'agent-4', name: 'Yui',   title: 'Sharp code reviewer',    focus: 'edge cases, quality, reviews' },
-  'agent-5': { id: 'agent-5', name: 'Mika',  title: 'Creative UI designer',   focus: 'visual polish, softness, layout' },
+  'agent-1': {
+    id: 'agent-1',
+    name: 'Mai',
+    title: 'Cheerful frontend lead',
+    focus: 'frontend polish, sprint energy',
+  },
+  'agent-2': {
+    id: 'agent-2',
+    name: 'Aki',
+    title: 'Calm devops mechanic',
+    focus: 'builds, deploys, stability',
+  },
+  'agent-3': {
+    id: 'agent-3',
+    name: 'Ren',
+    title: 'Precise backend samurai',
+    focus: 'APIs, data integrity, contracts',
+  },
+  'agent-4': {
+    id: 'agent-4',
+    name: 'Yui',
+    title: 'Sharp code reviewer',
+    focus: 'edge cases, quality, reviews',
+  },
+  'agent-5': {
+    id: 'agent-5',
+    name: 'Mika',
+    title: 'Creative UI designer',
+    focus: 'visual polish, softness, layout',
+  },
 };
 
 const VALID_IDS = new Set(Object.keys(AGENTS)) as Set<OfficeAgentId>;
@@ -60,11 +80,7 @@ const FALLBACK_POOL: Record<OfficeAgentId, readonly string[]> = {
     'UI slice is looking polished.',
     'Let me check those responsive breakpoints.',
   ],
-  'agent-2': [
-    'Build passed. All green.',
-    'CI pipeline is stable.',
-    'Runtime logs look clean.',
-  ],
+  'agent-2': ['Build passed. All green.', 'CI pipeline is stable.', 'Runtime logs look clean.'],
   'agent-3': [
     'API contract looks clean.',
     'Data integrity checks passed.',
@@ -90,17 +106,12 @@ function clampText(text: string, maxChars?: number): string {
 }
 
 function pickTarget(fromId: OfficeAgentId, avoid?: OfficeAgentId): OfficeAgentId {
-  const candidates = [...VALID_IDS].filter(
-    (id) => id !== fromId && id !== avoid,
-  );
+  const candidates = [...VALID_IDS].filter((id) => id !== fromId && id !== avoid);
   // Deterministic: first alphabetically different agent
   return candidates[0] ?? (VALID_IDS.has('agent-1') ? 'agent-1' : fromId);
 }
 
-function pickFallbackText(
-  agentId: OfficeAgentId,
-  recentDialogue?: string[],
-): string {
+function pickFallbackText(agentId: OfficeAgentId, recentDialogue?: string[]): string {
   const pool = FALLBACK_POOL[agentId];
   if (!pool || pool.length === 0) return 'Working on it.';
 
@@ -111,9 +122,7 @@ function pickFallbackText(
 
 // ─── Prompt builder (placeholder — not used for Claude yet) ───────────────────
 
-export function buildOfficeDialoguePrompt(
-  input: GenerateOfficeDialogueInput,
-): string {
+export function buildOfficeDialoguePrompt(input: GenerateOfficeDialogueInput): string {
   const from = AGENTS[input.fromAgentId];
   const to = input.toAgentId ? AGENTS[input.toAgentId] : undefined;
 
@@ -165,9 +174,7 @@ export class DialogueService {
     private readonly llmProvider?: LlmTextProvider,
   ) {}
 
-  async generateOfficeDialogue(
-    input: GenerateOfficeDialogueInput,
-  ): Promise<DialogueResponse> {
+  async generateOfficeDialogue(input: GenerateOfficeDialogueInput): Promise<DialogueResponse> {
     const now = input.now ?? Date.now();
     const maxChars = input.maxChars;
 

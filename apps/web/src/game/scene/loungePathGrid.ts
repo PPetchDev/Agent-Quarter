@@ -1,8 +1,8 @@
-import type { RoomObject } from "../../components/lounge/roomDefs";
-import { FURNITURE_TILES } from "../../components/lounge/roomDefs";
-import type { IsoWorldPoint } from "../agents/agentTypes";
-import type { GridCell, IsoRoutePoint } from "../movement/gridPath";
-import { isCellInBounds, planIsoGridPath } from "../movement/gridPath";
+import type { RoomObject } from '../../components/lounge/roomDefs';
+import { FURNITURE_TILES } from '../../components/lounge/roomDefs';
+import type { IsoWorldPoint } from '../agents/agentTypes';
+import type { GridCell, IsoRoutePoint } from '../movement/gridPath';
+import { isCellInBounds, planIsoGridPath } from '../movement/gridPath';
 
 export type LoungeGridRouteParams = {
   objects: RoomObject[];
@@ -45,11 +45,7 @@ export function planLoungeGridRoute(params: LoungeGridRouteParams): IsoRoutePoin
     rows: params.roomHeight,
     start: params.start,
     target: params.target,
-    blockedCells: buildLoungeBlockedCells(
-      params.objects,
-      params.roomWidth,
-      params.roomHeight,
-    ),
+    blockedCells: buildLoungeBlockedCells(params.objects, params.roomWidth, params.roomHeight),
   });
 }
 

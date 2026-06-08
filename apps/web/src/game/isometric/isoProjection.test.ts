@@ -3,9 +3,9 @@ import { isoToScreen, screenToIso } from './isoProjection';
 import type { IsoProjectionConfig } from './isoProjection';
 
 const cfg: IsoProjectionConfig = {
-  originX:    400,
-  originY:    120,
-  tileWidth:  96,
+  originX: 400,
+  originY: 120,
+  tileWidth: 96,
   tileHeight: 48,
 };
 
@@ -33,7 +33,7 @@ describe('isoToScreen', () => {
   it('x+1 y+1 moves straight down', () => {
     const a = isoToScreen({ x: 0, y: 0 }, cfg);
     const b = isoToScreen({ x: 1, y: 1 }, cfg);
-    expect(b.x).toBe(a.x);  // x offsets cancel
+    expect(b.x).toBe(a.x); // x offsets cancel
     expect(b.y).toBeGreaterThan(a.y);
   });
 
@@ -41,12 +41,12 @@ describe('isoToScreen', () => {
     const a = isoToScreen({ x: 1, y: 1, z: 0 }, cfg);
     const b = isoToScreen({ x: 1, y: 1, z: 10 }, cfg);
     expect(b.y).toBeLessThan(a.y);
-    expect(b.x).toBe(a.x);    // z does not affect screen x
+    expect(b.x).toBe(a.x); // z does not affect screen x
   });
 
   it('z=0 and z=undefined produce the same result', () => {
     const a = isoToScreen({ x: 2, y: 3, z: 0 }, cfg);
-    const b = isoToScreen({ x: 2, y: 3 },        cfg);
+    const b = isoToScreen({ x: 2, y: 3 }, cfg);
     expect(a.x).toBe(b.x);
     expect(a.y).toBe(b.y);
   });
@@ -80,7 +80,7 @@ describe('screenToIso', () => {
     ];
     for (const p of pts) {
       const screen = isoToScreen(p, cfg);
-      const back   = screenToIso(screen, cfg);
+      const back = screenToIso(screen, cfg);
       expect(back.x).toBeCloseTo(p.x, 5);
       expect(back.y).toBeCloseTo(p.y, 5);
     }

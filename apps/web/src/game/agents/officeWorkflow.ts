@@ -1,11 +1,6 @@
 import type { AgentTaskType } from './agentTypes';
 
-export type OfficeAgentId =
-  | 'agent-1'
-  | 'agent-2'
-  | 'agent-3'
-  | 'agent-4'
-  | 'agent-5';
+export type OfficeAgentId = 'agent-1' | 'agent-2' | 'agent-3' | 'agent-4' | 'agent-5';
 
 export type OfficeToolId = 'map' | 'edit' | 'test' | 'browser' | 'git';
 
@@ -89,10 +84,15 @@ export const OFFICE_WORKFLOW_AGENTS: readonly OfficeWorkflowAgent[] = [
   },
 ];
 
-export const OFFICE_TOOL_BOUNDARIES: Readonly<Record<OfficeToolId, {
-  label: string;
-  guardrail: string;
-}>> = {
+export const OFFICE_TOOL_BOUNDARIES: Readonly<
+  Record<
+    OfficeToolId,
+    {
+      label: string;
+      guardrail: string;
+    }
+  >
+> = {
   map: {
     label: 'Map',
     guardrail: 'Read ai/maps before source.',
@@ -205,10 +205,7 @@ export function getOfficeAgent(agentId: OfficeAgentId): OfficeWorkflowAgent {
   return agent;
 }
 
-export function describeOfficeStepStart(
-  step: OfficeWorkflowStep,
-  commandText: string,
-): string {
+export function describeOfficeStepStart(step: OfficeWorkflowStep, commandText: string): string {
   const command = normalizeOfficeCommand(commandText);
   return `${step.title}: ${step.detail} Command: ${command}`;
 }
@@ -222,9 +219,7 @@ export function describeOfficeStepDone(
   return `${step.title} done. Handing off to ${nextAgent.name}.`;
 }
 
-export function createOfficeToolEvent(
-  step: OfficeWorkflowStep,
-): Omit<OfficeToolEvent, 'id'> {
+export function createOfficeToolEvent(step: OfficeWorkflowStep): Omit<OfficeToolEvent, 'id'> {
   const tool = OFFICE_TOOL_BOUNDARIES[step.toolId];
   return {
     agentId: step.agentId,

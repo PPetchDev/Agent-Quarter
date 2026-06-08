@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { executeRunDev, type ExecuteRunDevResult } from "../../lib/api";
+import { useEffect, useState } from 'react';
+import { executeRunDev, type ExecuteRunDevResult } from '../../lib/api';
 
 export const READ_ONLY_EXECUTION_PROMPT =
-  "Read-only UI-triggered execution smoke. Do not modify files. Inspect the project briefly and reply with one short status sentence.";
+  'Read-only UI-triggered execution smoke. Do not modify files. Inspect the project briefly and reply with one short status sentence.';
 
 export type RunExecutionButtonStatus =
-  | { kind: "idle" }
-  | { kind: "started"; message: string }
-  | { kind: "error"; message: string };
+  | { kind: 'idle' }
+  | { kind: 'started'; message: string }
+  | { kind: 'error'; message: string };
 
 export type RunExecutionButtonControllerInput = {
   runId: string;
@@ -29,8 +29,9 @@ export function isLocalCodexUiEnabled(env?: {
   NEXT_PUBLIC_ENABLE_LOCAL_CODEX_UI?: string;
 }): boolean {
   const nodeEnv = env?.NODE_ENV ?? process.env.NODE_ENV;
-  const flag = env?.NEXT_PUBLIC_ENABLE_LOCAL_CODEX_UI ?? process.env.NEXT_PUBLIC_ENABLE_LOCAL_CODEX_UI;
-  return nodeEnv !== "production" && flag === "true";
+  const flag =
+    env?.NEXT_PUBLIC_ENABLE_LOCAL_CODEX_UI ?? process.env.NEXT_PUBLIC_ENABLE_LOCAL_CODEX_UI;
+  return nodeEnv !== 'production' && flag === 'true';
 }
 
 /**
@@ -49,11 +50,13 @@ export function shouldShowRunExecutionButton(
 }
 
 export function getRunExecutionButtonLabel(isPending: boolean): string {
-  return isPending ? "Starting..." : "Dev: Run read-only";
+  return isPending ? 'Starting...' : 'Dev: Run read-only';
 }
 
-export function formatRunExecutionError(result: Extract<ExecuteRunDevResult, { ok: false }>): string {
-  const message = result.message.replace(/\s+/g, " ").slice(0, 120);
+export function formatRunExecutionError(
+  result: Extract<ExecuteRunDevResult, { ok: false }>,
+): string {
+  const message = result.message.replace(/\s+/g, ' ').slice(0, 120);
   return result.status ? `${result.status}: ${message}` : message;
 }
 
@@ -68,15 +71,15 @@ export function createRunExecutionClickHandler({
     if (isPending()) return;
 
     setPending(true);
-    setStatus({ kind: "idle" });
+    setStatus({ kind: 'idle' });
 
     const result = await execute(runId, READ_ONLY_EXECUTION_PROMPT);
 
     if (result.ok) {
-      setStatus({ kind: "started", message: "Execution started" });
+      setStatus({ kind: 'started', message: 'Execution started' });
     } else {
       setStatus({
-        kind: "error",
+        kind: 'error',
         message: `Could not start execution: ${formatRunExecutionError(result)}`,
       });
     }
@@ -92,9 +95,11 @@ type RunExecutionButtonProps = {
 export function RunExecutionButton({ runId }: RunExecutionButtonProps) {
   const [mounted, setMounted] = useState(false);
   const [pending, setPending] = useState(false);
-  const [status, setStatus] = useState<RunExecutionButtonStatus>({ kind: "idle" });
+  const [status, setStatus] = useState<RunExecutionButtonStatus>({ kind: 'idle' });
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   if (!mounted || !shouldShowRunExecutionButton(runId)) return null;
 
@@ -115,10 +120,10 @@ export function RunExecutionButton({ runId }: RunExecutionButtonProps) {
       >
         {getRunExecutionButtonLabel(pending)}
       </button>
-      {status.kind !== "idle" && (
+      {status.kind !== 'idle' && (
         <span
           className={`max-w-[11rem] text-right text-[8px] ${
-            status.kind === "started" ? "text-[#6ee7b7]" : "text-[#f87171]"
+            status.kind === 'started' ? 'text-[#6ee7b7]' : 'text-[#f87171]'
           }`}
         >
           {status.message}

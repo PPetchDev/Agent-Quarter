@@ -12,7 +12,10 @@ afterEach(() => {
 
 describe('executeRunDev', () => {
   it('posts to /api/runs/:id/execute', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => successResponse }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => successResponse }),
+    );
 
     await executeRunDev('r-002', 'Inspect the project.');
 
@@ -23,7 +26,10 @@ describe('executeRunDev', () => {
   });
 
   it('URL-encodes the run id', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => successResponse }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => successResponse }),
+    );
 
     await executeRunDev('r 002', 'Inspect the project.');
 
@@ -32,7 +38,10 @@ describe('executeRunDev', () => {
   });
 
   it('sends prompt and read-only mode only', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => successResponse }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => successResponse }),
+    );
 
     await executeRunDev('r-002', 'Inspect the project.');
 
@@ -45,7 +54,10 @@ describe('executeRunDev', () => {
   });
 
   it('never sends cwd, workspace-write, danger-full-access, or raw command args', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => successResponse }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => successResponse }),
+    );
 
     await executeRunDev('r-002', 'Inspect the project.');
 
@@ -59,7 +71,10 @@ describe('executeRunDev', () => {
   });
 
   it('returns structured success data on 202 response', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 202, json: async () => successResponse }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, status: 202, json: async () => successResponse }),
+    );
 
     const result = await executeRunDev('r-002', 'Inspect the project.');
 

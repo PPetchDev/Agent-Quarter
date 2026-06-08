@@ -108,16 +108,12 @@ describe('DialogueService', () => {
     });
 
     it('clamps output to maxChars', async () => {
-      const result = await service.generateOfficeDialogue(
-        makeInput({ maxChars: 10 }),
-      );
+      const result = await service.generateOfficeDialogue(makeInput({ maxChars: 10 }));
       expect(result.text.length).toBeLessThanOrEqual(10);
     });
 
     it('preserves model from provider result', async () => {
-      const service2 = new DialogueService(
-        mockProvider('Hello!', 'gpt-4o-mini'),
-      );
+      const service2 = new DialogueService(mockProvider('Hello!', 'gpt-4o-mini'));
       const result = await service2.generateOfficeDialogue(makeInput());
       expect(result.model).toBe('gpt-4o-mini');
     });
@@ -132,9 +128,7 @@ describe('DialogueService', () => {
 
   describe('output sanitization', () => {
     it('sanitizes multiline output into single-line text', async () => {
-      const service = new DialogueService(
-        mockProvider('Line one\nLine two\n```code``` **bold**'),
-      );
+      const service = new DialogueService(mockProvider('Line one\nLine two\n```code``` **bold**'));
       const result = await service.generateOfficeDialogue(makeInput());
       expect(result.text).not.toMatch(/\n/);
       expect(result.text).not.toMatch(/```/);
@@ -147,9 +141,7 @@ describe('DialogueService', () => {
 
   describe('with provider (failure → fallback)', () => {
     it('falls back when provider throws', async () => {
-      const service = new DialogueService(
-        mockProvider(new Error('API key missing')),
-      );
+      const service = new DialogueService(mockProvider(new Error('API key missing')));
       const result = await service.generateOfficeDialogue(makeInput());
       expect(result.source).toBe('deterministic');
       expect(result.fallbackUsed).toBe(true);
@@ -170,9 +162,7 @@ describe('DialogueService', () => {
     });
 
     it('invalid fromAgentId still returns safe deterministic fallback', async () => {
-      const service = new DialogueService(
-        mockProvider('should not be called'),
-      );
+      const service = new DialogueService(mockProvider('should not be called'));
       const result = await service.generateOfficeDialogue(
         makeInput({ fromAgentId: 'agent-99' as OfficeAgentId }),
       );
@@ -186,7 +176,7 @@ describe('DialogueService', () => {
 describe('sanitizeDialogueText', () => {
   it('is exercised through provider success path with multiline input', async () => {
     const service = new DialogueService(
-      mockProvider('\n```js\ncode\n```\n  **Hello** world  \n\'quoted\'\n'),
+      mockProvider("\n```js\ncode\n```\n  **Hello** world  \n'quoted'\n"),
     );
     const result = await service.generateOfficeDialogue(makeInput());
     expect(result.source).toBe('llm');

@@ -22,8 +22,8 @@
     align-items: center;
     justify-content: center;
     font-size: 36px;
-    border: 2px solid rgba(240,171,252,0.4);
-    box-shadow: 0 0 16px rgba(240,171,252,0.2);
+    border: 2px solid rgba(240, 171, 252, 0.4);
+    box-shadow: 0 0 16px rgba(240, 171, 252, 0.2);
     position: relative;
   }
   .emotion-tag {
@@ -37,61 +37,140 @@
 
   /* Option A: Continuous loop only */
   @keyframes float-gentle {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-8px); }
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
   }
   @keyframes float-excited {
-    0%, 100% { transform: translateY(0px) scale(1); }
-    25% { transform: translateY(-10px) scale(1.05); }
-    75% { transform: translateY(-4px) scale(1.02); }
+    0%,
+    100% {
+      transform: translateY(0px) scale(1);
+    }
+    25% {
+      transform: translateY(-10px) scale(1.05);
+    }
+    75% {
+      transform: translateY(-4px) scale(1.02);
+    }
   }
   @keyframes sway-sleepy {
-    0%, 100% { transform: rotate(-3deg) translateY(2px); }
-    50% { transform: rotate(3deg) translateY(0px); }
+    0%,
+    100% {
+      transform: rotate(-3deg) translateY(2px);
+    }
+    50% {
+      transform: rotate(3deg) translateY(0px);
+    }
   }
-  .anim-idle { animation: float-gentle 3s ease-in-out infinite; }
-  .anim-excited { animation: float-excited 0.8s ease-in-out infinite; }
-  .anim-sleepy { animation: sway-sleepy 4s ease-in-out infinite; }
+  .anim-idle {
+    animation: float-gentle 3s ease-in-out infinite;
+  }
+  .anim-excited {
+    animation: float-excited 0.8s ease-in-out infinite;
+  }
+  .anim-sleepy {
+    animation: sway-sleepy 4s ease-in-out infinite;
+  }
 
   /* Option B: Triggered entrance */
   @keyframes pop-in {
-    0% { transform: scale(0.3) rotate(-10deg); opacity: 0; }
-    70% { transform: scale(1.15) rotate(3deg); opacity: 1; }
-    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    0% {
+      transform: scale(0.3) rotate(-10deg);
+      opacity: 0;
+    }
+    70% {
+      transform: scale(1.15) rotate(3deg);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
   }
   @keyframes slide-up-in {
-    0% { transform: translateY(30px); opacity: 0; }
-    100% { transform: translateY(0); opacity: 1; }
+    0% {
+      transform: translateY(30px);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
-  .anim-entrance { animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-  .anim-entrance-slide { animation: slide-up-in 0.4s ease-out forwards; }
+  .anim-entrance {
+    animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  .anim-entrance-slide {
+    animation: slide-up-in 0.4s ease-out forwards;
+  }
 
   /* Option C: Both — loop + burst */
   @keyframes float-base {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-6px); }
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
   }
   @keyframes burst-happy {
-    0% { box-shadow: 0 0 16px rgba(240,171,252,0.2); }
-    30% { box-shadow: 0 0 30px rgba(240,171,252,0.8), 0 0 60px rgba(240,171,252,0.3); }
-    100% { box-shadow: 0 0 16px rgba(240,171,252,0.2); }
+    0% {
+      box-shadow: 0 0 16px rgba(240, 171, 252, 0.2);
+    }
+    30% {
+      box-shadow:
+        0 0 30px rgba(240, 171, 252, 0.8),
+        0 0 60px rgba(240, 171, 252, 0.3);
+    }
+    100% {
+      box-shadow: 0 0 16px rgba(240, 171, 252, 0.2);
+    }
   }
   @keyframes burst-angry {
-    0%, 100% { transform: translateX(0) translateY(0px); }
-    20% { transform: translateX(-4px) translateY(-6px); }
-    40% { transform: translateX(4px) translateY(-6px); }
-    60% { transform: translateX(-4px) translateY(-6px); }
-    80% { transform: translateX(4px) translateY(-6px); }
+    0%,
+    100% {
+      transform: translateX(0) translateY(0px);
+    }
+    20% {
+      transform: translateX(-4px) translateY(-6px);
+    }
+    40% {
+      transform: translateX(4px) translateY(-6px);
+    }
+    60% {
+      transform: translateX(-4px) translateY(-6px);
+    }
+    80% {
+      transform: translateX(4px) translateY(-6px);
+    }
   }
   .anim-float-glow {
-    animation: float-base 3s ease-in-out infinite, burst-happy 1.5s ease-out;
+    animation:
+      float-base 3s ease-in-out infinite,
+      burst-happy 1.5s ease-out;
   }
   .anim-shake-float {
-    animation: burst-angry 0.5s ease-in-out, float-base 3s ease-in-out 0.5s infinite;
+    animation:
+      burst-angry 0.5s ease-in-out,
+      float-base 3s ease-in-out 0.5s infinite;
   }
 
-  .demo-row { display: flex; gap: 16px; justify-content: center; }
-  .demo-sub { text-align: center; font-size: 10px; color: #64748b; font-family: monospace; }
+  .demo-row {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+  }
+  .demo-sub {
+    text-align: center;
+    font-size: 10px;
+    color: #64748b;
+    font-family: monospace;
+  }
   .replay-btn {
     background: #1e293b;
     border: 1px solid #334155;
@@ -102,34 +181,40 @@
     cursor: pointer;
     margin-top: 4px;
   }
-  .replay-btn:hover { background: #334155; }
+  .replay-btn:hover {
+    background: #334155;
+  }
 </style>
 
 <div class="cards">
-
   <div class="card" data-choice="continuous-loop" onclick="toggleSelect(this)">
     <div class="card-image">
       <div class="demo-box">
         <div class="demo-row">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px">
             <div class="char-img anim-idle">🐱</div>
-            <div class="demo-sub">idle<br>float ช้า</div>
+            <div class="demo-sub">idle<br />float ช้า</div>
           </div>
-          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px">
             <div class="char-img anim-excited">🐱</div>
-            <div class="demo-sub">excited<br>กระโดดเร็ว</div>
+            <div class="demo-sub">excited<br />กระโดดเร็ว</div>
           </div>
-          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px">
             <div class="char-img anim-sleepy">🐱</div>
-            <div class="demo-sub">sleepy<br>โยกช้า</div>
+            <div class="demo-sub">sleepy<br />โยกช้า</div>
           </div>
         </div>
-        <div style="font-size:9px;color:#475569;text-align:center;margin-top:4px;">แต่ละอารมณ์มี loop animation ของตัวเอง — เล่นตลอดเวลา</div>
+        <div style="font-size: 9px; color: #475569; text-align: center; margin-top: 4px">
+          แต่ละอารมณ์มี loop animation ของตัวเอง — เล่นตลอดเวลา
+        </div>
       </div>
     </div>
     <div class="card-body">
       <h3>A — Continuous Loop Per Emotion</h3>
-      <p>ตัวละครขยับตลอดเวลา แต่ละอารมณ์มี loop ของตัวเอง เช่น idle=float, excited=bounce, sleepy=sway ใช้ anime.js timeline</p>
+      <p>
+        ตัวละครขยับตลอดเวลา แต่ละอารมณ์มี loop ของตัวเอง เช่น idle=float, excited=bounce,
+        sleepy=sway ใช้ anime.js timeline
+      </p>
     </div>
   </div>
 
@@ -137,18 +222,23 @@
     <div class="card-image">
       <div class="demo-box">
         <div class="demo-row">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px">
             <div class="char-img anim-entrance" id="entranceDemo">🐱</div>
-            <div class="demo-sub">เปลี่ยนอารมณ์<br>= pop in</div>
+            <div class="demo-sub">เปลี่ยนอารมณ์<br />= pop in</div>
           </div>
         </div>
         <button class="replay-btn" onclick="replayEntrance()">▶ Replay</button>
-        <div style="font-size:9px;color:#475569;text-align:center;">animate เมื่อเปลี่ยน emotion เท่านั้น — จากนั้นนิ่ง</div>
+        <div style="font-size: 9px; color: #475569; text-align: center">
+          animate เมื่อเปลี่ยน emotion เท่านั้น — จากนั้นนิ่ง
+        </div>
       </div>
     </div>
     <div class="card-body">
       <h3>B — Triggered Entrance Only</h3>
-      <p>ตัวละครนิ่ง แต่เมื่อ emotion เปลี่ยนจะมี entrance animation (pop, bounce, slide) แล้วค่อยนิ่งรอ</p>
+      <p>
+        ตัวละครนิ่ง แต่เมื่อ emotion เปลี่ยนจะมี entrance animation (pop, bounce, slide)
+        แล้วค่อยนิ่งรอ
+      </p>
     </div>
   </div>
 
@@ -156,42 +246,46 @@
     <div class="card-image">
       <div class="demo-box">
         <div class="demo-row">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px">
             <div class="char-img anim-float-glow" id="happyDemo">🐱</div>
-            <div class="demo-sub">happy<br>float + glow burst</div>
+            <div class="demo-sub">happy<br />float + glow burst</div>
           </div>
-          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px">
             <div class="char-img anim-shake-float" id="angryDemo">🐱</div>
-            <div class="demo-sub">angry<br>shake แล้ว float</div>
+            <div class="demo-sub">angry<br />shake แล้ว float</div>
           </div>
         </div>
         <button class="replay-btn" onclick="replayBurst()">▶ Replay</button>
-        <div style="font-size:9px;color:#475569;text-align:center;">loop ตลอด + burst effect เมื่อเปลี่ยน emotion</div>
+        <div style="font-size: 9px; color: #475569; text-align: center">
+          loop ตลอด + burst effect เมื่อเปลี่ยน emotion
+        </div>
       </div>
     </div>
     <div class="card-body">
       <h3>C — Loop + Burst (แนะนำ)</h3>
-      <p>ตัวละขยับ loop เบาๆ ตลอด + เมื่อ emotion เปลี่ยนมี burst (glow, shake, bounce) ก่อนเข้า loop ใหม่</p>
+      <p>
+        ตัวละขยับ loop เบาๆ ตลอด + เมื่อ emotion เปลี่ยนมี burst (glow, shake, bounce) ก่อนเข้า loop
+        ใหม่
+      </p>
     </div>
   </div>
-
 </div>
 
 <script>
-function replayEntrance() {
-  const el = document.getElementById('entranceDemo');
-  el.style.animation = 'none';
-  void el.offsetWidth;
-  el.style.animation = 'pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
-}
-function replayBurst() {
-  const happy = document.getElementById('happyDemo');
-  const angry = document.getElementById('angryDemo');
-  happy.style.animation = 'none';
-  angry.style.animation = 'none';
-  void happy.offsetWidth;
-  void angry.offsetWidth;
-  happy.style.animation = 'float-base 3s ease-in-out infinite, burst-happy 1.5s ease-out';
-  angry.style.animation = 'burst-angry 0.5s ease-in-out, float-base 3s ease-in-out 0.5s infinite';
-}
+  function replayEntrance() {
+    const el = document.getElementById('entranceDemo');
+    el.style.animation = 'none';
+    void el.offsetWidth;
+    el.style.animation = 'pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
+  }
+  function replayBurst() {
+    const happy = document.getElementById('happyDemo');
+    const angry = document.getElementById('angryDemo');
+    happy.style.animation = 'none';
+    angry.style.animation = 'none';
+    void happy.offsetWidth;
+    void angry.offsetWidth;
+    happy.style.animation = 'float-base 3s ease-in-out infinite, burst-happy 1.5s ease-out';
+    angry.style.animation = 'burst-angry 0.5s ease-in-out, float-base 3s ease-in-out 0.5s infinite';
+  }
 </script>

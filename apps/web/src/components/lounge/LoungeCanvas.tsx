@@ -1,9 +1,9 @@
-"use client";
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import * as PIXI from "pixi.js";
-import "pixi-spine";
-import { Spine } from "pixi-spine";
+'use client';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import * as PIXI from 'pixi.js';
+import 'pixi-spine';
+import { Spine } from 'pixi-spine';
 import {
   drawBackground,
   proj,
@@ -15,19 +15,19 @@ import {
   ROOM_TILES_Y,
   setRoomProjection,
   getTimeTheme,
-} from "./pixiRoom";
-import type { RoomTheme } from "./pixiRoom";
-import { buildRoomScene, loadRoomJSON } from "./roomLoader";
-import type { RoomScene } from "./roomLoader";
-import type { RoomObject } from "./roomDefs";
-import { checkCollision, FURNITURE_TILES } from "./roomDefs";
-import { FurnitureInspector } from "./FurnitureInspector";
-import { ShopModal } from "./ShopModal";
-import { getDefaultSpawnPosition, type CatalogItem } from "./furnitureCatalog";
-import { selectPurchasePlacement } from "./purchasePlacement";
-import { useAgentWalk } from "@/hooks/useAgentWalk";
-import { useCountdown } from "@/hooks/useCountdown";
-import type { Agent, AgentState, AgentTaskType } from "@/game/agents/agentTypes";
+} from './pixiRoom';
+import type { RoomTheme } from './pixiRoom';
+import { buildRoomScene, loadRoomJSON } from './roomLoader';
+import type { RoomScene } from './roomLoader';
+import type { RoomObject } from './roomDefs';
+import { checkCollision, FURNITURE_TILES } from './roomDefs';
+import { FurnitureInspector } from './FurnitureInspector';
+import { ShopModal } from './ShopModal';
+import { getDefaultSpawnPosition, type CatalogItem } from './furnitureCatalog';
+import { selectPurchasePlacement } from './purchasePlacement';
+import { useAgentWalk } from '@/hooks/useAgentWalk';
+import { useCountdown } from '@/hooks/useCountdown';
+import type { Agent, AgentState, AgentTaskType } from '@/game/agents/agentTypes';
 import {
   createOfficeToolEvent,
   createOfficeWorkflowSteps,
@@ -35,28 +35,24 @@ import {
   describeOfficeStepStart,
   OFFICE_TOOL_BOUNDARIES,
   OFFICE_WORKFLOW_AGENTS,
-} from "@/game/agents/officeWorkflow";
+} from '@/game/agents/officeWorkflow';
 import type {
   OfficeAgentId,
   OfficeChatMessage,
   OfficeToolEvent,
   OfficeWorkflowStatus,
   OfficeWorkflowStep,
-} from "@/game/agents/officeWorkflow";
-import { startOfficeRun, completeOfficeRun } from "@/game/agents/officeRunAdapter";
-import { useRunSocket } from "@/hooks/useRunSocket";
-import { loungeStations, type LoungeStationId } from "@/game/scene/loungeStations";
-import { pickAgentDialogue } from "@/game/dialogue/dialogueScheduler";
-import { generateOfficeDialogue } from "@/game/dialogue/dialogueAdapter";
-import Image from "next/image";
+} from '@/game/agents/officeWorkflow';
+import { startOfficeRun, completeOfficeRun } from '@/game/agents/officeRunAdapter';
+import { useRunSocket } from '@/hooks/useRunSocket';
+import { loungeStations, type LoungeStationId } from '@/game/scene/loungeStations';
+import { pickAgentDialogue } from '@/game/dialogue/dialogueScheduler';
+import { generateOfficeDialogue } from '@/game/dialogue/dialogueAdapter';
+import Image from 'next/image';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function snapObj(
-  o: RoomObject,
-  maxX = ROOM_TILES_X,
-  maxY = ROOM_TILES_Y,
-): RoomObject {
+function snapObj(o: RoomObject, maxX = ROOM_TILES_X, maxY = ROOM_TILES_Y): RoomObject {
   return {
     ...o,
     wx: Math.round(Math.max(0, Math.min(maxX - 1, o.wx))),
@@ -68,11 +64,7 @@ function cloneLayout(objects: RoomObject[]): RoomObject[] {
   return objects.map((o) => ({ ...o }));
 }
 
-function autoArrangeLayout(
-  objects: RoomObject[],
-  maxW: number,
-  maxH: number,
-): RoomObject[] | null {
+function autoArrangeLayout(objects: RoomObject[], maxW: number, maxH: number): RoomObject[] | null {
   const sorted = [...objects].sort((a, b) => {
     const ta = FURNITURE_TILES[a.furnitureType] ?? { w: 1, d: 1 };
     const tb = FURNITURE_TILES[b.furnitureType] ?? { w: 1, d: 1 };
@@ -113,128 +105,127 @@ function autoArrangeLayout(
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TASK_DEFS: { task: AgentTaskType; icon: string; label: string }[] = [
-  { task: "code",     icon: "💻",  label: "Code"  },
-  { task: "research", icon: "📚",  label: "Read"  },
-  { task: "meeting",  icon: "🗣️", label: "Meet"  },
-  { task: "document", icon: "📝",  label: "Doc"   },
-  { task: "print",    icon: "🖨️", label: "Print" },
-  { task: "rest",     icon: "🛋️", label: "Rest"  },
+  { task: 'code', icon: '💻', label: 'Code' },
+  { task: 'research', icon: '📚', label: 'Read' },
+  { task: 'meeting', icon: '🗣️', label: 'Meet' },
+  { task: 'document', icon: '📝', label: 'Doc' },
+  { task: 'print', icon: '🖨️', label: 'Print' },
+  { task: 'rest', icon: '🛋️', label: 'Rest' },
 ];
 
 const TASK_ICON: Record<AgentTaskType, string> = {
-  code:     "💻",
-  research: "📚",
-  meeting:  "🗣️",
-  document: "📝",
-  review:   "🔍",
-  print:    "🖨️",
-  rest:     "🛋️",
-  idle:     "·",
+  code: '💻',
+  research: '📚',
+  meeting: '🗣️',
+  document: '📝',
+  review: '🔍',
+  print: '🖨️',
+  rest: '🛋️',
+  idle: '·',
 };
 
 const TASK_ICON_LABEL: Record<AgentTaskType, string> = {
-  code:     "Code",
-  research: "Read",
-  meeting:  "Meet",
-  document: "Doc",
-  review:   "Review",
-  print:    "Print",
-  rest:     "Rest",
-  idle:     "Idle",
+  code: 'Code',
+  research: 'Read',
+  meeting: 'Meet',
+  document: 'Doc',
+  review: 'Review',
+  print: 'Print',
+  rest: 'Rest',
+  idle: 'Idle',
 };
 
 const TASK_REWARDS: Record<AgentTaskType, { coins: number; happiness: number }> = {
-  code:     { coins: 40, happiness: 8 },
+  code: { coins: 40, happiness: 8 },
   research: { coins: 25, happiness: 5 },
   document: { coins: 20, happiness: 4 },
-  meeting:  { coins: 20, happiness: 4 },
-  review:   { coins: 30, happiness: 6 },
-  print:    { coins: 15, happiness: 3 },
-  rest:     { coins: 10, happiness: 10 },
-  idle:     { coins: 0,  happiness: 0 },
+  meeting: { coins: 20, happiness: 4 },
+  review: { coins: 30, happiness: 6 },
+  print: { coins: 15, happiness: 3 },
+  rest: { coins: 10, happiness: 10 },
+  idle: { coins: 0, happiness: 0 },
 };
 
 const STATE_LABEL: Record<string, string> = {
-  idle:        "😴 Idle",
-  walking:     "🚶 Moving",
-  thinking:    "🤔 Thinking",
-  coding:      "💻 Coding",
-  researching: "📚 Reading",
-  meeting:     "🗣️ Meeting",
-  documenting: "📝 Docs",
-  reviewing:   "🔍 Review",
-  printing:    "🖨️ Print",
-  resting:     "🛋️ Resting",
-  done:        "✅ Done",
-  error:       "⚠️ Error",
+  idle: '😴 Idle',
+  walking: '🚶 Moving',
+  thinking: '🤔 Thinking',
+  coding: '💻 Coding',
+  researching: '📚 Reading',
+  meeting: '🗣️ Meeting',
+  documenting: '📝 Docs',
+  reviewing: '🔍 Review',
+  printing: '🖨️ Print',
+  resting: '🛋️ Resting',
+  done: '✅ Done',
+  error: '⚠️ Error',
 };
 
 const STATE_COLOR: Record<string, string> = {
-  idle:        "bg-[#86efac]/30 text-[#166534]",
-  walking:     "bg-[#93c5fd]/30 text-[#1e40af]",
-  thinking:    "bg-[#c4b5fd]/30 text-[#5b21b6]",
-  coding:      "bg-[#fde68a]/40 text-[#7a5000]",
-  researching: "bg-[#a5f3fc]/30 text-[#155e75]",
-  meeting:     "bg-[#f9a8d4]/30 text-[#831843]",
-  documenting: "bg-[#d9f99d]/30 text-[#3f6212]",
-  reviewing:   "bg-[#fca5a5]/30 text-[#7f1d1d]",
-  printing:    "bg-[#e9d5ff]/30 text-[#4c1d95]",
-  resting:     "bg-[#fed7aa]/30 text-[#7c2d12]",
-  done:        "bg-[#86efac]/40 text-[#14532d]",
-  error:       "bg-[#fca5a5]/50 text-[#991b1b]",
+  idle: 'bg-[#86efac]/30 text-[#166534]',
+  walking: 'bg-[#93c5fd]/30 text-[#1e40af]',
+  thinking: 'bg-[#c4b5fd]/30 text-[#5b21b6]',
+  coding: 'bg-[#fde68a]/40 text-[#7a5000]',
+  researching: 'bg-[#a5f3fc]/30 text-[#155e75]',
+  meeting: 'bg-[#f9a8d4]/30 text-[#831843]',
+  documenting: 'bg-[#d9f99d]/30 text-[#3f6212]',
+  reviewing: 'bg-[#fca5a5]/30 text-[#7f1d1d]',
+  printing: 'bg-[#e9d5ff]/30 text-[#4c1d95]',
+  resting: 'bg-[#fed7aa]/30 text-[#7c2d12]',
+  done: 'bg-[#86efac]/40 text-[#14532d]',
+  error: 'bg-[#fca5a5]/50 text-[#991b1b]',
 };
 
 const OFFICE_STATUS_LABEL: Record<OfficeWorkflowStatus, string> = {
-  idle: "Idle",
-  running: "Running",
-  paused: "Paused",
-  done: "Done",
+  idle: 'Idle',
+  running: 'Running',
+  paused: 'Paused',
+  done: 'Done',
 };
 
 const OFFICE_STATUS_CLASS: Record<OfficeWorkflowStatus, string> = {
-  idle: "bg-[#e8d0a0]/50 text-[#5a3c18]",
-  running: "bg-[#bbf7d0]/80 text-[#166534]",
-  paused: "bg-[#fde68a]/90 text-[#7a5000]",
-  done: "bg-[#bfdbfe]/90 text-[#1e40af]",
+  idle: 'bg-[#e8d0a0]/50 text-[#5a3c18]',
+  running: 'bg-[#bbf7d0]/80 text-[#166534]',
+  paused: 'bg-[#fde68a]/90 text-[#7a5000]',
+  done: 'bg-[#bfdbfe]/90 text-[#1e40af]',
 };
 
-const OFFICE_CHAT_CLASS: Record<OfficeChatMessage["kind"], string> = {
-  status: "border-[#c8a870]/60 bg-[#fff8e8]/80 text-[#5a3c18]",
-  handoff: "border-[#93c5fd]/60 bg-[#eff6ff]/85 text-[#1e3a8a]",
-  done: "border-[#86efac]/70 bg-[#f0fdf4]/85 text-[#166534]",
-  blocked: "border-[#fca5a5]/80 bg-[#fef2f2]/90 text-[#991b1b]",
-  dialogue: "border-[#c4b5fd]/60 bg-[#f5f3ff]/85 text-[#5b21b6]",
+const OFFICE_CHAT_CLASS: Record<OfficeChatMessage['kind'], string> = {
+  status: 'border-[#c8a870]/60 bg-[#fff8e8]/80 text-[#5a3c18]',
+  handoff: 'border-[#93c5fd]/60 bg-[#eff6ff]/85 text-[#1e3a8a]',
+  done: 'border-[#86efac]/70 bg-[#f0fdf4]/85 text-[#166534]',
+  blocked: 'border-[#fca5a5]/80 bg-[#fef2f2]/90 text-[#991b1b]',
+  dialogue: 'border-[#c4b5fd]/60 bg-[#f5f3ff]/85 text-[#5b21b6]',
 };
 
 /** Canonical seed task ID for REST adapter (fire-and-forget, degrade silently). */
-const OFFICE_CANONICAL_TASK_ID = "t-008"; // "File findings in backlog" (status: todo)
+const OFFICE_CANONICAL_TASK_ID = 't-008'; // "File findings in backlog" (status: todo)
 
-const ENABLE_LLM_DIALOGUE =
-  process.env.NEXT_PUBLIC_ENABLE_LLM_DIALOGUE === 'true';
+const ENABLE_LLM_DIALOGUE = process.env.NEXT_PUBLIC_ENABLE_LLM_DIALOGUE === 'true';
 
 const LLM_REQUEST_COOLDOWN_MS = 90_000;
 
-const STORAGE_KEY = "squad:lounge:v7";
-const ROOM_MAP_URL = "/maps/maple_hideout.json";
+const STORAGE_KEY = 'squad:lounge:v7';
+const ROOM_MAP_URL = '/maps/maple_hideout.json';
 const INITIAL_COINS = 500;
 const TRAIN_REWARD = 25;
 const TRAIN_MAX = 4;
-const TRAIN_DATE_KEY = "squad:lounge:trainDate";
-const TRAIN_COUNT_KEY = "squad:lounge:trainCount";
+const TRAIN_DATE_KEY = 'squad:lounge:trainDate';
+const TRAIN_COUNT_KEY = 'squad:lounge:trainCount';
 const COLLECT_BUTTON_COOLDOWN_MS = 8000;
 const HAPPINESS_MAX = 200;
 
 function getLocalDateKey(): string {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 const SUPPLIES_LOW_THRESHOLD_PCT = 20;
 const SUPPLIES_LOW_REWARD_MULT = 0.75;
 
-type Mode = "visit" | "move";
+type Mode = 'visit' | 'move';
 
 type OfficeWalker = {
   agent: Agent;
@@ -255,7 +246,7 @@ type SharedLayoutPayload = {
   objects: RoomObject[];
 };
 
-const LAYOUT_QUERY_PARAM = "layout";
+const LAYOUT_QUERY_PARAM = 'layout';
 
 function useTimer(startSecs = 8 * 3600 + 23 * 60 + 17) {
   const [s, setS] = useState(startSecs);
@@ -263,9 +254,9 @@ function useTimer(startSecs = 8 * 3600 + 23 * 60 + 17) {
     const id = setInterval(() => setS((p) => Math.max(0, p - 1)), 1000);
     return () => clearInterval(id);
   }, []);
-  const h = String(Math.floor(s / 3600)).padStart(2, "0");
-  const m = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
-  const ss = String(s % 60).padStart(2, "0");
+  const h = String(Math.floor(s / 3600)).padStart(2, '0');
+  const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+  const ss = String(s % 60).padStart(2, '0');
   return `${h}:${m}:${ss}`;
 }
 
@@ -275,27 +266,24 @@ function useSuppliesTimer(startSecs = 12 * 3600 + 45 * 60 + 30) {
     const id = setInterval(() => setS((p) => Math.max(0, p - 1)), 1000);
     return () => clearInterval(id);
   }, []);
-  const h = String(Math.floor(s / 3600)).padStart(2, "0");
-  const m = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
-  const ss = String(s % 60).padStart(2, "0");
+  const h = String(Math.floor(s / 3600)).padStart(2, '0');
+  const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+  const ss = String(s % 60).padStart(2, '0');
   return `${h}:${m}:${ss}`;
 }
 
 function encodeBase64Url(input: string): string {
-  if (typeof window === "undefined") return "";
+  if (typeof window === 'undefined') return '';
   const bytes = new TextEncoder().encode(input);
-  let binary = "";
+  let binary = '';
   for (const b of bytes) binary += String.fromCharCode(b);
-  return btoa(binary)
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
 
 function decodeBase64Url(input: string): string | null {
-  if (typeof window === "undefined") return null;
-  const base64 = input.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+  if (typeof window === 'undefined') return null;
+  const base64 = input.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
   try {
     const binary = atob(padded);
     const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
@@ -306,7 +294,7 @@ function decodeBase64Url(input: string): string | null {
 }
 
 function parseSharedLayoutFromUrl(): SharedLayoutPayload | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
   const params = new URLSearchParams(window.location.search);
   const encoded = params.get(LAYOUT_QUERY_PARAM);
   if (!encoded) return null;
@@ -319,26 +307,22 @@ function parseSharedLayoutFromUrl(): SharedLayoutPayload | null {
     if (parsed.v !== 1 || !Array.isArray(parsed.objects)) return null;
 
     const roomW =
-      typeof parsed.roomW === "number"
-        ? Math.max(6, Math.min(16, parsed.roomW))
-        : ROOM_TILES_X;
+      typeof parsed.roomW === 'number' ? Math.max(6, Math.min(16, parsed.roomW)) : ROOM_TILES_X;
     const roomH =
-      typeof parsed.roomH === "number"
-        ? Math.max(5, Math.min(14, parsed.roomH))
-        : ROOM_TILES_Y;
+      typeof parsed.roomH === 'number' ? Math.max(5, Math.min(14, parsed.roomH)) : ROOM_TILES_Y;
 
     const objects = parsed.objects
       .filter((o): o is RoomObject => {
         return (
-          typeof o?.id === "number" &&
-          typeof o?.furnitureType === "string" &&
-          typeof o?.label === "string" &&
-          typeof o?.description === "string" &&
-          typeof o?.wx === "number" &&
-          typeof o?.wy === "number" &&
-          typeof o?.wz === "number" &&
-          typeof o?.happiness === "number" &&
-          typeof o?.draggable === "boolean"
+          typeof o?.id === 'number' &&
+          typeof o?.furnitureType === 'string' &&
+          typeof o?.label === 'string' &&
+          typeof o?.description === 'string' &&
+          typeof o?.wx === 'number' &&
+          typeof o?.wy === 'number' &&
+          typeof o?.wz === 'number' &&
+          typeof o?.happiness === 'number' &&
+          typeof o?.draggable === 'boolean'
         );
       })
       .map((o) => snapObj(o, roomW, roomH));
@@ -348,16 +332,13 @@ function parseSharedLayoutFromUrl(): SharedLayoutPayload | null {
     return {
       v: 1,
       roomName:
-        typeof parsed.roomName === "string" && parsed.roomName.trim().length > 0
+        typeof parsed.roomName === 'string' && parsed.roomName.trim().length > 0
           ? parsed.roomName
-          : "Shared Lounge",
+          : 'Shared Lounge',
       roomW,
       roomH,
-      happiness: typeof parsed.happiness === "number" ? parsed.happiness : 128,
-      coins:
-        typeof parsed.coins === "number"
-          ? Math.max(0, parsed.coins)
-          : INITIAL_COINS,
+      happiness: typeof parsed.happiness === 'number' ? parsed.happiness : 128,
+      coins: typeof parsed.coins === 'number' ? Math.max(0, parsed.coins) : INITIAL_COINS,
       floor: parsed.floor === 2 ? 2 : 1,
       objects,
     };
@@ -367,13 +348,13 @@ function parseSharedLayoutFromUrl(): SharedLayoutPayload | null {
 }
 
 function removeSharedLayoutQuery(): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   const url = new URL(window.location.href);
   if (!url.searchParams.has(LAYOUT_QUERY_PARAM)) return;
   url.searchParams.delete(LAYOUT_QUERY_PARAM);
   const qs = url.searchParams.toString();
-  const next = `${url.pathname}${qs ? `?${qs}` : ""}${url.hash}`;
-  window.history.replaceState({}, "", next);
+  const next = `${url.pathname}${qs ? `?${qs}` : ''}${url.hash}`;
+  window.history.replaceState({}, '', next);
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -407,10 +388,10 @@ export function LoungeCanvas() {
   const redoRef = useRef<RoomObject[][]>([]);
   const nextIdRef = useRef<number>(1000);
   const scaleRef = useRef<number>(1);
-  const modeRef = useRef<Mode>("visit");
+  const modeRef = useRef<Mode>('visit');
 
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>("visit");
+  const [mode, setMode] = useState<Mode>('visit');
   const [objects, setObjects] = useState<RoomObject[]>(DEFAULT_OBJECTS);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [scale, setScale] = useState(1);
@@ -419,7 +400,7 @@ export function LoungeCanvas() {
   const [panY, setPanY] = useState(0);
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
-  const [roomName, setRoomName] = useState("Maple Hideout");
+  const [roomName, setRoomName] = useState('Maple Hideout');
   const [happiness, setHappiness] = useState(128);
   const [coins, setCoins] = useState(INITIAL_COINS);
   const [floor, setFloor] = useState(1);
@@ -427,7 +408,9 @@ export function LoungeCanvas() {
   const [suppliesProgress, setSuppliesProgress] = useState(28640);
   const [suppliesMax] = useState(40000);
   const [agentBubble, setAgentBubble] = useState<string | null>(null);
-  const [floatingHearts, setFloatingHearts] = useState<{id:number,x:number,y:number,createdAt:number}[]>([]);
+  const [floatingHearts, setFloatingHearts] = useState<
+    { id: number; x: number; y: number; createdAt: number }[]
+  >([]);
   const [collectButtonCooldownUntil, setCollectButtonCooldownUntil] = useState(0);
   const heartIdRef = useRef(0);
   const [shopOpen, setShopOpen] = useState(false);
@@ -485,11 +468,13 @@ export function LoungeCanvas() {
     characterId: 'mika',
     startIso: { wx: 5.4, wy: 5.2, wz: 0.2 },
   });
-  const [officeCommand, setOfficeCommand] = useState("Build a verified lounge workflow slice");
-  const [activeOfficeCommand, setActiveOfficeCommand] = useState("Build a verified lounge workflow slice");
-  const [officeStatus, setOfficeStatus] = useState<OfficeWorkflowStatus>("idle");
+  const [officeCommand, setOfficeCommand] = useState('Build a verified lounge workflow slice');
+  const [activeOfficeCommand, setActiveOfficeCommand] = useState(
+    'Build a verified lounge workflow slice',
+  );
+  const [officeStatus, setOfficeStatus] = useState<OfficeWorkflowStatus>('idle');
   const [officeSteps, setOfficeSteps] = useState<OfficeWorkflowStep[]>(() =>
-    createOfficeWorkflowSteps("Build a verified lounge workflow slice"),
+    createOfficeWorkflowSteps('Build a verified lounge workflow slice'),
   );
   const [officeStepIndex, setOfficeStepIndex] = useState(0);
   const [officeChat, setOfficeChat] = useState<OfficeChatMessage[]>([]);
@@ -498,45 +483,48 @@ export function LoungeCanvas() {
   const officeInFlightRunIdRef = useRef<string | null>(null);
   const officeChatIdRef = useRef(0);
   const officeToolEventIdRef = useRef(0);
-  const officeWalkers = useMemo<OfficeWalkerMap>(() => ({
-    "agent-1": { agent, assignTask, clearAgentTask },
-    "agent-2": {
-      agent: aki.agent,
-      assignTask: aki.assignTask,
-      clearAgentTask: aki.clearAgentTask,
-    },
-    "agent-3": {
-      agent: ren.agent,
-      assignTask: ren.assignTask,
-      clearAgentTask: ren.clearAgentTask,
-    },
-    "agent-4": {
-      agent: yui.agent,
-      assignTask: yui.assignTask,
-      clearAgentTask: yui.clearAgentTask,
-    },
-    "agent-5": {
-      agent: mika.agent,
-      assignTask: mika.assignTask,
-      clearAgentTask: mika.clearAgentTask,
-    },
-  }), [
-    agent,
-    assignTask,
-    clearAgentTask,
-    aki.agent,
-    aki.assignTask,
-    aki.clearAgentTask,
-    ren.agent,
-    ren.assignTask,
-    ren.clearAgentTask,
-    yui.agent,
-    yui.assignTask,
-    yui.clearAgentTask,
-    mika.agent,
-    mika.assignTask,
-    mika.clearAgentTask,
-  ]);
+  const officeWalkers = useMemo<OfficeWalkerMap>(
+    () => ({
+      'agent-1': { agent, assignTask, clearAgentTask },
+      'agent-2': {
+        agent: aki.agent,
+        assignTask: aki.assignTask,
+        clearAgentTask: aki.clearAgentTask,
+      },
+      'agent-3': {
+        agent: ren.agent,
+        assignTask: ren.assignTask,
+        clearAgentTask: ren.clearAgentTask,
+      },
+      'agent-4': {
+        agent: yui.agent,
+        assignTask: yui.assignTask,
+        clearAgentTask: yui.clearAgentTask,
+      },
+      'agent-5': {
+        agent: mika.agent,
+        assignTask: mika.assignTask,
+        clearAgentTask: mika.clearAgentTask,
+      },
+    }),
+    [
+      agent,
+      assignTask,
+      clearAgentTask,
+      aki.agent,
+      aki.assignTask,
+      aki.clearAgentTask,
+      ren.agent,
+      ren.assignTask,
+      ren.clearAgentTask,
+      yui.agent,
+      yui.assignTask,
+      yui.clearAgentTask,
+      mika.agent,
+      mika.assignTask,
+      mika.clearAgentTask,
+    ],
+  );
   const visibleOfficeAgents = useMemo(
     () =>
       OFFICE_WORKFLOW_AGENTS.map((spec) => ({
@@ -558,9 +546,13 @@ export function LoungeCanvas() {
   }, [aki.agent.state, aki.assignTask, officeStatus, roomReady]);
   // Track character positions
   useEffect(() => {
-    const update = (id: string, pos: {x:number;y:number}, dir: string) => {
+    const update = (id: string, pos: { x: number; y: number }, dir: string) => {
       const c = charSpritesRef.current.get(id);
-      if (c) { c.x = pos.x; c.y = pos.y - 40; c.scale.x = dir === 'left' ? -Math.abs(c.scale.x) : Math.abs(c.scale.x); }
+      if (c) {
+        c.x = pos.x;
+        c.y = pos.y - 40;
+        c.scale.x = dir === 'left' ? -Math.abs(c.scale.x) : Math.abs(c.scale.x);
+      }
     };
     update('agent-1', agent.position, agent.direction);
     update('agent-2', aki.agent.position, aki.agent.direction);
@@ -582,22 +574,22 @@ export function LoungeCanvas() {
 
   // ── Spine animation state mapping ────────────────────────────────────────────
   const SPINE_ANIM_CANDIDATES: Record<AgentState, string[]> = {
-    idle:        ['normal','stand','stand2','sit','sleep'],
-    walking:     ['walk','move','move_left','normal','stand'],
-    thinking:    ['normal','stand','stand2'],
-    coding:      ['normal','stand','stand2'],
-    researching: ['normal','stand','stand2'],
-    meeting:     ['normal','stand','stand2'],
-    documenting: ['normal','stand','stand2'],
-    reviewing:   ['normal','stand','stand2'],
-    printing:    ['normal','stand','stand2'],
-    resting:     ['sit','sleep','normal','stand'],
-    done:        ['victory','normal','stand'],
-    error:       ['break','normal','stand'],
+    idle: ['normal', 'stand', 'stand2', 'sit', 'sleep'],
+    walking: ['walk', 'move', 'move_left', 'normal', 'stand'],
+    thinking: ['normal', 'stand', 'stand2'],
+    coding: ['normal', 'stand', 'stand2'],
+    researching: ['normal', 'stand', 'stand2'],
+    meeting: ['normal', 'stand', 'stand2'],
+    documenting: ['normal', 'stand', 'stand2'],
+    reviewing: ['normal', 'stand', 'stand2'],
+    printing: ['normal', 'stand', 'stand2'],
+    resting: ['sit', 'sleep', 'normal', 'stand'],
+    done: ['victory', 'normal', 'stand'],
+    error: ['break', 'normal', 'stand'],
   };
 
   const ONE_SHOT_STATES = new Set<AgentState>(['done', 'error']);
-  const CALM_ANIMS = ['normal','stand','stand2','sit','sleep'];
+  const CALM_ANIMS = ['normal', 'stand', 'stand2', 'sit', 'sleep'];
 
   useEffect(() => {
     const applyAnim = (id: string, state: AgentState) => {
@@ -605,7 +597,7 @@ export function LoungeCanvas() {
       if (!spine?.state) return;
       const candidates = SPINE_ANIM_CANDIDATES[state];
       if (!candidates) return;
-      const available = (spine.spineData.animations as any[]).map((a:any) => a.name) as string[];
+      const available = (spine.spineData.animations as any[]).map((a: any) => a.name) as string[];
       const target = candidates.find((c) => available.includes(c)) ?? available[0];
       if (!target) return;
       const current = spine.state.getCurrent(0);
@@ -638,13 +630,17 @@ export function LoungeCanvas() {
   // ── Game mechanics ──────────────────────────────────────────────────────────
   // Food drain
   useEffect(() => {
-    const id = setInterval(() => setSuppliesProgress(p => Math.max(0, p - 3)), 3000);
+    const id = setInterval(() => setSuppliesProgress((p) => Math.max(0, p - 3)), 3000);
     return () => clearInterval(id);
   }, []);
   // Keep suppliesProgressRef in sync for safe reads inside reward effect
-  useEffect(() => { suppliesProgressRef.current = suppliesProgress; }, [suppliesProgress]);
+  useEffect(() => {
+    suppliesProgressRef.current = suppliesProgress;
+  }, [suppliesProgress]);
   // Keep happinessRef in sync for safe reads inside addHappiness
-  useEffect(() => { happinessRef.current = happiness; }, [happiness]);
+  useEffect(() => {
+    happinessRef.current = happiness;
+  }, [happiness]);
   // Persist Train daily state when trainCount changes (skip pre-load fire)
   useEffect(() => {
     if (!trainStorageLoadedRef.current) return;
@@ -656,16 +652,46 @@ export function LoungeCanvas() {
     }
   }, [trainCount]);
   // Speech bubbles
-  const CHATTER = ["Hmm~", "I wonder...", "Ah, an idea!", "So cozy!", "Working hard!", "Zzz... oh!", "Need supplies~", "Let's go!"];
+  const CHATTER = [
+    'Hmm~',
+    'I wonder...',
+    'Ah, an idea!',
+    'So cozy!',
+    'Working hard!',
+    'Zzz... oh!',
+    'Need supplies~',
+    "Let's go!",
+  ];
   useEffect(() => {
-    const tick = () => { setAgentBubble(CHATTER[Math.floor(Math.random()*CHATTER.length)]!); setTimeout(() => setAgentBubble(null), 2500); };
-    const t = setTimeout(() => { tick(); setInterval(() => { if (!document.hidden) tick(); }, 15000); }, 8000);
+    const tick = () => {
+      setAgentBubble(CHATTER[Math.floor(Math.random() * CHATTER.length)]!);
+      setTimeout(() => setAgentBubble(null), 2500);
+    };
+    const t = setTimeout(() => {
+      tick();
+      setInterval(() => {
+        if (!document.hidden) tick();
+      }, 15000);
+    }, 8000);
     return () => clearTimeout(t);
   }, []);
   // Heart cleanup
-  useEffect(() => { if (!floatingHearts.length) return; const id = setInterval(() => setFloatingHearts(h => h.filter(x => performance.now()-x.createdAt<1500)), 200); return () => clearInterval(id); }, [floatingHearts.length]);
+  useEffect(() => {
+    if (!floatingHearts.length) return;
+    const id = setInterval(
+      () => setFloatingHearts((h) => h.filter((x) => performance.now() - x.createdAt < 1500)),
+      200,
+    );
+    return () => clearInterval(id);
+  }, [floatingHearts.length]);
   // Collect button cooldown cleanup on unmount
-  useEffect(() => () => { if (collectButtonCooldownTimeoutRef.current) clearTimeout(collectButtonCooldownTimeoutRef.current); }, []);
+  useEffect(
+    () => () => {
+      if (collectButtonCooldownTimeoutRef.current)
+        clearTimeout(collectButtonCooldownTimeoutRef.current);
+    },
+    [],
+  );
 
   // Keep refs in sync
   useEffect(() => {
@@ -705,284 +731,281 @@ export function LoungeCanvas() {
     appRef.current = app;
 
     (async () => {
-    let roomObjects = DEFAULT_OBJECTS;
-    try {
-      const loaded = await loadRoomJSON(ROOM_MAP_URL);
-      if (loaded.length > 0) roomObjects = loaded.map((o) => snapObj(o));
-    } catch {
-      /* use defaults */
-    }
+      let roomObjects = DEFAULT_OBJECTS;
+      try {
+        const loaded = await loadRoomJSON(ROOM_MAP_URL);
+        if (loaded.length > 0) roomObjects = loaded.map((o) => snapObj(o));
+      } catch {
+        /* use defaults */
+      }
 
-    try {
-          const saved = localStorage.getItem(STORAGE_KEY);
-          if (saved) {
-            const parsed = JSON.parse(saved) as {
-              objects?: RoomObject[];
-              roomName?: string;
-              happiness?: number;
-              floor?: number;
-              coins?: number;
-              nextId?: number;
-              roomW?: number;
-              roomH?: number;
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved) as {
+            objects?: RoomObject[];
+            roomName?: string;
+            happiness?: number;
+            floor?: number;
+            coins?: number;
+            nextId?: number;
+            roomW?: number;
+            roomH?: number;
+          };
+          const loadedW =
+            typeof parsed.roomW === 'number'
+              ? Math.max(6, Math.min(16, parsed.roomW))
+              : ROOM_TILES_X;
+          const loadedH =
+            typeof parsed.roomH === 'number'
+              ? Math.max(5, Math.min(14, parsed.roomH))
+              : ROOM_TILES_Y;
+          setRoomW(loadedW);
+          roomWRef.current = loadedW;
+          setRoomH(loadedH);
+          roomHRef.current = loadedH;
+          if (parsed.objects?.length)
+            roomObjects = parsed.objects.map((o) => snapObj(o, loadedW, loadedH));
+          if (parsed.roomName) setRoomName(parsed.roomName);
+          if (typeof parsed.happiness === 'number') setHappiness(parsed.happiness);
+          if (typeof parsed.floor === 'number') setFloor(parsed.floor);
+          if (typeof parsed.coins === 'number') {
+            setCoins(parsed.coins);
+            coinsRef.current = parsed.coins;
+          }
+          if (typeof parsed.nextId === 'number') nextIdRef.current = parsed.nextId;
+        }
+      } catch {
+        /* ignore */
+      }
+
+      // ── Train daily reset ───────────────────────────────────────────────
+      try {
+        const today = getLocalDateKey();
+        const savedDate = localStorage.getItem(TRAIN_DATE_KEY);
+        const savedCount = localStorage.getItem(TRAIN_COUNT_KEY);
+        if (savedDate === today && savedCount !== null) {
+          const parsed = parseInt(savedCount, 10);
+          const clamped = Number.isFinite(parsed) ? Math.min(TRAIN_MAX, Math.max(0, parsed)) : 0;
+          setTrainCount(clamped);
+        } else {
+          // New day or no data — reset
+          localStorage.setItem(TRAIN_DATE_KEY, today);
+          localStorage.setItem(TRAIN_COUNT_KEY, '0');
+          setTrainCount(0);
+        }
+      } catch {
+        /* ignore */
+      }
+      trainStorageLoadedRef.current = true;
+
+      const shared = parseSharedLayoutFromUrl();
+      if (shared) {
+        setRoomW(shared.roomW);
+        roomWRef.current = shared.roomW;
+        setRoomH(shared.roomH);
+        roomHRef.current = shared.roomH;
+        setRoomName(shared.roomName);
+        setHappiness(shared.happiness);
+        setFloor(shared.floor);
+        setCoins(shared.coins);
+        coinsRef.current = shared.coins;
+        roomObjects = shared.objects.map((o) => snapObj(o, shared.roomW, shared.roomH));
+        removeSharedLayoutQuery();
+      }
+
+      // Ensure nextIdRef is greater than any existing id
+      const maxId = Math.max(...roomObjects.map((o) => o.id), 999);
+      if (nextIdRef.current <= maxId) nextIdRef.current = maxId + 1;
+
+      setObjects(roomObjects);
+      objectsRef.current = roomObjects;
+      if (mounted) setRoomReady(true);
+
+      setRoomProjection(roomWRef.current, roomHRef.current);
+      const scene = buildRoomScene(app.stage, roomObjects, {
+        onSelect: (id) => {
+          if (modeRef.current === 'move') return;
+          setSelectedId((prev) => (prev === id ? null : id));
+        },
+        onDragStart: (id, sx, sy) => {
+          if (modeRef.current !== 'move') return;
+          if (!dragRef.current) {
+            const item = objectsRef.current.find((o) => o.id === id);
+            const wx = item?.wx ?? 0,
+              wy = item?.wy ?? 0;
+            dragRef.current = {
+              id,
+              screenX: sx,
+              screenY: sy,
+              accX: Math.round(wx),
+              accY: Math.round(wy),
+              lastValidX: wx,
+              lastValidY: wy,
+              startX: wx,
+              startY: wy,
             };
-            const loadedW =
-              typeof parsed.roomW === "number"
-                ? Math.max(6, Math.min(16, parsed.roomW))
-                : ROOM_TILES_X;
-            const loadedH =
-              typeof parsed.roomH === "number"
-                ? Math.max(5, Math.min(14, parsed.roomH))
-                : ROOM_TILES_Y;
-            setRoomW(loadedW);
-            roomWRef.current = loadedW;
-            setRoomH(loadedH);
-            roomHRef.current = loadedH;
-            if (parsed.objects?.length)
-              roomObjects = parsed.objects.map((o) =>
-                snapObj(o, loadedW, loadedH),
-              );
-            if (parsed.roomName) setRoomName(parsed.roomName);
-            if (typeof parsed.happiness === "number")
-              setHappiness(parsed.happiness);
-            if (typeof parsed.floor === "number") setFloor(parsed.floor);
-            if (typeof parsed.coins === "number") {
-              setCoins(parsed.coins);
-              coinsRef.current = parsed.coins;
-            }
-            if (typeof parsed.nextId === "number")
-              nextIdRef.current = parsed.nextId;
           }
-        } catch {
-          /* ignore */
-        }
+        },
+      });
+      sceneRef.current = scene;
+      drawBackground(scene.backgroundGraphics, roomWRef.current, roomHRef.current, theme);
 
-        // ── Train daily reset ───────────────────────────────────────────────
-        try {
-          const today = getLocalDateKey();
-          const savedDate = localStorage.getItem(TRAIN_DATE_KEY);
-          const savedCount = localStorage.getItem(TRAIN_COUNT_KEY);
-          if (savedDate === today && savedCount !== null) {
-              const parsed = parseInt(savedCount, 10);
-              const clamped = Number.isFinite(parsed) ? Math.min(TRAIN_MAX, Math.max(0, parsed)) : 0;
-              setTrainCount(clamped);
-          } else {
-              // New day or no data — reset
-              localStorage.setItem(TRAIN_DATE_KEY, today);
-              localStorage.setItem(TRAIN_COUNT_KEY, "0");
-              setTrainCount(0);
-          }
-        } catch {
-          /* ignore */
-        }
-        trainStorageLoadedRef.current = true;
+      // ── Load real Spine 3.8 characters ────────────────────────────────────
+      const CHAR_DEFS = [
+        {
+          skel: '/azur-char/qiye/qiye_h.skel',
+          atlas: '/azur-char/qiye/qiye_h.atlas',
+          wx: 5.0,
+          wy: 0.65,
+          wz: 0.0,
+          id: 'agent-1',
+          name: 'qiye',
+        },
+        {
+          skel: '/azur-char/dunkeerke/dunkeerke.skel',
+          atlas: '/azur-char/dunkeerke/dunkeerke.atlas',
+          wx: 8.0,
+          wy: 0.65,
+          wz: 0.0,
+          id: 'agent-2',
+          name: 'dunkeerke',
+        },
+      ];
 
-        const shared = parseSharedLayoutFromUrl();
-        if (shared) {
-          setRoomW(shared.roomW);
-          roomWRef.current = shared.roomW;
-          setRoomH(shared.roomH);
-          roomHRef.current = shared.roomH;
-          setRoomName(shared.roomName);
-          setHappiness(shared.happiness);
-          setFloor(shared.floor);
-          setCoins(shared.coins);
-          coinsRef.current = shared.coins;
-          roomObjects = shared.objects.map((o) =>
-            snapObj(o, shared.roomW, shared.roomH),
-          );
-          removeSharedLayoutQuery();
-        }
-
-        // Ensure nextIdRef is greater than any existing id
-        const maxId = Math.max(...roomObjects.map((o) => o.id), 999);
-        if (nextIdRef.current <= maxId) nextIdRef.current = maxId + 1;
-
-        setObjects(roomObjects);
-        objectsRef.current = roomObjects;
-        if (mounted) setRoomReady(true);
-
-        setRoomProjection(roomWRef.current, roomHRef.current);
-        const scene = buildRoomScene(app.stage, roomObjects, {
-          onSelect: (id) => {
-            if (modeRef.current === "move") return;
-            setSelectedId((prev) => (prev === id ? null : id));
-          },
-          onDragStart: (id, sx, sy) => {
-            if (modeRef.current !== "move") return;
-            if (!dragRef.current) {
-              const item = objectsRef.current.find((o) => o.id === id);
-              const wx = item?.wx ?? 0,
-                wy = item?.wy ?? 0;
-              dragRef.current = {
-                id,
-                screenX: sx,
-                screenY: sy,
-                accX: Math.round(wx),
-                accY: Math.round(wy),
-                lastValidX: wx,
-                lastValidY: wy,
-                startX: wx,
-                startY: wy,
-              };
+      for (const def of CHAR_DEFS) {
+        PIXI.Assets.load([def.skel, def.atlas])
+          .then((loaded: Record<string, any>) => {
+            const skelKey = def.skel;
+            const spineData = loaded[skelKey]?.spineData;
+            if (!spineData) {
+              console.warn(`[Spine] No spineData for ${def.name}`);
+              return;
             }
-          },
-        });
-        sceneRef.current = scene;
-        drawBackground(
-          scene.backgroundGraphics,
-          roomWRef.current,
-          roomHRef.current,
-          theme,
-        );
+            const spine = new Spine(spineData);
+            const [sx, sy] = proj(def.wx, def.wy, def.wz);
+            spine.x = sx;
+            spine.y = sy - 30;
+            spine.scale.set(0.28);
+            // Depth sort with furniture: character footprint ~1×1 tile
+            const [, backY] = proj(def.wx + 0.5, def.wy + 1.0, def.wz);
+            spine.zIndex = backY + def.wx * 4 + def.wz * 25;
+            scene.furnitureLayer.addChild(spine);
+            charSpritesRef.current.set(def.id, spine);
 
-        // ── Load real Spine 3.8 characters ────────────────────────────────────
-        const CHAR_DEFS = [
-          { skel: '/azur-char/qiye/qiye_h.skel',
-            atlas: '/azur-char/qiye/qiye_h.atlas',
-            wx: 5.0, wy: 0.65, wz: 0.0, id: 'agent-1', name: 'qiye' },
-          { skel: '/azur-char/dunkeerke/dunkeerke.skel',
-            atlas: '/azur-char/dunkeerke/dunkeerke.atlas',
-            wx: 8.0, wy: 0.65, wz: 0.0, id: 'agent-2', name: 'dunkeerke' },
-        ];
-
-        for (const def of CHAR_DEFS) {
-          PIXI.Assets.load([def.skel, def.atlas])
-            .then((loaded: Record<string, any>) => {
-              const skelKey = def.skel;
-              const spineData = loaded[skelKey]?.spineData;
-              if (!spineData) {
-                console.warn(`[Spine] No spineData for ${def.name}`);
+            // ── Tap interaction ──────────────────────────────────────────
+            spine.eventMode = 'static';
+            spine.cursor = 'pointer';
+            spine.hitArea = new PIXI.Circle(0, -15, 40);
+            spine.on('pointertap', () => {
+              // ── Collect cooldown (3s per character) ──
+              const now = Date.now();
+              if (now - (lastCollectRef.current[def.id] ?? 0) < 3000) {
+                if (now - lastCooldownToastRef.current > 1000) {
+                  lastCooldownToastRef.current = now;
+                  showToast('Wait a moment~');
+                }
                 return;
               }
-              const spine = new Spine(spineData);
-              const [sx, sy] = proj(def.wx, def.wy, def.wz);
-              spine.x = sx;
-              spine.y = sy - 30;
-              spine.scale.set(0.28);
-              // Depth sort with furniture: character footprint ~1×1 tile
-              const [, backY] = proj(def.wx + 0.5, def.wy + 1.0, def.wz);
-              spine.zIndex = backY + def.wx * 4 + def.wz * 25;
-              scene.furnitureLayer.addChild(spine);
-              charSpritesRef.current.set(def.id, spine);
+              lastCollectRef.current[def.id] = now;
 
-              // ── Tap interaction ──────────────────────────────────────────
-              spine.eventMode = 'static';
-              spine.cursor = 'pointer';
-              spine.hitArea = new PIXI.Circle(0, -15, 40);
-              spine.on('pointertap', () => {
-                // ── Collect cooldown (3s per character) ──
-                const now = Date.now();
-                if (now - (lastCollectRef.current[def.id] ?? 0) < 3000) {
-                  if (now - lastCooldownToastRef.current > 1000) {
-                    lastCooldownToastRef.current = now;
-                    showToast("Wait a moment~");
-                  }
-                  return;
-                }
-                lastCollectRef.current[def.id] = now;
+              const state = (spine as any).state;
+              const anims = ((spine as any).spineData.animations as any[]).map((a: any) => a.name);
+              const oneShotAnims = new Set(['victory', 'break']);
+              const current = state.getCurrent(0);
+              if (current && oneShotAnims.has(current.animation.name)) return;
+              const tap = ['touch', 'motou'].find((a) => anims.includes(a));
+              if (!tap) return;
+              if (current?.animation?.name === tap) return;
+              state.setAnimation(0, tap, false);
+              const calm =
+                ['normal', 'stand', 'stand2', 'sit', 'sleep'].find((c) => anims.includes(c)) ??
+                anims[0];
+              if (calm) state.addAnimation(0, calm, true, 0);
 
-                const state = (spine as any).state;
-                const anims = ((spine as any).spineData.animations as any[]).map((a:any) => a.name);
-                const oneShotAnims = new Set(['victory', 'break']);
-                const current = state.getCurrent(0);
-                if (current && oneShotAnims.has(current.animation.name)) return;
-                const tap = ['touch','motou'].find((a) => anims.includes(a));
-                if (!tap) return;
-                if (current?.animation?.name === tap) return;
-                state.setAnimation(0, tap, false);
-                const calm = ['normal','stand','stand2','sit','sleep'].find((c) => anims.includes(c)) ?? anims[0];
-                if (calm) state.addAnimation(0, calm, true, 0);
-
-                // ── Collect rewards ──
-                addHappiness(3);
-                setCoins(c => c + 15);
-                setFloatingHearts(prev => [...prev, {
+              // ── Collect rewards ──
+              addHappiness(3);
+              setCoins((c) => c + 15);
+              setFloatingHearts((prev) => [
+                ...prev,
+                {
                   id: ++heartIdRef.current,
-                  x: sx, y: sy - 60,
+                  x: sx,
+                  y: sy - 60,
                   createdAt: performance.now(),
-                }]);
-                showToast("♡+3 🪙+15");
-              });
-
-              // Log animation names + play calm lounge default
-              const animNames = spine.spineData.animations.map(
-                (a: any) => a.name,
-              );
-              console.log(`[Spine] ${def.name} animations:`, animNames);
-              if (animNames.length > 0) {
-                const priority = ['normal', 'stand', 'stand2', 'sit', 'sleep'];
-                const target = priority.find((a) => animNames.includes(a)) ?? animNames[0];
-                spine.state.setAnimation(0, target, true);
-              }
-            })
-            .catch((e: Error) => {
-              console.error(`[Spine] Failed to load ${def.name}:`, e.message);
+                },
+              ]);
+              showToast('♡+3 🪙+15');
             });
-        }
 
-        app.stage.on("pointermove", (e: PIXI.FederatedPointerEvent) => {
-          const drag = dragRef.current;
-          if (!drag) return;
-          const dx = (e.global.x - drag.screenX) / scaleRef.current;
-          const dy = (e.global.y - drag.screenY) / scaleRef.current;
-          drag.screenX = e.global.x;
-          drag.screenY = e.global.y;
-          const [dwx, dwy] = worldDeltaFromScreen(dx, dy);
-          drag.accX += dwx;
-          drag.accY += dwy;
-          const item = objectsRef.current.find((o) => o.id === drag.id);
-          if (!item) return;
-          const fp = FURNITURE_TILES[item.furnitureType];
-          const nx = Math.round(
-            Math.max(0, Math.min(roomWRef.current - fp.w, drag.accX)),
-          );
-          const ny = Math.round(
-            Math.max(0, Math.min(roomHRef.current - fp.d, drag.accY)),
-          );
-          const colliding = checkCollision(objectsRef.current, drag.id, nx, ny);
-          // Move item visually to new position regardless of collision
-          objectsRef.current = objectsRef.current.map((o) =>
-            o.id === drag.id ? { ...o, wx: nx, wy: ny } : o,
-          );
-          scene.updateItem(drag.id, nx, ny, item.wz);
-          scene.setDragHighlight(drag.id, colliding);
-          if (!colliding) {
-            drag.lastValidX = nx;
-            drag.lastValidY = ny;
-          }
-        });
-
-        const endDrag = () => {
-          const drag = dragRef.current;
-          if (!drag) return;
-          const didMove =
-            drag.startX !== drag.lastValidX || drag.startY !== drag.lastValidY;
-          // Snap back to last valid position if current is colliding
-          const item = objectsRef.current.find((o) => o.id === drag.id);
-          if (item) {
-            const finalX = drag.lastValidX,
-              finalY = drag.lastValidY;
-            if (didMove) {
-              const previous = objectsRef.current.map((o) =>
-                o.id === drag.id
-                  ? { ...o, wx: drag.startX, wy: drag.startY }
-                  : { ...o },
-              );
-              pushHistorySnapshot(previous);
+            // Log animation names + play calm lounge default
+            const animNames = spine.spineData.animations.map((a: any) => a.name);
+            console.log(`[Spine] ${def.name} animations:`, animNames);
+            if (animNames.length > 0) {
+              const priority = ['normal', 'stand', 'stand2', 'sit', 'sleep'];
+              const target = priority.find((a) => animNames.includes(a)) ?? animNames[0];
+              spine.state.setAnimation(0, target, true);
             }
-            objectsRef.current = objectsRef.current.map((o) =>
-              o.id === drag.id ? { ...o, wx: finalX, wy: finalY } : o,
-            );
-            scene.updateItem(drag.id, finalX, finalY, item.wz);
-          }
-          scene.setSelected(null);
-          dragRef.current = null;
-          setObjects([...objectsRef.current]);
-        };
-        app.stage.on("pointerup", endDrag);
-        app.stage.on("pointerupoutside", endDrag);
+          })
+          .catch((e: Error) => {
+            console.error(`[Spine] Failed to load ${def.name}:`, e.message);
+          });
+      }
 
+      app.stage.on('pointermove', (e: PIXI.FederatedPointerEvent) => {
+        const drag = dragRef.current;
+        if (!drag) return;
+        const dx = (e.global.x - drag.screenX) / scaleRef.current;
+        const dy = (e.global.y - drag.screenY) / scaleRef.current;
+        drag.screenX = e.global.x;
+        drag.screenY = e.global.y;
+        const [dwx, dwy] = worldDeltaFromScreen(dx, dy);
+        drag.accX += dwx;
+        drag.accY += dwy;
+        const item = objectsRef.current.find((o) => o.id === drag.id);
+        if (!item) return;
+        const fp = FURNITURE_TILES[item.furnitureType];
+        const nx = Math.round(Math.max(0, Math.min(roomWRef.current - fp.w, drag.accX)));
+        const ny = Math.round(Math.max(0, Math.min(roomHRef.current - fp.d, drag.accY)));
+        const colliding = checkCollision(objectsRef.current, drag.id, nx, ny);
+        // Move item visually to new position regardless of collision
+        objectsRef.current = objectsRef.current.map((o) =>
+          o.id === drag.id ? { ...o, wx: nx, wy: ny } : o,
+        );
+        scene.updateItem(drag.id, nx, ny, item.wz);
+        scene.setDragHighlight(drag.id, colliding);
+        if (!colliding) {
+          drag.lastValidX = nx;
+          drag.lastValidY = ny;
+        }
+      });
+
+      const endDrag = () => {
+        const drag = dragRef.current;
+        if (!drag) return;
+        const didMove = drag.startX !== drag.lastValidX || drag.startY !== drag.lastValidY;
+        // Snap back to last valid position if current is colliding
+        const item = objectsRef.current.find((o) => o.id === drag.id);
+        if (item) {
+          const finalX = drag.lastValidX,
+            finalY = drag.lastValidY;
+          if (didMove) {
+            const previous = objectsRef.current.map((o) =>
+              o.id === drag.id ? { ...o, wx: drag.startX, wy: drag.startY } : { ...o },
+            );
+            pushHistorySnapshot(previous);
+          }
+          objectsRef.current = objectsRef.current.map((o) =>
+            o.id === drag.id ? { ...o, wx: finalX, wy: finalY } : o,
+          );
+          scene.updateItem(drag.id, finalX, finalY, item.wz);
+        }
+        scene.setSelected(null);
+        dragRef.current = null;
+        setObjects([...objectsRef.current]);
+      };
+      app.stage.on('pointerup', endDrag);
+      app.stage.on('pointerupoutside', endDrag);
     })(); // close async IIFE
 
     return () => {
@@ -1008,7 +1031,7 @@ export function LoungeCanvas() {
 
   // ── Tile grid overlay (edit mode + room size change) ────────────────────────
   useEffect(() => {
-    sceneRef.current?.setEditMode(mode === "move", roomW, roomH);
+    sceneRef.current?.setEditMode(mode === 'move', roomW, roomH);
   }, [mode, roomW, roomH]);
 
   // ── Active station pulse (driven by agent work lifecycle) ───────────────────
@@ -1066,35 +1089,46 @@ export function LoungeCanvas() {
           : Math.max(0.88, Math.min(baseScale * 1.22, 1.42)),
       );
       setCameraY(isMobile ? -8 : -18);
-      setPanX(0); setPanY(0);
+      setPanX(0);
+      setPanY(0);
     };
     updateScale();
-    window.addEventListener("resize", updateScale);
-    return () => window.removeEventListener("resize", updateScale);
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
   }, []);
 
   // ── Pan & Zoom ───────────────────────────────────────────────────────────────
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    const d = e.deltaY > 0 ? -0.08 : 0.08;
-    const ns = Math.max(0.5, Math.min(2.5, scale + d));
-    const r = ns / scale;
-    const rect = e.currentTarget.getBoundingClientRect();
-    setPanX(p => e.clientX - rect.left - (e.clientX - rect.left - p) * r);
-    setPanY(p => e.clientY - rect.top - (e.clientY - rect.top - p) * r);
-    setScale(ns); scaleRef.current = ns;
-  }, [scale]);
-  const handlePanStart = useCallback((e: React.MouseEvent) => {
-    if (modeRef.current !== 'visit') return;
-    if ((e.target as HTMLElement).closest('button,input,a')) return;
-    setIsPanning(true);
-    panStartRef.current = { x: e.clientX, y: e.clientY, panX, panY };
-  }, [panX, panY]);
-  const handlePanMove = useCallback((e: React.MouseEvent) => {
-    if (!isPanning) return;
-    setPanX(panStartRef.current.panX + e.clientX - panStartRef.current.x);
-    setPanY(panStartRef.current.panY + e.clientY - panStartRef.current.y);
-  }, [isPanning]);
+  const handleWheel = useCallback(
+    (e: React.WheelEvent) => {
+      e.preventDefault();
+      const d = e.deltaY > 0 ? -0.08 : 0.08;
+      const ns = Math.max(0.5, Math.min(2.5, scale + d));
+      const r = ns / scale;
+      const rect = e.currentTarget.getBoundingClientRect();
+      setPanX((p) => e.clientX - rect.left - (e.clientX - rect.left - p) * r);
+      setPanY((p) => e.clientY - rect.top - (e.clientY - rect.top - p) * r);
+      setScale(ns);
+      scaleRef.current = ns;
+    },
+    [scale],
+  );
+  const handlePanStart = useCallback(
+    (e: React.MouseEvent) => {
+      if (modeRef.current !== 'visit') return;
+      if ((e.target as HTMLElement).closest('button,input,a')) return;
+      setIsPanning(true);
+      panStartRef.current = { x: e.clientX, y: e.clientY, panX, panY };
+    },
+    [panX, panY],
+  );
+  const handlePanMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isPanning) return;
+      setPanX(panStartRef.current.panX + e.clientX - panStartRef.current.x);
+      setPanY(panStartRef.current.panY + e.clientY - panStartRef.current.y);
+    },
+    [isPanning],
+  );
   const handlePanEnd = useCallback(() => setIsPanning(false), []);
 
   // ── Persist ──────────────────────────────────────────────────────────────────
@@ -1136,7 +1170,7 @@ export function LoungeCanvas() {
     };
   }, []);
 
-  const appendOfficeChat = useCallback((message: Omit<OfficeChatMessage, "id">) => {
+  const appendOfficeChat = useCallback((message: Omit<OfficeChatMessage, 'id'>) => {
     const id = `chat-${++officeChatIdRef.current}`;
     setOfficeChat((prev) => [...prev, { id, ...message }].slice(-8));
   }, []);
@@ -1185,11 +1219,12 @@ export function LoungeCanvas() {
         const now = message.createdAt;
         lastDialogueAtRef.current = now;
 
-        const appendDialogue = (fromAgentId: OfficeAgentId, toAgentId: OfficeAgentId | undefined, text: string) => {
-          recentDialogueTextsRef.current = [
-            ...recentDialogueTextsRef.current.slice(-4),
-            text,
-          ];
+        const appendDialogue = (
+          fromAgentId: OfficeAgentId,
+          toAgentId: OfficeAgentId | undefined,
+          text: string,
+        ) => {
+          recentDialogueTextsRef.current = [...recentDialogueTextsRef.current.slice(-4), text];
           appendOfficeChat({
             agentId: fromAgentId,
             toAgentId,
@@ -1227,53 +1262,39 @@ export function LoungeCanvas() {
             recentDialogue: recentDialogueTextsRef.current,
             now,
             maxChars: 80,
-          }).then((response) => {
-            llmInFlightRef.current = false;
+          })
+            .then((response) => {
+              llmInFlightRef.current = false;
 
-            if (
-              requestId !== llmRequestIdRef.current ||
-              !dialogueMountedRef.current ||
-              officeStatusRef.current !== 'idle'
-            ) {
-              return;
-            }
+              if (
+                requestId !== llmRequestIdRef.current ||
+                !dialogueMountedRef.current ||
+                officeStatusRef.current !== 'idle'
+              ) {
+                return;
+              }
 
-            if (!response || !response.text?.trim()) {
-              // Fallback to deterministic
-              appendDialogue(
-                message.fromAgentId,
-                message.toAgentId,
-                message.text,
-              );
-              return;
-            }
+              if (!response || !response.text?.trim()) {
+                // Fallback to deterministic
+                appendDialogue(message.fromAgentId, message.toAgentId, message.text);
+                return;
+              }
 
-            appendDialogue(
-              response.fromAgentId,
-              response.toAgentId,
-              response.text,
-            );
-          }).catch(() => {
-            llmInFlightRef.current = false;
-            if (
-              requestId === llmRequestIdRef.current &&
-              dialogueMountedRef.current &&
-              officeStatusRef.current === 'idle'
-            ) {
-              appendDialogue(
-                message.fromAgentId,
-                message.toAgentId,
-                message.text,
-              );
-            }
-          });
+              appendDialogue(response.fromAgentId, response.toAgentId, response.text);
+            })
+            .catch(() => {
+              llmInFlightRef.current = false;
+              if (
+                requestId === llmRequestIdRef.current &&
+                dialogueMountedRef.current &&
+                officeStatusRef.current === 'idle'
+              ) {
+                appendDialogue(message.fromAgentId, message.toAgentId, message.text);
+              }
+            });
         } else {
           // Deterministic only (guarded out or flag disabled)
-          appendDialogue(
-            message.fromAgentId,
-            message.toAgentId,
-            message.text,
-          );
+          appendDialogue(message.fromAgentId, message.toAgentId, message.text);
         }
       }
     };
@@ -1302,45 +1323,39 @@ export function LoungeCanvas() {
   }, []);
 
   // ── socket run lifecycle (failed/cancelled only; started/completed handled by REST) ──
-  const handleRunFailed = useCallback(
-    ({ run }: { run: { id: string } }) => {
-      if (!officeInFlightRunIdRef.current) return;
-      if (run.id !== officeInFlightRunIdRef.current) return;
-      appendOfficeChat({
-        agentId: OFFICE_WORKFLOW_AGENTS[0].id,
-        kind: "blocked",
-        text: "⚠️ Backend run failed",
-      });
-    },
-    [],
-  );
+  const handleRunFailed = useCallback(({ run }: { run: { id: string } }) => {
+    if (!officeInFlightRunIdRef.current) return;
+    if (run.id !== officeInFlightRunIdRef.current) return;
+    appendOfficeChat({
+      agentId: OFFICE_WORKFLOW_AGENTS[0].id,
+      kind: 'blocked',
+      text: '⚠️ Backend run failed',
+    });
+  }, []);
 
-  const handleRunCancelled = useCallback(
-    ({ run }: { run: { id: string } }) => {
-      if (!officeInFlightRunIdRef.current) return;
-      if (run.id !== officeInFlightRunIdRef.current) return;
-      appendOfficeChat({
-        agentId: OFFICE_WORKFLOW_AGENTS[0].id,
-        kind: "blocked",
-        text: "✕ Backend run cancelled",
-      });
-    },
-    [],
-  );
+  const handleRunCancelled = useCallback(({ run }: { run: { id: string } }) => {
+    if (!officeInFlightRunIdRef.current) return;
+    if (run.id !== officeInFlightRunIdRef.current) return;
+    appendOfficeChat({
+      agentId: OFFICE_WORKFLOW_AGENTS[0].id,
+      kind: 'blocked',
+      text: '✕ Backend run cancelled',
+    });
+  }, []);
 
   useRunSocket({
     onRunFailed: handleRunFailed,
     onRunCancelled: handleRunCancelled,
   });
 
-  const appendOfficeToolEvent = useCallback((event: Omit<OfficeToolEvent, "id">) => {
+  const appendOfficeToolEvent = useCallback((event: Omit<OfficeToolEvent, 'id'>) => {
     const id = `tool-${++officeToolEventIdRef.current}`;
     setOfficeToolEvents((prev) => [...prev, { id, ...event }].slice(-6));
   }, []);
 
   const handleRunOfficeCommand = useCallback(() => {
     if (!roomReady) {
-      showToast("Room is loading");
+      showToast('Room is loading');
       return;
     }
 
@@ -1351,7 +1366,7 @@ export function LoungeCanvas() {
     setActiveOfficeCommand(officeCommand);
     setOfficeSteps(steps);
     setOfficeStepIndex(0);
-    setOfficeStatus("running");
+    setOfficeStatus('running');
     setOfficeToolEvents([]);
     setOfficeChat([]);
 
@@ -1359,17 +1374,17 @@ export function LoungeCanvas() {
       appendOfficeChat({
         agentId: first.agentId,
         toAgentId: first.handoffTo,
-        kind: "status",
-        text: "Command accepted. Starting map-first handoff.",
+        kind: 'status',
+        text: 'Command accepted. Starting map-first handoff.',
       });
     }
-    showToast("Office workflow started");
+    showToast('Office workflow started');
   }, [appendOfficeChat, officeCommand, roomReady, showToast]);
 
   const handlePauseOfficeWorkflow = useCallback(() => {
     setOfficeStatus((current) => {
-      if (current === "running") return "paused";
-      if (current === "paused") return "running";
+      if (current === 'running') return 'paused';
+      if (current === 'paused') return 'running';
       return current;
     });
   }, []);
@@ -1377,44 +1392,58 @@ export function LoungeCanvas() {
   const handleResetOfficeWorkflow = useCallback(() => {
     officeStepInFlightRef.current = null;
     Object.values(officeWalkers).forEach((walker) => walker.clearAgentTask());
-    setOfficeStatus("idle");
+    setOfficeStatus('idle');
     setOfficeStepIndex(0);
     setOfficeToolEvents([]);
     setOfficeChat([]);
-    showToast("Office workflow reset");
+    showToast('Office workflow reset');
   }, [officeWalkers, showToast]);
 
   useEffect(() => {
-    if (officeStatus !== "running") return;
+    if (officeStatus !== 'running') return;
 
     const step = officeSteps[officeStepIndex];
     if (!step) {
-      setOfficeStatus("done");
+      setOfficeStatus('done');
       return;
     }
 
     const walker = officeWalkers[step.agentId];
 
     if (officeStepInFlightRef.current === null) {
-      if (walker.agent.state !== "idle") return;
+      if (walker.agent.state !== 'idle') return;
 
       walker.assignTask(step.taskType);
       officeStepInFlightRef.current = step.id;
       // Fire-and-forget: call backend run start, store returned run ID for completion
-      startOfficeRun(OFFICE_CANONICAL_TASK_ID).then((run) => {
-        if (run) {
-          officeInFlightRunIdRef.current = run.id;
-          appendOfficeChat({ agentId: step.agentId, kind: "status", text: "🔗 Backend run linked" });
-        } else {
-          appendOfficeChat({ agentId: step.agentId, kind: "status", text: "⚡ Demo fallback · backend unavailable" });
-        }
-      }).catch(() => {
-        appendOfficeChat({ agentId: step.agentId, kind: "status", text: "⚡ Demo fallback · backend unavailable" });
-      });
+      startOfficeRun(OFFICE_CANONICAL_TASK_ID)
+        .then((run) => {
+          if (run) {
+            officeInFlightRunIdRef.current = run.id;
+            appendOfficeChat({
+              agentId: step.agentId,
+              kind: 'status',
+              text: '🔗 Backend run linked',
+            });
+          } else {
+            appendOfficeChat({
+              agentId: step.agentId,
+              kind: 'status',
+              text: '⚡ Demo fallback · backend unavailable',
+            });
+          }
+        })
+        .catch(() => {
+          appendOfficeChat({
+            agentId: step.agentId,
+            kind: 'status',
+            text: '⚡ Demo fallback · backend unavailable',
+          });
+        });
       appendOfficeChat({
         agentId: step.agentId,
         toAgentId: step.handoffTo,
-        kind: "handoff",
+        kind: 'handoff',
         text: describeOfficeStepStart(step, activeOfficeCommand),
       });
       appendOfficeToolEvent(createOfficeToolEvent(step));
@@ -1423,39 +1452,46 @@ export function LoungeCanvas() {
 
     if (officeStepInFlightRef.current !== step.id) return;
 
-    if (walker.agent.state === "error") {
+    if (walker.agent.state === 'error') {
       appendOfficeChat({
         agentId: step.agentId,
-        kind: "blocked",
+        kind: 'blocked',
         text: `${step.title} blocked. Waiting for path or layout fix.`,
       });
-      setOfficeStatus("paused");
+      setOfficeStatus('paused');
       return;
     }
 
-    if (walker.agent.state !== "idle") return;
+    if (walker.agent.state !== 'idle') return;
 
     const nextStep = officeSteps[officeStepIndex + 1];
     officeStepInFlightRef.current = null;
     appendOfficeChat({
       agentId: step.agentId,
       toAgentId: nextStep?.agentId,
-      kind: "done",
+      kind: 'done',
       text: describeOfficeStepDone(step, nextStep),
     });
 
     if (nextStep) {
       setOfficeStepIndex((current) => current + 1);
     } else {
-      setOfficeStatus("done");
-      showToast("Office workflow done");
+      setOfficeStatus('done');
+      showToast('Office workflow done');
     }
     // Fire-and-forget: call backend run complete with in-flight run ID
     const runId = officeInFlightRunIdRef.current;
     if (runId) {
-      completeOfficeRun(runId).then((result) => {
-        if (result) appendOfficeChat({ agentId: step.agentId, kind: "status", text: "✅ Backend run completed" });
-      }).catch(() => {});
+      completeOfficeRun(runId)
+        .then((result) => {
+          if (result)
+            appendOfficeChat({
+              agentId: step.agentId,
+              kind: 'status',
+              text: '✅ Backend run completed',
+            });
+        })
+        .catch(() => {});
       officeInFlightRunIdRef.current = null;
     }
   }, [
@@ -1470,28 +1506,31 @@ export function LoungeCanvas() {
   ]);
 
   // ── Happiness with cap ───────────────────────────────────────────────────────
-  const addHappiness = useCallback((amount: number) => {
-    const prev = happinessRef.current;
-    if (prev >= HAPPINESS_MAX) return;
-    const next = Math.min(HAPPINESS_MAX, prev + amount);
-    setHappiness(next);
-    if (next >= HAPPINESS_MAX && !happinessMaxReachedRef.current) {
-      happinessMaxReachedRef.current = true;
-      showToast("Max happiness! 🥳");
-    }
-  }, [showToast]);
+  const addHappiness = useCallback(
+    (amount: number) => {
+      const prev = happinessRef.current;
+      if (prev >= HAPPINESS_MAX) return;
+      const next = Math.min(HAPPINESS_MAX, prev + amount);
+      setHappiness(next);
+      if (next >= HAPPINESS_MAX && !happinessMaxReachedRef.current) {
+        happinessMaxReachedRef.current = true;
+        showToast('Max happiness! 🥳');
+      }
+    },
+    [showToast],
+  );
 
   // ── Task completion reward ──────────────────────────────────────────────────
   useEffect(() => {
     const prevState = previousAgentStateRef.current;
     const prevTaskType = previousTaskTypeRef.current;
     if (
-      agent.state === "idle" &&
-      prevState !== "idle" &&
-      prevState !== "walking" &&
-      prevState !== "error" &&
+      agent.state === 'idle' &&
+      prevState !== 'idle' &&
+      prevState !== 'walking' &&
+      prevState !== 'error' &&
       prevTaskType &&
-      prevTaskType !== "idle"
+      prevTaskType !== 'idle'
     ) {
       const reward = TASK_REWARDS[prevTaskType] ?? { coins: 0, happiness: 0 };
       if (reward.coins > 0 || reward.happiness > 0) {
@@ -1502,7 +1541,7 @@ export function LoungeCanvas() {
         const rewardHappiness = Math.round(reward.happiness * rewardMult);
         setCoins((c) => c + rewardCoins);
         addHappiness(rewardHappiness);
-        const toastSuffix = isLowSupplies ? "  📉 Low supplies" : "";
+        const toastSuffix = isLowSupplies ? '  📉 Low supplies' : '';
         showToast(`+${rewardCoins} 🪙  +${rewardHappiness} ♡${toastSuffix}`);
       }
     }
@@ -1511,15 +1550,11 @@ export function LoungeCanvas() {
   }, [agent.state, agent.taskType, showToast]);
 
   const applyLayoutObjects = useCallback((nextObjects: RoomObject[]) => {
-    const snapped = nextObjects.map((obj) =>
-      snapObj(obj, roomWRef.current, roomHRef.current),
-    );
+    const snapped = nextObjects.map((obj) => snapObj(obj, roomWRef.current, roomHRef.current));
     objectsRef.current = snapped;
     sceneRef.current?.rebuild(snapped);
     setObjects(cloneLayout(snapped));
-    setSelectedId((prev) =>
-      prev !== null && snapped.some((o) => o.id === prev) ? prev : null,
-    );
+    setSelectedId((prev) => (prev !== null && snapped.some((o) => o.id === prev) ? prev : null));
   }, []);
 
   const pushHistorySnapshot = useCallback((snapshot: RoomObject[]) => {
@@ -1531,44 +1566,40 @@ export function LoungeCanvas() {
   const handleUndo = useCallback(() => {
     const prev = historyRef.current.pop();
     if (!prev) {
-      showToast("Nothing to undo");
+      showToast('Nothing to undo');
       return;
     }
     redoRef.current.push(cloneLayout(objectsRef.current));
     applyLayoutObjects(prev);
-    showToast("Undo");
+    showToast('Undo');
   }, [applyLayoutObjects, showToast]);
 
   const handleRedo = useCallback(() => {
     const next = redoRef.current.pop();
     if (!next) {
-      showToast("Nothing to redo");
+      showToast('Nothing to redo');
       return;
     }
     historyRef.current.push(cloneLayout(objectsRef.current));
     applyLayoutObjects(next);
-    showToast("Redo");
+    showToast('Redo');
   }, [applyLayoutObjects, showToast]);
 
   const handleAutoArrange = useCallback(() => {
-    const arranged = autoArrangeLayout(
-      objectsRef.current,
-      roomWRef.current,
-      roomHRef.current,
-    );
+    const arranged = autoArrangeLayout(objectsRef.current, roomWRef.current, roomHRef.current);
     if (!arranged) {
-      showToast("Could not auto-arrange all items");
+      showToast('Could not auto-arrange all items');
       return;
     }
     pushHistorySnapshot(objectsRef.current);
     applyLayoutObjects(arranged);
-    showToast("Auto-arranged");
+    showToast('Auto-arranged');
   }, [applyLayoutObjects, pushHistorySnapshot, showToast]);
 
   // ── Actions ──────────────────────────────────────────────────────────────────
   const handleTrain = useCallback(() => {
     if (trainCount >= TRAIN_MAX) {
-      showToast("Training complete for today!");
+      showToast('Training complete for today!');
       return;
     }
     addHappiness(5);
@@ -1580,7 +1611,7 @@ export function LoungeCanvas() {
   const handlePurchase = useCallback(
     (item: CatalogItem) => {
       if (coinsRef.current < item.cost) {
-        showToast("Not enough coins");
+        showToast('Not enough coins');
         return;
       }
 
@@ -1594,7 +1625,7 @@ export function LoungeCanvas() {
       });
 
       if (!placed) {
-        showToast("No free space");
+        showToast('No free space');
         return;
       }
 
@@ -1620,18 +1651,13 @@ export function LoungeCanvas() {
       sceneRef.current?.removeItem(id);
       setObjects([...objectsRef.current]);
       setSelectedId(null);
-      showToast("Item removed");
+      showToast('Item removed');
     },
     [pushHistorySnapshot, showToast],
   );
 
   const handleReset = useCallback(async () => {
-    if (
-      !confirm(
-        "Reset room to default layout? Any custom items will be removed.",
-      )
-    )
-      return;
+    if (!confirm('Reset room to default layout? Any custom items will be removed.')) return;
     pushHistorySnapshot(objectsRef.current);
     let defaults = DEFAULT_OBJECTS;
     try {
@@ -1643,11 +1669,11 @@ export function LoungeCanvas() {
     applyLayoutObjects(defaults);
     setSelectedId(null);
     nextIdRef.current = Math.max(...defaults.map((o) => o.id), 999) + 1;
-    showToast("Room reset");
+    showToast('Room reset');
   }, [applyLayoutObjects, pushHistorySnapshot, showToast]);
 
   const handleShare = useCallback(async () => {
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return;
 
     const payload: SharedLayoutPayload = {
       v: 1,
@@ -1666,7 +1692,7 @@ export function LoungeCanvas() {
 
     const encoded = encodeBase64Url(JSON.stringify(payload));
     if (!encoded) {
-      showToast("Share not available");
+      showToast('Share not available');
       return;
     }
 
@@ -1674,23 +1700,23 @@ export function LoungeCanvas() {
 
     try {
       await navigator.clipboard.writeText(shareUrl);
-      showToast("Share link copied");
+      showToast('Share link copied');
     } catch {
-      const ok = window.prompt("Copy this lounge link", shareUrl);
-      showToast(ok !== null ? "Share link ready" : "Could not copy link");
+      const ok = window.prompt('Copy this lounge link', shareUrl);
+      showToast(ok !== null ? 'Share link ready' : 'Could not copy link');
     }
   }, [coins, floor, happiness, roomH, roomName, roomW, showToast]);
 
   const selectedObj = objects.find((o) => o.id === selectedId) ?? null;
   const suppliesPct = Math.round((suppliesProgress / suppliesMax) * 100);
-  const totalHappiness =
-    happiness + objects.reduce((s, o) => s + o.happiness, 0);
+  const totalHappiness = happiness + objects.reduce((s, o) => s + o.happiness, 0);
   const canUndo = historyRef.current.length > 0;
   const canRedo = redoRef.current.length > 0;
   const currentOfficeStep = officeSteps[officeStepIndex];
-  const officeProgress = officeSteps.length > 0
-    ? `${Math.min(officeStepIndex + 1, officeSteps.length)}/${officeSteps.length}`
-    : "0/0";
+  const officeProgress =
+    officeSteps.length > 0
+      ? `${Math.min(officeStepIndex + 1, officeSteps.length)}/${officeSteps.length}`
+      : '0/0';
 
   // ── JSX ──────────────────────────────────────────────────────────────────────
   return (
@@ -1698,8 +1724,8 @@ export function LoungeCanvas() {
       ref={viewportRef}
       className="relative flex-1 w-full overflow-hidden select-none"
       style={{
-        height: "calc(100vh - 45px)",
-        minHeight: "calc(100vh - 45px)",
+        height: 'calc(100vh - 45px)',
+        minHeight: 'calc(100vh - 45px)',
         background: `linear-gradient(180deg,${theme.skyTop} 0%,${theme.skyBot} 100%)`,
         cursor: isPanning ? 'grabbing' : mode === 'visit' ? 'grab' : 'default',
       }}
@@ -1719,7 +1745,7 @@ export function LoungeCanvas() {
           ←
         </button>
         <div className="flex items-center gap-1.5 rounded-2xl border border-[#c8a870] bg-[#f5e4c0]/90 px-3 py-2 shadow-md backdrop-blur-sm max-sm:px-2 max-sm:py-1 max-sm:gap-1">
-          {mode === "move" ? (
+          {mode === 'move' ? (
             <input
               className="bg-transparent text-[13px] font-bold text-[#5a3c18] outline-none w-32 max-sm:w-20 max-sm:text-[11px]"
               value={roomName}
@@ -1732,7 +1758,7 @@ export function LoungeCanvas() {
           )}
           <button
             type="button"
-            onClick={() => setMode((m) => (m === "visit" ? "move" : "visit"))}
+            onClick={() => setMode((m) => (m === 'visit' ? 'move' : 'visit'))}
             className="text-[#8b5e30] hover:text-[#5a3c18] transition text-[12px] max-sm:text-[10px]"
           >
             ✏
@@ -1784,7 +1810,9 @@ export function LoungeCanvas() {
           <span className="text-[12px] font-black text-[#5a3c18] max-sm:text-[10px]">
             Command Board
           </span>
-          <span className={`ml-auto rounded-full px-2 py-0.5 text-[9px] font-black max-sm:text-[7px] ${OFFICE_STATUS_CLASS[officeStatus]}`}>
+          <span
+            className={`ml-auto rounded-full px-2 py-0.5 text-[9px] font-black max-sm:text-[7px] ${OFFICE_STATUS_CLASS[officeStatus]}`}
+          >
             {OFFICE_STATUS_LABEL[officeStatus]} · {officeProgress}
           </span>
         </div>
@@ -1799,12 +1827,12 @@ export function LoungeCanvas() {
           <button
             type="button"
             onClick={handleRunOfficeCommand}
-            disabled={officeStatus === "running" || !roomReady}
+            disabled={officeStatus === 'running' || !roomReady}
             title="Run office workflow"
             className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[12px] font-black shadow active:scale-95 transition ${
-              officeStatus === "running" || !roomReady
-                ? "bg-[#94a3b8] text-[#334155] cursor-not-allowed"
-                : "bg-[#16a34a] text-white hover:bg-[#15803d]"
+              officeStatus === 'running' || !roomReady
+                ? 'bg-[#94a3b8] text-[#334155] cursor-not-allowed'
+                : 'bg-[#16a34a] text-white hover:bg-[#15803d]'
             }`}
           >
             ▶
@@ -1812,15 +1840,15 @@ export function LoungeCanvas() {
           <button
             type="button"
             onClick={handlePauseOfficeWorkflow}
-            disabled={officeStatus !== "running" && officeStatus !== "paused"}
-            title={officeStatus === "paused" ? "Resume" : "Pause"}
+            disabled={officeStatus !== 'running' && officeStatus !== 'paused'}
+            title={officeStatus === 'paused' ? 'Resume' : 'Pause'}
             className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[12px] font-black shadow active:scale-95 transition ${
-              officeStatus === "running" || officeStatus === "paused"
-                ? "bg-[#fde68a] text-[#7a5000] hover:bg-[#facc15]"
-                : "bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed"
+              officeStatus === 'running' || officeStatus === 'paused'
+                ? 'bg-[#fde68a] text-[#7a5000] hover:bg-[#facc15]'
+                : 'bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed'
             }`}
           >
-            {officeStatus === "paused" ? "▶" : "Ⅱ"}
+            {officeStatus === 'paused' ? '▶' : 'Ⅱ'}
           </button>
           <button
             type="button"
@@ -1840,9 +1868,7 @@ export function LoungeCanvas() {
                 key={spec.id}
                 title={`${spec.title} · ${spec.focus}`}
                 className={`min-w-0 rounded-xl border px-1.5 py-1 text-center ${
-                  active
-                    ? "border-[#38bdf8] bg-[#e0f2fe]"
-                    : "border-[#c8a870]/70 bg-[#fff8e8]/70"
+                  active ? 'border-[#38bdf8] bg-[#e0f2fe]' : 'border-[#c8a870]/70 bg-[#fff8e8]/70'
                 }`}
               >
                 <Image
@@ -1857,7 +1883,8 @@ export function LoungeCanvas() {
                   {spec.name}
                 </div>
                 <div className="truncate text-[7px] font-bold text-[#8b6030]">
-                  {TASK_ICON[boardAgent.taskType ?? "idle"] ?? "·"} {TASK_ICON_LABEL[boardAgent.taskType ?? "idle"]}
+                  {TASK_ICON[boardAgent.taskType ?? 'idle'] ?? '·'}{' '}
+                  {TASK_ICON_LABEL[boardAgent.taskType ?? 'idle']}
                 </div>
               </div>
             );
@@ -1871,10 +1898,10 @@ export function LoungeCanvas() {
               title={step.detail}
               className={`min-w-0 flex-1 truncate rounded-full px-1.5 py-0.5 text-center text-[8px] font-black ${
                 index < officeStepIndex
-                  ? "bg-[#bbf7d0] text-[#166534]"
+                  ? 'bg-[#bbf7d0] text-[#166534]'
                   : index === officeStepIndex
-                    ? "bg-[#bfdbfe] text-[#1e40af]"
-                    : "bg-[#e8d0a0]/70 text-[#7a5000]"
+                    ? 'bg-[#bfdbfe] text-[#1e40af]'
+                    : 'bg-[#e8d0a0]/70 text-[#7a5000]'
               }`}
             >
               {step.title}
@@ -1894,7 +1921,9 @@ export function LoungeCanvas() {
                 </div>
               ) : (
                 officeChat.map((message) => {
-                  const speaker = OFFICE_WORKFLOW_AGENTS.find((item) => item.id === message.agentId);
+                  const speaker = OFFICE_WORKFLOW_AGENTS.find(
+                    (item) => item.id === message.agentId,
+                  );
                   const target = message.toAgentId
                     ? OFFICE_WORKFLOW_AGENTS.find((item) => item.id === message.toAgentId)
                     : null;
@@ -1905,7 +1934,7 @@ export function LoungeCanvas() {
                     >
                       <span className="font-black">
                         {speaker?.name ?? message.agentId}
-                        {target ? ` → ${target.name}` : ""}
+                        {target ? ` → ${target.name}` : ''}
                       </span>
                       <span className="ml-1">{message.text}</span>
                     </div>
@@ -1944,7 +1973,9 @@ export function LoungeCanvas() {
                       className="rounded-lg border border-[#bbf7d0]/70 bg-[#f0fdf4]/85 px-2 py-1 text-[8px] font-semibold leading-snug text-[#166534]"
                     >
                       <span className="font-black">{event.label}</span>
-                      <span className="ml-1">{owner?.name ?? event.agentId}: {event.detail}</span>
+                      <span className="ml-1">
+                        {owner?.name ?? event.agentId}: {event.detail}
+                      </span>
                     </div>
                   );
                 })
@@ -1955,7 +1986,7 @@ export function LoungeCanvas() {
       </div>
 
       {/* ── Move-mode banner ────────────────────────────────────────── */}
-      {mode === "move" && (
+      {mode === 'move' && (
         <div className="absolute left-1/2 top-3 z-30 -translate-x-1/2 flex items-center gap-1.5 rounded-full border border-[#e8b800] bg-[#fde68a] px-3 py-1 shadow-md max-sm:flex-wrap max-sm:justify-center max-sm:gap-1 max-sm:px-2 max-sm:py-0.5 max-sm:rounded-2xl">
           <span className="text-[10px] font-black text-[#7a5000] max-sm:text-[8px]">
             ✋ Move Mode
@@ -1971,7 +2002,7 @@ export function LoungeCanvas() {
             type="button"
             onClick={handleUndo}
             disabled={!canUndo}
-            className={`rounded-full px-2 py-0.5 text-[9px] font-black active:scale-95 transition max-sm:px-1.5 max-sm:text-[7px] ${canUndo ? "bg-[#166534] text-white hover:bg-[#14532d]" : "bg-[#94a3b8] text-[#334155] cursor-not-allowed"}`}
+            className={`rounded-full px-2 py-0.5 text-[9px] font-black active:scale-95 transition max-sm:px-1.5 max-sm:text-[7px] ${canUndo ? 'bg-[#166534] text-white hover:bg-[#14532d]' : 'bg-[#94a3b8] text-[#334155] cursor-not-allowed'}`}
           >
             ↶ Undo
           </button>
@@ -1979,7 +2010,7 @@ export function LoungeCanvas() {
             type="button"
             onClick={handleRedo}
             disabled={!canRedo}
-            className={`rounded-full px-2 py-0.5 text-[9px] font-black active:scale-95 transition max-sm:px-1.5 max-sm:text-[7px] ${canRedo ? "bg-[#7c3aed] text-white hover:bg-[#6d28d9]" : "bg-[#94a3b8] text-[#334155] cursor-not-allowed"}`}
+            className={`rounded-full px-2 py-0.5 text-[9px] font-black active:scale-95 transition max-sm:px-1.5 max-sm:text-[7px] ${canRedo ? 'bg-[#7c3aed] text-white hover:bg-[#6d28d9]' : 'bg-[#94a3b8] text-[#334155] cursor-not-allowed'}`}
           >
             ↷ Redo
           </button>
@@ -2001,11 +2032,9 @@ export function LoungeCanvas() {
       )}
 
       {/* ── Room settings panel ─────────────────────────────────────── */}
-      {mode === "move" && showRoomSettings && (
+      {mode === 'move' && showRoomSettings && (
         <div className="absolute left-1/2 top-14 z-40 -translate-x-1/2 rounded-2xl border border-[#c8a870] bg-[#f5e4c0]/95 px-5 py-3 shadow-xl backdrop-blur-sm flex flex-col gap-2 min-w-[220px]">
-          <span className="text-[11px] font-black text-[#5a3c18]">
-            Room Size
-          </span>
+          <span className="text-[11px] font-black text-[#5a3c18]">Room Size</span>
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-[#7a5000] w-12">Width</span>
             <input
@@ -2016,9 +2045,7 @@ export function LoungeCanvas() {
               onChange={(e) => setRoomW(Number(e.target.value))}
               className="flex-1 accent-[#e8b800]"
             />
-            <span className="text-[11px] font-bold text-[#5a3c18] w-6 text-center">
-              {roomW}
-            </span>
+            <span className="text-[11px] font-bold text-[#5a3c18] w-6 text-center">{roomW}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-[#7a5000] w-12">Height</span>
@@ -2030,9 +2057,7 @@ export function LoungeCanvas() {
               onChange={(e) => setRoomH(Number(e.target.value))}
               className="flex-1 accent-[#e8b800]"
             />
-            <span className="text-[11px] font-bold text-[#5a3c18] w-6 text-center">
-              {roomH}
-            </span>
+            <span className="text-[11px] font-bold text-[#5a3c18] w-6 text-center">{roomH}</span>
           </div>
           <span className="text-[9px] text-[#8b5e30] text-center">
             {roomW} × {roomH} tiles — saved automatically
@@ -2042,7 +2067,9 @@ export function LoungeCanvas() {
 
       {/* ── Toast ─────────────────────────────────────────────────────── */}
       {toast && (
-        <div className={`absolute left-1/2 z-40 -translate-x-1/2 rounded-full bg-[#fdf6e8] border border-[#c8a870] px-4 py-1.5 shadow-lg animate-pulse max-sm:px-3 max-sm:py-1 ${mode === "move" ? "top-20 max-sm:top-24" : "top-16 max-sm:top-14"}`}>
+        <div
+          className={`absolute left-1/2 z-40 -translate-x-1/2 rounded-full bg-[#fdf6e8] border border-[#c8a870] px-4 py-1.5 shadow-lg animate-pulse max-sm:px-3 max-sm:py-1 ${mode === 'move' ? 'top-20 max-sm:top-24' : 'top-16 max-sm:top-14'}`}
+        >
           <span className="text-[11px] font-black text-[#5a3c18] max-sm:text-[9px]">{toast}</span>
         </div>
       )}
@@ -2055,18 +2082,13 @@ export function LoungeCanvas() {
             width: CANVAS_W,
             height: CANVAS_H,
             transform: `translate(${panX}px, ${panY + cameraY}px) scale(${scale})`,
-            transformOrigin: "center center",
+            transformOrigin: 'center center',
           }}
         >
-          <canvas
-            ref={canvasRef}
-            width={CANVAS_W}
-            height={CANVAS_H}
-            className="absolute inset-0"
-          />
+          <canvas ref={canvasRef} width={CANVAS_W} height={CANVAS_H} className="absolute inset-0" />
 
           <div className="absolute inset-0 z-30 pointer-events-none">
-            {mode === "move" && routeDebug.points.length > 0 && (
+            {mode === 'move' && routeDebug.points.length > 0 && (
               <svg
                 className="absolute inset-0 z-[1] h-full w-full"
                 viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`}
@@ -2078,7 +2100,7 @@ export function LoungeCanvas() {
                   return (
                     <>
                       <polyline
-                        points={points.map((point) => `${point.x},${point.y}`).join(" ")}
+                        points={points.map((point) => `${point.x},${point.y}`).join(' ')}
                         fill="none"
                         stroke="#38bdf8"
                         strokeWidth={4}
@@ -2093,7 +2115,7 @@ export function LoungeCanvas() {
                             cx={point.position.x}
                             cy={point.position.y}
                             r={index === remaining.length - 1 ? 5 : 3.5}
-                            fill={index === remaining.length - 1 ? "#facc15" : "#e0f2fe"}
+                            fill={index === remaining.length - 1 ? '#facc15' : '#e0f2fe'}
                             fillOpacity={0.92}
                             stroke="#075985"
                             strokeWidth={1.5}
@@ -2110,22 +2132,22 @@ export function LoungeCanvas() {
             {/* ── Lounge agents walking overlay ─────────────────────── */}
             {visibleOfficeAgents.map(({ agent: a }) => {
               const ANIM_FILE: Record<string, string> = {
-                idle: "01-idle",
-                walk_up: "04-thinking",
-                walk_down: "04-thinking",
-                walk_left: "04-thinking",
-                walk_right: "04-thinking",
-                thinking: "04-thinking",
-                typing: "08-excited",
-                reading: "04-thinking",
-                talking: "05-happy",
-                documenting: "08-excited",
-                printing: "08-excited",
-                resting: "07-sleepy",
-                happy: "05-happy",
-                confused: "09-surprised",
+                idle: '01-idle',
+                walk_up: '04-thinking',
+                walk_down: '04-thinking',
+                walk_left: '04-thinking',
+                walk_right: '04-thinking',
+                thinking: '04-thinking',
+                typing: '08-excited',
+                reading: '04-thinking',
+                talking: '05-happy',
+                documenting: '08-excited',
+                printing: '08-excited',
+                resting: '07-sleepy',
+                happy: '05-happy',
+                confused: '09-surprised',
               };
-              const moodFile = ANIM_FILE[a.animation] ?? "01-idle";
+              const moodFile = ANIM_FILE[a.animation] ?? '01-idle';
               const imgSrc = `/characters/${a.characterId}/${moodFile}.jpg`;
               const { x, y } = a.position;
               const SZ = 64;
@@ -2137,8 +2159,8 @@ export function LoungeCanvas() {
                       style={{
                         left: x,
                         top: y - SZ - 8,
-                        transform: "translate(-50%, -100%)",
-                        whiteSpace: "nowrap",
+                        transform: 'translate(-50%, -100%)',
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       {a.bubbleText}
@@ -2151,8 +2173,8 @@ export function LoungeCanvas() {
                       style={{
                         left: x,
                         top: y - SZ - 8,
-                        transform: "translate(-50%, -100%)",
-                        whiteSpace: "nowrap",
+                        transform: 'translate(-50%, -100%)',
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       <span className="font-black">{a.name}/</span>
@@ -2165,7 +2187,7 @@ export function LoungeCanvas() {
                     style={{
                       left: x,
                       top: y,
-                      transform: "translate(-50%, -100%)",
+                      transform: 'translate(-50%, -100%)',
                       width: SZ,
                       height: SZ,
                     }}
@@ -2187,7 +2209,7 @@ export function LoungeCanvas() {
           <FurnitureInspector
             object={selectedObj}
             onClose={() => setSelectedId(null)}
-            onMoveMode={() => setMode("move")}
+            onMoveMode={() => setMode('move')}
             onDelete={handleDelete}
           />
         </div>
@@ -2200,56 +2222,49 @@ export function LoungeCanvas() {
             <button
               key={task}
               type="button"
-              onClick={(e) =>
-                e.shiftKey ? enqueueTask(task) : assignTask(task)
-              }
+              onClick={(e) => (e.shiftKey ? enqueueTask(task) : assignTask(task))}
               title={`${label} — shift-click to enqueue`}
               className={`flex flex-col items-center gap-0 rounded-xl px-2 py-1 text-[10px] font-bold transition active:scale-95 max-sm:px-1 max-sm:py-0.5 max-sm:text-[8px] ${
-                agent.taskType === task && agent.state !== "idle"
-                  ? "bg-[#e8a030] text-white shadow ring-2 ring-[#e8a030]/40"
-                  : "text-[#5a3c18] hover:bg-[#f0d8a8]"
+                agent.taskType === task && agent.state !== 'idle'
+                  ? 'bg-[#e8a030] text-white shadow ring-2 ring-[#e8a030]/40'
+                  : 'text-[#5a3c18] hover:bg-[#f0d8a8]'
               }`}
             >
               <span className="text-[15px] leading-none max-sm:text-[13px]">{icon}</span>
               <span className="leading-none mt-0.5 max-sm:mt-0">{label}</span>
             </button>
           ))}
-          {agent.state !== "idle" && (
+          {agent.state !== 'idle' && (
             <button
               type="button"
               onClick={clearAgentTask}
               className={`ml-0.5 rounded-xl px-2 py-1 text-[11px] font-bold active:scale-95 transition ${
-                agent.state === "error"
-                  ? "bg-[#fca5a5]/60 text-[#7f1d1d] ring-1 ring-[#991b1b]/40 hover:bg-[#fca5a5]/80"
-                  : "text-[#9a3c18] hover:bg-[#fdd]"
+                agent.state === 'error'
+                  ? 'bg-[#fca5a5]/60 text-[#7f1d1d] ring-1 ring-[#991b1b]/40 hover:bg-[#fca5a5]/80'
+                  : 'text-[#9a3c18] hover:bg-[#fdd]'
               }`}
               title="Stop agent and clear queue"
             >
-              {agent.state === "error" ? (
+              {agent.state === 'error' ? (
                 <>
                   ✕<span className="ml-1 max-sm:hidden">Clear</span>
                 </>
               ) : (
-                "✕"
+                '✕'
               )}
             </button>
           )}
         </div>
-        {agent.state === "error" && (
+        {agent.state === 'error' && (
           <span className="text-[8px] font-semibold text-[#991b1b]/70 max-sm:hidden">
             ✕ to clear
           </span>
         )}
         {agent.taskQueue.length > 0 && (
           <div className="flex items-center gap-1 rounded-full border border-[#c8a870] bg-[#f5e4c0]/90 px-2 py-0.5 shadow-sm max-sm:px-1.5">
-            <span className="text-[8px] font-bold text-[#7a5000] tracking-wide">
-              Next:
-            </span>
-            <span
-              title={TASK_ICON_LABEL[agent.taskQueue[0]!]}
-              className="text-[11px] leading-none"
-            >
-              {TASK_ICON[agent.taskQueue[0]!] ?? "·"}
+            <span className="text-[8px] font-bold text-[#7a5000] tracking-wide">Next:</span>
+            <span title={TASK_ICON_LABEL[agent.taskQueue[0]!]} className="text-[11px] leading-none">
+              {TASK_ICON[agent.taskQueue[0]!] ?? '·'}
             </span>
             <span className="text-[8px] font-semibold text-[#5a3c18] max-sm:hidden">
               {TASK_ICON_LABEL[agent.taskQueue[0]!]}
@@ -2272,11 +2287,12 @@ export function LoungeCanvas() {
           onClick={() => {
             const now = Date.now();
             if (now < collectButtonCooldownUntil) {
-              showToast("Wait a moment~");
+              showToast('Wait a moment~');
               return;
             }
             // Set cooldown
-            if (collectButtonCooldownTimeoutRef.current) clearTimeout(collectButtonCooldownTimeoutRef.current);
+            if (collectButtonCooldownTimeoutRef.current)
+              clearTimeout(collectButtonCooldownTimeoutRef.current);
             setCollectButtonCooldownUntil(now + COLLECT_BUTTON_COOLDOWN_MS);
             collectButtonCooldownTimeoutRef.current = setTimeout(
               () => setCollectButtonCooldownUntil(0),
@@ -2284,18 +2300,26 @@ export function LoungeCanvas() {
             );
             // Grant reward
             addHappiness(3);
-            setCoins(c => c + 15);
-            setSuppliesProgress(p => Math.min(40000, p + 50));
-            setFloatingHearts(prev => [...prev, { id: ++heartIdRef.current, x: 45 + Math.random() * 10, y: 50, createdAt: performance.now() }]);
-            showToast("♡+3 🪙+15 🍱+50");
+            setCoins((c) => c + 15);
+            setSuppliesProgress((p) => Math.min(40000, p + 50));
+            setFloatingHearts((prev) => [
+              ...prev,
+              {
+                id: ++heartIdRef.current,
+                x: 45 + Math.random() * 10,
+                y: 50,
+                createdAt: performance.now(),
+              },
+            ]);
+            showToast('♡+3 🪙+15 🍱+50');
           }}
           className={
             Date.now() < collectButtonCooldownUntil
-              ? "rounded-full bg-[#ff69b4]/5 border border-[#ff69b4]/15 px-2.5 py-0.5 text-[9px] font-bold text-[#d4708a]/40 cursor-not-allowed opacity-50 transition max-sm:px-2 max-sm:text-[8px]"
-              : "rounded-full bg-[#ff69b4]/15 border border-[#ff69b4]/30 px-2.5 py-0.5 text-[9px] font-bold text-[#d4708a] hover:bg-[#ff69b4]/25 active:scale-95 transition max-sm:px-2 max-sm:text-[8px]"
+              ? 'rounded-full bg-[#ff69b4]/5 border border-[#ff69b4]/15 px-2.5 py-0.5 text-[9px] font-bold text-[#d4708a]/40 cursor-not-allowed opacity-50 transition max-sm:px-2 max-sm:text-[8px]'
+              : 'rounded-full bg-[#ff69b4]/15 border border-[#ff69b4]/30 px-2.5 py-0.5 text-[9px] font-bold text-[#d4708a] hover:bg-[#ff69b4]/25 active:scale-95 transition max-sm:px-2 max-sm:text-[8px]'
           }
         >
-          {Date.now() < collectButtonCooldownUntil ? "♡ Wait…" : "♡ Collect"}
+          {Date.now() < collectButtonCooldownUntil ? '♡ Wait…' : '♡ Collect'}
         </button>
 
         {/* Character roster cards */}
@@ -2304,9 +2328,9 @@ export function LoungeCanvas() {
             <div
               key={spec.id}
               className={`flex min-w-0 items-center gap-1.5 rounded-xl border px-2 py-1 max-sm:px-1.5 max-sm:py-0.5 max-sm:gap-1 ${
-                officeSteps[officeStepIndex]?.agentId === spec.id && officeStatus === "running"
-                  ? "border-[#38bdf8] bg-[#e0f2fe]/95"
-                  : "border-[#c8a870] bg-[#f5e4c0]/90"
+                officeSteps[officeStepIndex]?.agentId === spec.id && officeStatus === 'running'
+                  ? 'border-[#38bdf8] bg-[#e0f2fe]/95'
+                  : 'border-[#c8a870] bg-[#f5e4c0]/90'
               }`}
             >
               <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-[#fff0f5] max-sm:h-5 max-sm:w-5">
@@ -2322,40 +2346,39 @@ export function LoungeCanvas() {
               <span className="truncate text-[10px] font-bold text-[#5a3c18] max-sm:text-[8px]">
                 {spec.name}
               </span>
-              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold max-sm:px-1.5 max-sm:text-[7px] ${STATE_COLOR[rosterAgent.state] ?? "bg-[#e8d0a0]/30 text-[#5a3c18]"}`}>
+              <span
+                className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold max-sm:px-1.5 max-sm:text-[7px] ${STATE_COLOR[rosterAgent.state] ?? 'bg-[#e8d0a0]/30 text-[#5a3c18]'}`}
+              >
                 {STATE_LABEL[rosterAgent.state] ?? rosterAgent.state}
               </span>
             </div>
           ))}
         </div>
-        {agent.state === "error" && agent.bubbleText && (
+        {agent.state === 'error' && agent.bubbleText && (
           <span className="flex items-center gap-1 rounded-full border border-[#991b1b]/30 bg-[#fca5a5]/40 px-2 py-0.5 text-[8px] font-semibold text-[#991b1b] max-sm:text-[7px]">
             <span aria-hidden>⚠️</span>
             {agent.bubbleText}
           </span>
         )}
-        {agent.workDurationMs !== undefined &&
-          agent.workElapsedMs !== undefined && (
-            <div className="flex flex-col items-center gap-0.5 mt-0.5">
-              <span className="text-[8px] font-semibold text-[#7a5000]/70 max-sm:text-[7px]">
-                Working · {Math.max(1, Math.ceil((agent.workDurationMs - agent.workElapsedMs) / 1000))}s left
-              </span>
-              <div className="relative h-1 w-32 overflow-hidden rounded-full bg-[#e8d0a0]">
-                <div
-                  className="absolute inset-y-0 left-0 rounded-full bg-[#e8a030]"
-                  style={{
-                    width: `${Math.min(
-                      100,
-                      Math.max(
-                        0,
-                        (agent.workElapsedMs / agent.workDurationMs) * 100,
-                      ),
-                    )}%`,
-                  }}
-                />
-              </div>
+        {agent.workDurationMs !== undefined && agent.workElapsedMs !== undefined && (
+          <div className="flex flex-col items-center gap-0.5 mt-0.5">
+            <span className="text-[8px] font-semibold text-[#7a5000]/70 max-sm:text-[7px]">
+              Working ·{' '}
+              {Math.max(1, Math.ceil((agent.workDurationMs - agent.workElapsedMs) / 1000))}s left
+            </span>
+            <div className="relative h-1 w-32 overflow-hidden rounded-full bg-[#e8d0a0]">
+              <div
+                className="absolute inset-y-0 left-0 rounded-full bg-[#e8a030]"
+                style={{
+                  width: `${Math.min(
+                    100,
+                    Math.max(0, (agent.workElapsedMs / agent.workDurationMs) * 100),
+                  )}%`,
+                }}
+              />
             </div>
-          )}
+          </div>
+        )}
       </div>
 
       {/* ── Bottom-left: Train + Supplies ───────────────────────────── */}
@@ -2367,8 +2390,8 @@ export function LoungeCanvas() {
             disabled={trainCount >= TRAIN_MAX}
             className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-white shadow-md active:scale-95 transition ${
               trainCount >= TRAIN_MAX
-                ? "bg-[#a0a0a0] cursor-not-allowed"
-                : "bg-[#e84040] hover:bg-[#d03030]"
+                ? 'bg-[#a0a0a0] cursor-not-allowed'
+                : 'bg-[#e84040] hover:bg-[#d03030]'
             }`}
           >
             <span className="text-[11px] font-black">Train</span>
@@ -2403,9 +2426,12 @@ export function LoungeCanvas() {
           </div>
         )}
         {/* Floating hearts */}
-        {floatingHearts.map(h => (
-          <div key={h.id} className="absolute pointer-events-none text-lg animate-ping z-50"
-            style={{ left: h.x + '%', top: h.y + '%', animation: 'floatUp 1.5s ease-out forwards' }}>
+        {floatingHearts.map((h) => (
+          <div
+            key={h.id}
+            className="absolute pointer-events-none text-lg animate-ping z-50"
+            style={{ left: h.x + '%', top: h.y + '%', animation: 'floatUp 1.5s ease-out forwards' }}
+          >
             💕
           </div>
         ))}
@@ -2415,13 +2441,13 @@ export function LoungeCanvas() {
       <div className="absolute right-2 bottom-2 z-30 flex items-center gap-1 max-sm:right-1 max-sm:bottom-1 max-sm:gap-0.5">
         <button
           type="button"
-          onClick={() => setMode((m) => (m === "visit" ? "move" : "visit"))}
-          title={mode === "move" ? "Done editing" : "Move furniture"}
-          className={`flex flex-col items-center justify-center gap-0 rounded-xl border px-2.5 py-1.5 shadow-md active:scale-95 transition min-w-[54px] max-sm:min-w-[44px] max-sm:px-2 max-sm:py-1 ${mode === "move" ? "border-[#e8b800] bg-[#fde68a] text-[#7a5000]" : "border-[#c8a870] bg-[#f5e4c0]/90 text-[#5a3c18] hover:bg-[#f0d8a8]"}`}
+          onClick={() => setMode((m) => (m === 'visit' ? 'move' : 'visit'))}
+          title={mode === 'move' ? 'Done editing' : 'Move furniture'}
+          className={`flex flex-col items-center justify-center gap-0 rounded-xl border px-2.5 py-1.5 shadow-md active:scale-95 transition min-w-[54px] max-sm:min-w-[44px] max-sm:px-2 max-sm:py-1 ${mode === 'move' ? 'border-[#e8b800] bg-[#fde68a] text-[#7a5000]' : 'border-[#c8a870] bg-[#f5e4c0]/90 text-[#5a3c18] hover:bg-[#f0d8a8]'}`}
         >
           <span className="text-[18px] leading-none max-sm:text-[16px]">🪑</span>
           <span className="text-[9px] font-bold mt-0.5 max-sm:text-[7px]">
-            {mode === "move" ? "Done" : "Move"}
+            {mode === 'move' ? 'Done' : 'Move'}
           </span>
         </button>
         <button
@@ -2440,7 +2466,9 @@ export function LoungeCanvas() {
           className="flex flex-col items-center justify-center gap-0 rounded-xl border border-[#4a8acc] bg-[#b8d8f0]/90 px-2.5 py-1.5 shadow-md hover:bg-[#a0c8e8] active:scale-95 transition min-w-[54px] max-sm:min-w-[44px] max-sm:px-2 max-sm:py-1"
         >
           <span className="text-[18px] leading-none max-sm:text-[16px]">☁️</span>
-          <span className="text-[9px] font-bold text-[#1a4870] mt-0.5 max-sm:text-[7px]">Share</span>
+          <span className="text-[9px] font-bold text-[#1a4870] mt-0.5 max-sm:text-[7px]">
+            Share
+          </span>
         </button>
         <button
           type="button"
@@ -2449,7 +2477,9 @@ export function LoungeCanvas() {
           className="flex flex-col items-center justify-center gap-0 rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-2.5 py-1.5 shadow-md hover:bg-[#f0d8a8] active:scale-95 transition min-w-[54px] max-sm:min-w-[44px] max-sm:px-2 max-sm:py-1"
         >
           <span className="text-[18px] leading-none max-sm:text-[16px]">🪜</span>
-          <span className="text-[9px] font-bold text-[#5a3c18] mt-0.5 max-sm:text-[7px]">Floor</span>
+          <span className="text-[9px] font-bold text-[#5a3c18] mt-0.5 max-sm:text-[7px]">
+            Floor
+          </span>
         </button>
       </div>
 

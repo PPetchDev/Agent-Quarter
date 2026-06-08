@@ -21,10 +21,7 @@ class MockChildProcess extends EventEmitter {
   }
 }
 
-function mockSpawnSuccess(
-  outputLines: string[],
-  exitCode = 0,
-): ReturnType<typeof vi.fn> {
+function mockSpawnSuccess(outputLines: string[], exitCode = 0): ReturnType<typeof vi.fn> {
   return vi.fn().mockImplementation((_cmd, _args, _opts) => {
     const child = new MockChildProcess();
     setImmediate(() => {
@@ -239,10 +236,7 @@ describe('LocalCodexRunner — JSONL parsing', () => {
   });
 
   it('returns error on non-zero exit', async () => {
-    const spawnFn = mockSpawnSuccess(
-      [JSON.stringify({ type: 'error', message: 'failed' })],
-      1,
-    );
+    const spawnFn = mockSpawnSuccess([JSON.stringify({ type: 'error', message: 'failed' })], 1);
     const runner = new LocalCodexRunner(spawnFn);
     const result = await runner.run(safeInput);
     expect(result.ok).toBe(false);

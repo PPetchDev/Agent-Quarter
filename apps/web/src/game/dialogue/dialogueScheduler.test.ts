@@ -278,10 +278,7 @@ describe('pickAgentDialogue', () => {
       lastDialogueAt: null,
       cooldownMs: 0,
       probability: 1,
-      agents: [
-        { id: 'agent-1' },
-        { id: 'agent-2' },
-      ],
+      agents: [{ id: 'agent-1' }, { id: 'agent-2' }],
       random: () => 0.05,
     });
     expect(result).not.toBeNull();

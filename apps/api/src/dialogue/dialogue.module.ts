@@ -8,9 +8,6 @@ import { LLM_TEXT_PROVIDER } from '../llm/llm-provider.interface';
 @Module({
   imports: [ClaudeModule],
   controllers: [DialogueController],
-  providers: [
-    DialogueService,
-    { provide: LLM_TEXT_PROVIDER, useExisting: ClaudeService },
-  ],
+  providers: [DialogueService, { provide: LLM_TEXT_PROVIDER, useExisting: ClaudeService }],
 })
 export class DialogueModule {}

@@ -1,55 +1,44 @@
-"use client";
-import { useState, useEffect, useRef } from "react";
-import { useStageSocket } from "@/hooks/useStageSocket";
-import { getHistory } from "@/lib/api";
-import { CharacterAvatar } from "./CharacterAvatar";
-import { MessageBubble } from "./MessageBubble";
-import { CHARACTER_TEMPLATES } from "@squad/core";
+'use client';
+import { useState, useEffect, useRef } from 'react';
+import { useStageSocket } from '@/hooks/useStageSocket';
+import { getHistory } from '@/lib/api';
+import { CharacterAvatar } from './CharacterAvatar';
+import { MessageBubble } from './MessageBubble';
+import { CHARACTER_TEMPLATES } from '@squad/core';
 
 type HistMsg = { id: string; role: string; content: string; mood?: string };
 
 export function ChatPanel({ characterId }: { characterId: string }) {
-  const {
-    stageState,
-    activeMood,
-    chunks,
-    completedMessage,
-    sendMessage,
-    lastError,
-  } = useStageSocket(characterId);
+  const { stageState, activeMood, chunks, completedMessage, sendMessage, lastError } =
+    useStageSocket(characterId);
   const [history, setHistory] = useState<HistMsg[]>([]);
-  const [input, setInput] = useState("");
-  const [streaming, setStreaming] = useState("");
+  const [input, setInput] = useState('');
+  const [streaming, setStreaming] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
-  const template = CHARACTER_TEMPLATES.find(
-    (t) => t.characterId === characterId,
-  )!;
+  const template = CHARACTER_TEMPLATES.find((t) => t.characterId === characterId)!;
 
   useEffect(() => {
-    getHistory(characterId).then((msgs) =>
-      setHistory(msgs.map((m) => ({ ...m, id: m.id }))),
-    );
-    setStreaming("");
+    getHistory(characterId).then((msgs) => setHistory(msgs.map((m) => ({ ...m, id: m.id }))));
+    setStreaming('');
   }, [characterId]);
 
   useEffect(() => {
     if (chunks.length === 0) {
-      setStreaming("");
+      setStreaming('');
       return;
     }
-    setStreaming(chunks.map((c) => c.chunk).join(""));
+    setStreaming(chunks.map((c) => c.chunk).join(''));
   }, [chunks]);
 
   useEffect(() => {
     if (!completedMessage?.fullContent?.trim()) return;
     setHistory((prev) => {
-      if (prev.some((msg) => msg.id === completedMessage.messageId))
-        return prev;
+      if (prev.some((msg) => msg.id === completedMessage.messageId)) return prev;
       return [
         ...prev,
         {
           id: completedMessage.messageId,
-          role: "assistant",
+          role: 'assistant',
           content: completedMessage.fullContent,
           mood: completedMessage.mood,
         },
@@ -60,36 +49,27 @@ export function ChatPanel({ characterId }: { characterId: string }) {
   useEffect(() => {
     scrollRef.current?.scrollTo({
       top: scrollRef.current.scrollHeight,
-      behavior: "smooth",
+      behavior: 'smooth',
     });
   }, [history, streaming]);
 
   const handleSend = () => {
     const trimmed = input.trim();
     if (!trimmed) return;
-    setHistory((prev) => [
-      ...prev,
-      { id: Date.now().toString(), role: "user", content: trimmed },
-    ]);
+    setHistory((prev) => [...prev, { id: Date.now().toString(), role: 'user', content: trimmed }]);
     sendMessage(trimmed);
-    setInput("");
+    setInput('');
   };
 
-  const isProcessing = stageState.state === "processing";
+  const isProcessing = stageState.state === 'processing';
 
   return (
     <div className="flex flex-col flex-1 min-w-0">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-white/7 bg-white/2">
-        <CharacterAvatar
-          characterId={characterId}
-          mood={activeMood}
-          size="md"
-        />
+        <CharacterAvatar characterId={characterId} mood={activeMood} size="md" />
         <div className="flex-1 min-w-0">
-          <p className="text-[15px] font-black text-[#f0abfc]">
-            {template.name}
-          </p>
+          <p className="text-[15px] font-black text-[#f0abfc]">{template.name}</p>
           <p className="text-[10px] flex items-center gap-1.5 text-white/50">
             {isProcessing ? (
               <>
@@ -110,19 +90,14 @@ export function ChatPanel({ characterId }: { characterId: string }) {
       </div>
 
       {/* Messages */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3"
-      >
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
         {history.map((msg) => (
           <MessageBubble
             key={msg.id}
-            role={msg.role as "user" | "assistant"}
+            role={msg.role as 'user' | 'assistant'}
             content={msg.content}
             characterName={
-              msg.role === "assistant"
-                ? `${template.name} · ${template.title}`
-                : undefined
+              msg.role === 'assistant' ? `${template.name} · ${template.title}` : undefined
             }
           />
         ))}
@@ -150,9 +125,9 @@ export function ChatPanel({ characterId }: { characterId: string }) {
         {lastError && (
           <div className="flex gap-2">
             <div className="px-3.5 py-2 bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] rounded-2xl rounded-tl-sm text-[11px] text-red-400">
-              ⚠️{" "}
-              {lastError.includes("401") || lastError.includes("auth")
-                ? "API key ไม่ถูกต้อง — ตั้งค่า ANTHROPIC_API_KEY ใน apps/api/.env"
+              ⚠️{' '}
+              {lastError.includes('401') || lastError.includes('auth')
+                ? 'API key ไม่ถูกต้อง — ตั้งค่า ANTHROPIC_API_KEY ใน apps/api/.env'
                 : lastError}
             </div>
           </div>
@@ -165,7 +140,7 @@ export function ChatPanel({ characterId }: { characterId: string }) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
+            if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
               handleSend();
             }

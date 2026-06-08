@@ -14,7 +14,12 @@ export class ConversationsService {
     });
   }
 
-  async addMessage(conversationId: string, role: 'user' | 'assistant', content: string, mood?: string) {
+  async addMessage(
+    conversationId: string,
+    role: 'user' | 'assistant',
+    content: string,
+    mood?: string,
+  ) {
     return this.prisma.message.create({
       data: { conversationId, role, content, mood },
     });

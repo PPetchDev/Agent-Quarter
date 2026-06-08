@@ -11,7 +11,13 @@ import type { RoomObject } from './roomDefs';
 
 type RecordedOp =
   | { op: 'fillQuad'; points: [number, number][]; color: number; alpha: number }
-  | { op: 'strokeQuad'; points: [number, number][]; color: number; lineWidth: number; alpha: number }
+  | {
+      op: 'strokeQuad';
+      points: [number, number][];
+      color: number;
+      lineWidth: number;
+      alpha: number;
+    }
   | { op: 'circle'; cx: number; cy: number; r: number; color: number; alpha: number }
   | { op: 'ellipse'; cx: number; cy: number; rx: number; ry: number; color: number; alpha: number };
 
@@ -20,9 +26,11 @@ function buildRecordingCtx(furnitureType: string): { ctx: AmbientDrawContext; op
   const ctx: AmbientDrawContext = {
     proj: (wx, wy, wz) => [wx * 100 + wz * 10, wy * 100 + wz * 10],
     fillQuad: (points, color, alpha) => ops.push({ op: 'fillQuad', points, color, alpha }),
-    strokeQuad: (points, color, lineWidth, alpha) => ops.push({ op: 'strokeQuad', points, color, lineWidth, alpha }),
+    strokeQuad: (points, color, lineWidth, alpha) =>
+      ops.push({ op: 'strokeQuad', points, color, lineWidth, alpha }),
     circle: (cx, cy, r, color, alpha) => ops.push({ op: 'circle', cx, cy, r, color, alpha }),
-    ellipse: (cx, cy, rx, ry, color, alpha) => ops.push({ op: 'ellipse', cx, cy, rx, ry, color, alpha }),
+    ellipse: (cx, cy, rx, ry, color, alpha) =>
+      ops.push({ op: 'ellipse', cx, cy, rx, ry, color, alpha }),
     dim: getStationDim(furnitureType),
   };
   return { ctx, ops };
@@ -120,19 +128,10 @@ describe('STATION_AMBIENTS', () => {
   });
 
   it('only emits shape kinds known to the union', () => {
-    const known = new Set<AmbientShape['kind']>([
-      'face',
-      'halo',
-      'point',
-      'topOutline',
-      'custom',
-    ]);
+    const known = new Set<AmbientShape['kind']>(['face', 'halo', 'point', 'topOutline', 'custom']);
     for (const [type, shapes] of Object.entries(STATION_AMBIENTS)) {
       for (const shape of shapes) {
-        expect(
-          known.has(shape.kind),
-          `${type}: unknown kind ${shape.kind}`,
-        ).toBe(true);
+        expect(known.has(shape.kind), `${type}: unknown kind ${shape.kind}`).toBe(true);
       }
     }
   });
@@ -179,7 +178,17 @@ describe('STATION_AMBIENTS', () => {
         ellipse: () => {},
         dim: { w: 1, d: 1, h: 1 },
       },
-      { id: 0, furnitureType: 'x', label: '', description: '', wx: 0, wy: 0, wz: 0, happiness: 0, draggable: false },
+      {
+        id: 0,
+        furnitureType: 'x',
+        label: '',
+        description: '',
+        wx: 0,
+        wy: 0,
+        wz: 0,
+        happiness: 0,
+        draggable: false,
+      },
       0.5,
     );
     expect(calls.length).toBe(1);

@@ -191,7 +191,11 @@ describe('RunExecutionService', () => {
   it('truncates long event log messages to 500 chars', async () => {
     const gateway = makeGateway();
     const longMsg = 'x'.repeat(600);
-    const runner = makeRunner({ ok: true, events: [{ type: 'info', message: longMsg }], finalMessage: 'Done' });
+    const runner = makeRunner({
+      ok: true,
+      events: [{ type: 'info', message: longMsg }],
+      finalMessage: 'Done',
+    });
     const svc = new RunExecutionService(gateway, runner);
 
     await svc.executeRun(safeInput);
@@ -207,7 +211,10 @@ describe('RunExecutionService', () => {
 
     await svc.executeRun(safeInput);
 
-    const started = vi.mocked(gateway.emitRunExecutionStarted).mock.calls[0][0] as Record<string, unknown>;
+    const started = vi.mocked(gateway.emitRunExecutionStarted).mock.calls[0][0] as Record<
+      string,
+      unknown
+    >;
     expect(JSON.stringify(started)).not.toMatch(/codex exec/);
   });
 

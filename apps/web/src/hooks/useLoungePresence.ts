@@ -40,7 +40,12 @@ export function useLoungePresence() {
       socket.emit('join_stage', { characterId: template.characterId });
     }
 
-    const onStageState = (data: { characterId: string; state: StageRuntimeState; idleTier?: IdleTier; mood: CharacterMood }) => {
+    const onStageState = (data: {
+      characterId: string;
+      state: StageRuntimeState;
+      idleTier?: IdleTier;
+      mood: CharacterMood;
+    }) => {
       if (!data.characterId) return;
       setPresence((prev) => ({
         ...prev,
@@ -101,7 +106,10 @@ export function useLoungePresence() {
     const active = list.filter((item) => item.state === 'processing').length;
     const typing = list.filter((item) => item.activity === 'typing').length;
     const thinking = list.filter((item) => item.activity === 'thinking').length;
-    const sleeping = list.filter((item) => item.state === 'idle' && (item.idleTier === 'resting' || item.idleTier === 'offline')).length;
+    const sleeping = list.filter(
+      (item) =>
+        item.state === 'idle' && (item.idleTier === 'resting' || item.idleTier === 'offline'),
+    ).length;
     const idle = list.filter((item) => item.state === 'idle' && item.idleTier === 'ready').length;
     return { active, typing, thinking, idle, sleeping };
   }, [presence]);

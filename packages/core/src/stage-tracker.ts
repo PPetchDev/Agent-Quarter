@@ -8,7 +8,11 @@ export class StageTracker {
   private readonly idleAfterMs: number;
   private readonly now: () => number;
 
-  constructor(options?: { initialState?: StageRuntimeState; idleAfterMs?: number; now?: () => number }) {
+  constructor(options?: {
+    initialState?: StageRuntimeState;
+    idleAfterMs?: number;
+    now?: () => number;
+  }) {
     this.state = options?.initialState ?? 'idle';
     this.idleAfterMs = options?.idleAfterMs ?? DEFAULT_IDLE_AFTER_MS;
     this.now = options?.now ?? Date.now;

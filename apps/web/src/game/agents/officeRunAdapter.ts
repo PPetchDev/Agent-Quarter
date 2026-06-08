@@ -7,13 +7,13 @@ const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
  * Returns the updated Run record or null on failure.
  */
 export async function startOfficeRun(taskId: string): Promise<Run | null> {
-    try {
-        const res = await fetch(`${BASE}/api/tasks/${taskId}/start`, { method: 'POST' });
-        if (!res.ok) return null;
-        return res.json();
-    } catch {
-        return null;
-    }
+  try {
+    const res = await fetch(`${BASE}/api/tasks/${taskId}/start`, { method: 'POST' });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -21,13 +21,13 @@ export async function startOfficeRun(taskId: string): Promise<Run | null> {
  * Returns the updated Run record or null on failure.
  */
 export async function completeOfficeRun(runId: string): Promise<Run | null> {
-    try {
-        const res = await fetch(`${BASE}/api/runs/${runId}/complete`, { method: 'PATCH' });
-        if (!res.ok) return null;
-        return res.json();
-    } catch {
-        return null;
-    }
+  try {
+    const res = await fetch(`${BASE}/api/runs/${runId}/complete`, { method: 'PATCH' });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -35,5 +35,5 @@ export async function completeOfficeRun(runId: string): Promise<Run | null> {
  * Combines startOfficeRun with the backend's response which contains the Run id.
  */
 export async function createAndStartRun(taskId: string): Promise<Run | null> {
-    return startOfficeRun(taskId);
+  return startOfficeRun(taskId);
 }

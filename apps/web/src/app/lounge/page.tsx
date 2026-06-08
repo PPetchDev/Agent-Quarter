@@ -1,4 +1,4 @@
-import { LoungeCanvas } from "@/components/lounge/LoungeCanvas";
+import { LoungeCanvas } from '@/components/lounge/LoungeCanvas';
 
 export default function LoungePage() {
   return (

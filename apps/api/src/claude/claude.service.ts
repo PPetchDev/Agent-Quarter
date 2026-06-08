@@ -1,7 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import Anthropic from '@anthropic-ai/sdk';
-import { getCharacterTemplate, parseEmotionOverride, stripEmotionTags, type CharacterMood } from '@squad/core';
-import type { LlmTextProvider, LlmTextProviderInput, LlmTextProviderResult } from '../llm/llm-provider.interface';
+import {
+  getCharacterTemplate,
+  parseEmotionOverride,
+  stripEmotionTags,
+  type CharacterMood,
+} from '@squad/core';
+import type {
+  LlmTextProvider,
+  LlmTextProviderInput,
+  LlmTextProviderResult,
+} from '../llm/llm-provider.interface';
 
 export type StreamChunkEvent = {
   chunk: string;
@@ -27,7 +36,7 @@ export class ClaudeService implements LlmTextProvider {
     const systemPrompt = template?.systemPrompt ?? 'You are a helpful assistant.';
 
     const messages = [
-      ...history.map(m => ({ role: m.role, content: m.content })),
+      ...history.map((m) => ({ role: m.role, content: m.content })),
       { role: 'user' as const, content: userMessage },
     ];
 

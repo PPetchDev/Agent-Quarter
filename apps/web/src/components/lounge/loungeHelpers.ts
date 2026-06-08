@@ -4,11 +4,7 @@ import { ROOM_TILES_X, ROOM_TILES_Y } from './pixiRoom';
 
 // ─── Layout Helpers ───────────────────────────────────────────────────────────
 
-export function snapObj(
-  o: RoomObject,
-  maxX = ROOM_TILES_X,
-  maxY = ROOM_TILES_Y,
-): RoomObject {
+export function snapObj(o: RoomObject, maxX = ROOM_TILES_X, maxY = ROOM_TILES_Y): RoomObject {
   return {
     ...o,
     wx: Math.round(Math.max(0, Math.min(maxX - 1, o.wx))),
@@ -80,10 +76,7 @@ function encodeBase64Url(input: string): string {
   const bytes = new TextEncoder().encode(input);
   let binary = '';
   for (const b of bytes) binary += String.fromCharCode(b);
-  return btoa(binary)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/g, '');
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
 
 function decodeBase64Url(input: string): string | null {
@@ -120,13 +113,9 @@ export function parseSharedLayoutFromUrl(): SharedLayoutPayload | null {
     if (parsed.v !== 1 || !Array.isArray(parsed.objects)) return null;
 
     const roomW =
-      typeof parsed.roomW === 'number'
-        ? Math.max(6, Math.min(16, parsed.roomW))
-        : ROOM_TILES_X;
+      typeof parsed.roomW === 'number' ? Math.max(6, Math.min(16, parsed.roomW)) : ROOM_TILES_X;
     const roomH =
-      typeof parsed.roomH === 'number'
-        ? Math.max(5, Math.min(14, parsed.roomH))
-        : ROOM_TILES_Y;
+      typeof parsed.roomH === 'number' ? Math.max(5, Math.min(14, parsed.roomH)) : ROOM_TILES_Y;
 
     const objects = parsed.objects
       .filter((o): o is RoomObject => {
@@ -155,10 +144,7 @@ export function parseSharedLayoutFromUrl(): SharedLayoutPayload | null {
       roomW,
       roomH,
       happiness: typeof parsed.happiness === 'number' ? parsed.happiness : 128,
-      coins:
-        typeof parsed.coins === 'number'
-          ? Math.max(0, parsed.coins)
-          : 500,
+      coins: typeof parsed.coins === 'number' ? Math.max(0, parsed.coins) : 500,
       floor: parsed.floor === 2 ? 2 : 1,
       objects,
     };

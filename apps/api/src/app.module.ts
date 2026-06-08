@@ -7,6 +7,13 @@ import { ProjectsModule } from './projects/projects.module';
 import { DialogueModule } from './dialogue/dialogue.module';
 
 @Module({
-  imports: [PrismaModule, CharactersModule, ConversationsModule, ClaudeModule, ProjectsModule, DialogueModule],
+  imports: [
+    PrismaModule,
+    CharactersModule,
+    ConversationsModule,
+    ClaudeModule,
+    ProjectsModule,
+    DialogueModule,
+  ],
 })
 export class AppModule {}

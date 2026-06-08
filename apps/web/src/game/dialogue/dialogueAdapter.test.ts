@@ -39,7 +39,10 @@ afterEach(() => {
 
 describe('generateOfficeDialogue', () => {
   it('sends POST to /api/dialogue/office', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => mockLlmResponse }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => mockLlmResponse }),
+    );
 
     await generateOfficeDialogue({ fromAgentId: 'agent-3' });
 
@@ -50,7 +53,10 @@ describe('generateOfficeDialogue', () => {
   });
 
   it('uses configured API base URL', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => mockLlmResponse }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => mockLlmResponse }),
+    );
 
     await generateOfficeDialogue({ fromAgentId: 'agent-3' });
 
@@ -59,7 +65,10 @@ describe('generateOfficeDialogue', () => {
   });
 
   it('serializes request body', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => mockLlmResponse }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => mockLlmResponse }),
+    );
 
     await generateOfficeDialogue({
       fromAgentId: 'agent-3',
@@ -77,7 +86,10 @@ describe('generateOfficeDialogue', () => {
   });
 
   it('includes JSON content type', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => mockLlmResponse }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => mockLlmResponse }),
+    );
 
     await generateOfficeDialogue({ fromAgentId: 'agent-3' });
 
@@ -86,7 +98,10 @@ describe('generateOfficeDialogue', () => {
   });
 
   it('returns response on OK', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => mockLlmResponse }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => mockLlmResponse }),
+    );
 
     const result = await generateOfficeDialogue({ fromAgentId: 'agent-3' });
 
@@ -96,7 +111,10 @@ describe('generateOfficeDialogue', () => {
   // ── LLM response ────────────────────────────────────────────────────────────
 
   it('supports source: "llm" response', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => mockLlmResponse }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => mockLlmResponse }),
+    );
 
     const result = await generateOfficeDialogue({ fromAgentId: 'agent-3' });
 
@@ -108,7 +126,10 @@ describe('generateOfficeDialogue', () => {
   // ── Deterministic fallback ──────────────────────────────────────────────────
 
   it('supports source: "deterministic" fallback response', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => mockFallbackResponse }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => mockFallbackResponse }),
+    );
 
     const result = await generateOfficeDialogue({ fromAgentId: 'agent-3' });
 
@@ -117,7 +138,10 @@ describe('generateOfficeDialogue', () => {
   });
 
   it('preserves fallbackUsed', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => mockLlmResponse }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => mockLlmResponse }),
+    );
 
     const result = await generateOfficeDialogue({ fromAgentId: 'agent-3' });
 
@@ -125,7 +149,10 @@ describe('generateOfficeDialogue', () => {
   });
 
   it('preserves model when present', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => mockLlmResponse }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => mockLlmResponse }),
+    );
 
     const result = await generateOfficeDialogue({ fromAgentId: 'agent-3' });
 
@@ -157,7 +184,10 @@ describe('generateOfficeDialogue', () => {
   });
 
   it('handles invalid-agent fallback response with errorSummary', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => mockErrorResponse }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => mockErrorResponse }),
+    );
 
     const result = await generateOfficeDialogue({
       fromAgentId: 'agent-99' as DialogueResponse['fromAgentId'],

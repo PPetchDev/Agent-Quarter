@@ -11,9 +11,7 @@ import {
 
 describe('office workflow planner', () => {
   it('normalizes blank commands to a default command', () => {
-    expect(normalizeOfficeCommand('   ')).toBe(
-      'Build the next verified office workflow slice',
-    );
+    expect(normalizeOfficeCommand('   ')).toBe('Build the next verified office workflow slice');
   });
 
   it('plans a five-step handoff through the office squad', () => {

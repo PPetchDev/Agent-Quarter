@@ -1,31 +1,29 @@
-import { describe, expect, it } from "vitest";
-import mapJson from "../../../public/maps/maple_hideout.json";
-import { parseTiledMap, type RoomObject, type TiledMap } from "../../components/lounge/roomDefs";
-import { resolveAgentTask } from "../agents/taskResolver";
-import type { AgentTaskType } from "../agents/agentTypes";
-import { cellKey, isoToGridCell } from "../movement/gridPath";
-import { buildLoungeBlockedCells, planLoungeGridRoute } from "./loungePathGrid";
+import { describe, expect, it } from 'vitest';
+import mapJson from '../../../public/maps/maple_hideout.json';
+import { parseTiledMap, type RoomObject, type TiledMap } from '../../components/lounge/roomDefs';
+import { resolveAgentTask } from '../agents/taskResolver';
+import type { AgentTaskType } from '../agents/agentTypes';
+import { cellKey, isoToGridCell } from '../movement/gridPath';
+import { buildLoungeBlockedCells, planLoungeGridRoute } from './loungePathGrid';
 
 const roomWidth = 10;
 const roomHeight = 8;
 const defaultStart = { wx: 3.0, wy: 0.65, wz: 0.2 };
 const roomObjects = parseTiledMap(mapJson as TiledMap);
 
-describe("role-aligned lounge map", () => {
-  it("uses semantic furniture for agent task stations", () => {
+describe('role-aligned lounge map', () => {
+  it('uses semantic furniture for agent task stations', () => {
     const furnitureTypes = roomObjects.map((object) => object.furnitureType);
 
     expect(furnitureTypes).toEqual(
-      expect.arrayContaining(["computer_desk", "printer", "document_board"]),
+      expect.arrayContaining(['computer_desk', 'printer', 'document_board']),
     );
-    expect(furnitureTypes).not.toEqual(
-      expect.arrayContaining(["tv_stand", "tv"]),
-    );
+    expect(furnitureTypes).not.toEqual(expect.arrayContaining(['tv_stand', 'tv']));
   });
 });
 
-describe("buildLoungeBlockedCells", () => {
-  it("blocks floor furniture footprints and ignores wall-mounted objects", () => {
+describe('buildLoungeBlockedCells', () => {
+  it('blocks floor furniture footprints and ignores wall-mounted objects', () => {
     const blocked = new Set(
       buildLoungeBlockedCells(roomObjects, roomWidth, roomHeight).map(cellKey),
     );
@@ -40,44 +38,36 @@ describe("buildLoungeBlockedCells", () => {
   });
 });
 
-describe("planLoungeGridRoute", () => {
-  it.each([
-    "code",
-    "research",
-    "meeting",
-    "document",
-    "print",
-    "rest",
-  ] satisfies AgentTaskType[])("routes from the default start to %s", (task) => {
-    const resolved = resolveAgentTask(task, roomObjects);
-    const route = planLoungeGridRoute({
-      objects: roomObjects,
-      roomWidth,
-      roomHeight,
-      start: defaultStart,
-      target: resolved.targetIsoPoint,
-    });
-    const blocked = new Set(
-      buildLoungeBlockedCells(roomObjects, roomWidth, roomHeight).map(cellKey),
-    );
+describe('planLoungeGridRoute', () => {
+  it.each(['code', 'research', 'meeting', 'document', 'print', 'rest'] satisfies AgentTaskType[])(
+    'routes from the default start to %s',
+    (task) => {
+      const resolved = resolveAgentTask(task, roomObjects);
+      const route = planLoungeGridRoute({
+        objects: roomObjects,
+        roomWidth,
+        roomHeight,
+        start: defaultStart,
+        target: resolved.targetIsoPoint,
+      });
+      const blocked = new Set(
+        buildLoungeBlockedCells(roomObjects, roomWidth, roomHeight).map(cellKey),
+      );
 
-    expect(route).not.toBeNull();
-    expect(route?.length).toBeGreaterThan(0);
-    for (const point of route ?? []) {
-      expect(blocked.has(cellKey(point.cell))).toBe(false);
-    }
+      expect(route).not.toBeNull();
+      expect(route?.length).toBeGreaterThan(0);
+      for (const point of route ?? []) {
+        expect(blocked.has(cellKey(point.cell))).toBe(false);
+      }
 
-    const finalCell = route?.at(-1)?.cell;
-    const expectedTargetCell = isoToGridCell(
-      resolved.targetIsoPoint,
-      roomWidth,
-      roomHeight,
-    );
-    expect(finalCell).toEqual(expectedTargetCell);
-  });
+      const finalCell = route?.at(-1)?.cell;
+      const expectedTargetCell = isoToGridCell(resolved.targetIsoPoint, roomWidth, roomHeight);
+      expect(finalCell).toEqual(expectedTargetCell);
+    },
+  );
 
-  it("replans around a newly committed furniture blocker", () => {
-    const resolved = resolveAgentTask("code", roomObjects);
+  it('replans around a newly committed furniture blocker', () => {
+    const resolved = resolveAgentTask('code', roomObjects);
     const initialRoute = planLoungeGridRoute({
       objects: roomObjects,
       roomWidth,
@@ -91,9 +81,9 @@ describe("planLoungeGridRoute", () => {
 
     const blocker: RoomObject = {
       id: 9999,
-      furnitureType: "plant",
-      label: "Temporary blocker",
-      description: "",
+      furnitureType: 'plant',
+      label: 'Temporary blocker',
+      description: '',
       wx: blockedCell!.x,
       wy: blockedCell!.y,
       wz: 0,
@@ -109,20 +99,20 @@ describe("planLoungeGridRoute", () => {
     });
 
     expect(refreshedRoute).not.toBeNull();
-    expect(refreshedRoute?.some((point) => cellKey(point.cell) === cellKey(blockedCell!))).toBe(false);
+    expect(refreshedRoute?.some((point) => cellKey(point.cell) === cellKey(blockedCell!))).toBe(
+      false,
+    );
     expect(refreshedRoute?.at(-1)?.cell).toEqual(
       isoToGridCell(resolved.targetIsoPoint, roomWidth, roomHeight),
     );
   });
 
-  it("routes near the moved computer desk instead of the default desk target", () => {
+  it('routes near the moved computer desk instead of the default desk target', () => {
     const movedObjects = roomObjects.map((object) =>
-      object.furnitureType === "computer_desk"
-        ? { ...object, wx: 1, wy: 4 }
-        : object,
+      object.furnitureType === 'computer_desk' ? { ...object, wx: 1, wy: 4 } : object,
     );
-    const defaultResolved = resolveAgentTask("code", roomObjects);
-    const resolved = resolveAgentTask("code", movedObjects);
+    const defaultResolved = resolveAgentTask('code', roomObjects);
+    const resolved = resolveAgentTask('code', movedObjects);
     const route = planLoungeGridRoute({
       objects: movedObjects,
       roomWidth,
@@ -130,11 +120,7 @@ describe("planLoungeGridRoute", () => {
       start: defaultStart,
       target: resolved.targetIsoPoint,
     });
-    const targetCell = isoToGridCell(
-      resolved.targetIsoPoint,
-      roomWidth,
-      roomHeight,
-    );
+    const targetCell = isoToGridCell(resolved.targetIsoPoint, roomWidth, roomHeight);
 
     expect(resolved.targetIsoPoint).toEqual({ wx: 2.45, wy: 3.35, wz: 0.2 });
     expect(resolved.targetIsoPoint).not.toEqual(defaultResolved.targetIsoPoint);

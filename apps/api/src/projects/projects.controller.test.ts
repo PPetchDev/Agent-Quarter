@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { PROJECTS, RUNS, TASKS } from '@squad/core';
 import { ProjectsController } from './projects.controller';
@@ -42,9 +47,7 @@ describe('TasksController', () => {
   const controller = new TasksController(runsService, runsGateway);
 
   it('returns runs for an existing task', () => {
-    expect(controller.findRuns('t-001')).toEqual(
-      RUNS.filter((run) => run.taskId === 't-001'),
-    );
+    expect(controller.findRuns('t-001')).toEqual(RUNS.filter((run) => run.taskId === 't-001'));
   });
 
   it('throws the existing not found message for missing task runs', () => {

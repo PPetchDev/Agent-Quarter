@@ -36,7 +36,9 @@ describe('readCharacterMood', () => {
   });
 
   it('preserves character-specific idle defaults', () => {
-    expect(readCharacterMood('shinobu', { stageState: 'idle', idleTier: 'ready' })).toBe('thinking');
+    expect(readCharacterMood('shinobu', { stageState: 'idle', idleTier: 'ready' })).toBe(
+      'thinking',
+    );
   });
 
   it('falls back to idle for unknown characters', () => {

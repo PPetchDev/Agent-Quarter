@@ -1,11 +1,11 @@
-"use client";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+'use client';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const NAV = [
-  { href: "/lounge", label: "🏠 Lounge" },
-  { href: "/stages", label: "💬 Stages" },
-  { href: "/projects", label: "📋 Projects" },
+  { href: '/lounge', label: '🏠 Lounge' },
+  { href: '/stages', label: '💬 Stages' },
+  { href: '/projects', label: '📋 Projects' },
 ];
 
 export function TopBar() {
@@ -22,8 +22,8 @@ export function TopBar() {
             href={href}
             className={`text-[10px] font-semibold px-3.5 py-1 rounded-lg transition-all ${
               path === href
-                ? "bg-white/8 text-[#f0abfc] border border-white/14"
-                : "text-[#3d3060] hover:text-[#7c6b99]"
+                ? 'bg-white/8 text-[#f0abfc] border border-white/14'
+                : 'text-[#3d3060] hover:text-[#7c6b99]'
             }`}
           >
             {label}

@@ -32,9 +32,10 @@ export function enqueueTask(
  * Pop the head task. Returns the next task plus the remaining queue.
  * For an empty queue, `next` is `null` and `rest` is an empty array.
  */
-export function dequeueTask(
-  queue: readonly AgentTaskType[],
-): { next: AgentTaskType | null; rest: AgentTaskType[] } {
+export function dequeueTask(queue: readonly AgentTaskType[]): {
+  next: AgentTaskType | null;
+  rest: AgentTaskType[];
+} {
   if (queue.length === 0) {
     return { next: null, rest: [] };
   }

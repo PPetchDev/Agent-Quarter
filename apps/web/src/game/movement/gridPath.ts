@@ -1,4 +1,4 @@
-import type { IsoWorldPoint } from "../agents/agentTypes";
+import type { IsoWorldPoint } from '../agents/agentTypes';
 
 export type GridCell = {
   x: number;
@@ -22,21 +22,14 @@ export function cellKey(cell: GridCell): string {
   return `${cell.x},${cell.y}`;
 }
 
-export function isoToGridCell(
-  point: IsoWorldPoint,
-  cols: number,
-  rows: number,
-): GridCell {
+export function isoToGridCell(point: IsoWorldPoint, cols: number, rows: number): GridCell {
   return {
     x: Math.max(0, Math.min(cols - 1, Math.floor(point.wx))),
     y: Math.max(0, Math.min(rows - 1, Math.floor(point.wy))),
   };
 }
 
-export function cellCenterToIso(
-  cell: GridCell,
-  wz = 0.2,
-): IsoWorldPoint {
+export function cellCenterToIso(cell: GridCell, wz = 0.2): IsoWorldPoint {
   return {
     wx: cell.x + 0.5,
     wy: cell.y + 0.5,
@@ -44,11 +37,7 @@ export function cellCenterToIso(
   };
 }
 
-export function isCellInBounds(
-  cell: GridCell,
-  cols: number,
-  rows: number,
-): boolean {
+export function isCellInBounds(cell: GridCell, cols: number, rows: number): boolean {
   return cell.x >= 0 && cell.y >= 0 && cell.x < cols && cell.y < rows;
 }
 
@@ -212,16 +201,11 @@ function buildIsoRoutePoints(params: {
 
   return routeCells.map((cell, index) => {
     const isFinal = index === routeCells.length - 1;
-    const iso = isFinal && targetWasWalkable
-      ? target
-      : cellCenterToIso(cell, waypointZ);
+    const iso = isFinal && targetWasWalkable ? target : cellCenterToIso(cell, waypointZ);
     return buildIsoRoutePoint(cell, iso);
   });
 }
 
-function buildIsoRoutePoint(
-  cell: GridCell,
-  iso: IsoWorldPoint,
-): IsoRoutePoint {
+function buildIsoRoutePoint(cell: GridCell, iso: IsoWorldPoint): IsoRoutePoint {
   return { ...iso, cell };
 }

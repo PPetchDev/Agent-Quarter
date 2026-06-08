@@ -103,9 +103,7 @@ function shuffleCopy<T>(arr: readonly T[], rand: () => number): T[] {
   return copy;
 }
 
-export function pickAgentDialogue(
-  input: PickAgentDialogueInput,
-): AgentDialogueMessage | null {
+export function pickAgentDialogue(input: PickAgentDialogueInput): AgentDialogueMessage | null {
   const {
     now,
     lastDialogueAt,

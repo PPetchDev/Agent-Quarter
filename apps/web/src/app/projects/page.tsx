@@ -1,41 +1,41 @@
-import Image from "next/image";
-import Link from "next/link";
+import Image from 'next/image';
+import Link from 'next/link';
 import {
   CHARACTER_TEMPLATES,
   Project,
   ProjectStatus,
   RunStatus,
   getProjectStatusLabel,
-} from "@squad/core";
-import { fetchProjects, fetchProjectTasks, fetchTaskRuns } from "@/lib/api";
-import { RunExecutionButton } from "./RunExecutionButton";
-import { RunExecutionEventsPanel } from "./RunExecutionEventsPanel";
+} from '@squad/core';
+import { fetchProjects, fetchProjectTasks, fetchTaskRuns } from '@/lib/api';
+import { RunExecutionButton } from './RunExecutionButton';
+import { RunExecutionEventsPanel } from './RunExecutionEventsPanel';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 // ─── Project data ─────────────────────────────────────────────────────────────
 const STATUS_COLOR: Record<ProjectStatus, string> = {
-  active: "text-[#6ee7b7]",
-  review: "text-[#fde68a]",
-  paused: "text-[#fb923c]",
+  active: 'text-[#6ee7b7]',
+  review: 'text-[#fde68a]',
+  paused: 'text-[#fb923c]',
 };
 
 const RUN_STATUS_COLOR: Record<RunStatus, string> = {
-  pending: "text-white/30",
-  running: "text-[#fde68a]",
-  success: "text-[#6ee7b7]",
-  failed: "text-[#f87171]",
-  cancelled: "text-white/25",
+  pending: 'text-white/30',
+  running: 'text-[#fde68a]',
+  success: 'text-[#6ee7b7]',
+  failed: 'text-[#f87171]',
+  cancelled: 'text-white/25',
 };
 
 const ROLE_COLOR: Record<string, string> = {
-  frontend: "text-[#f9a8d4] border-[#f9a8d4]/30 bg-[#f9a8d4]/10",
-  backend: "text-[#93c5fd] border-[#93c5fd]/30 bg-[#93c5fd]/10",
-  review: "text-[#fde68a] border-[#fde68a]/30 bg-[#fde68a]/10",
-  devops: "text-[#6ee7b7] border-[#6ee7b7]/30 bg-[#6ee7b7]/10",
-  design: "text-[#c4b5fd] border-[#c4b5fd]/30 bg-[#c4b5fd]/10",
-  support: "text-[#fb923c] border-[#fb923c]/30 bg-[#fb923c]/10",
-  strategy: "text-[#f0abfc] border-[#f0abfc]/30 bg-[#f0abfc]/10",
+  frontend: 'text-[#f9a8d4] border-[#f9a8d4]/30 bg-[#f9a8d4]/10',
+  backend: 'text-[#93c5fd] border-[#93c5fd]/30 bg-[#93c5fd]/10',
+  review: 'text-[#fde68a] border-[#fde68a]/30 bg-[#fde68a]/10',
+  devops: 'text-[#6ee7b7] border-[#6ee7b7]/30 bg-[#6ee7b7]/10',
+  design: 'text-[#c4b5fd] border-[#c4b5fd]/30 bg-[#c4b5fd]/10',
+  support: 'text-[#fb923c] border-[#fb923c]/30 bg-[#fb923c]/10',
+  strategy: 'text-[#f0abfc] border-[#f0abfc]/30 bg-[#f0abfc]/10',
 };
 
 export default async function ProjectsPage() {
@@ -44,9 +44,7 @@ export default async function ProjectsPage() {
 
   // Fetch tasks for every project in parallel
   const taskEntries = await Promise.all(
-    projects.map((p) =>
-      fetchProjectTasks(p.id).then((tasks) => [p.id, tasks] as const),
-    ),
+    projects.map((p) => fetchProjectTasks(p.id).then((tasks) => [p.id, tasks] as const)),
   );
   const tasksMap = new Map(taskEntries);
 
@@ -54,14 +52,11 @@ export default async function ProjectsPage() {
   const activeTasks = projects.flatMap((p) => {
     const pts = tasksMap.get(p.id) ?? [];
     const active =
-      pts.find((t) => t.status === "in_progress") ??
-      pts.find((t) => t.status === "todo");
+      pts.find((t) => t.status === 'in_progress') ?? pts.find((t) => t.status === 'todo');
     return active ? [active] : [];
   });
   const runEntries = await Promise.all(
-    activeTasks.map((t) =>
-      fetchTaskRuns(t.id).then((runs) => [t.id, runs] as const),
-    ),
+    activeTasks.map((t) => fetchTaskRuns(t.id).then((runs) => [t.id, runs] as const)),
   );
   const runsMap = new Map(runEntries);
 
@@ -73,38 +68,26 @@ export default async function ProjectsPage() {
             ✦ SQUAD ✧
           </p>
           <h1 className="text-2xl font-black text-[#e2d9f3]">Projects</h1>
-          <p className="text-[11px] text-white/40 mt-1">
-            Active team — 7 agents ready
-          </p>
+          <p className="text-[11px] text-white/40 mt-1">Active team — 7 agents ready</p>
         </header>
 
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {CHARACTER_TEMPLATES.map((t) => {
-            const roleClass =
-              ROLE_COLOR[t.role] ?? "text-white/50 border-white/20 bg-white/5";
-            const project = projects.find(
-              (p) => p.characterId === t.characterId,
-            );
-            const projectTasks = project
-              ? (tasksMap.get(project.id) ?? [])
-              : [];
+            const roleClass = ROLE_COLOR[t.role] ?? 'text-white/50 border-white/20 bg-white/5';
+            const project = projects.find((p) => p.characterId === t.characterId);
+            const projectTasks = project ? (tasksMap.get(project.id) ?? []) : [];
             const taskSummary = project
               ? {
                   total: projectTasks.length,
-                  done: projectTasks.filter((t) => t.status === "done").length,
-                  inProgress: projectTasks.filter(
-                    (t) => t.status === "in_progress",
-                  ).length,
+                  done: projectTasks.filter((t) => t.status === 'done').length,
+                  inProgress: projectTasks.filter((t) => t.status === 'in_progress').length,
                 }
               : null;
             const activeTask =
-              projectTasks.find((t) => t.status === "in_progress") ??
-              projectTasks.find((t) => t.status === "todo");
-            const taskRuns = activeTask
-              ? (runsMap.get(activeTask.id) ?? [])
-              : [];
-            const latestRun =
-              taskRuns.length > 0 ? taskRuns[taskRuns.length - 1] : undefined;
+              projectTasks.find((t) => t.status === 'in_progress') ??
+              projectTasks.find((t) => t.status === 'todo');
+            const taskRuns = activeTask ? (runsMap.get(activeTask.id) ?? []) : [];
+            const latestRun = taskRuns.length > 0 ? taskRuns[taskRuns.length - 1] : undefined;
             return (
               <div
                 key={t.characterId}
@@ -121,12 +104,8 @@ export default async function ProjectsPage() {
                     />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[13px] font-bold text-[#e2d9f3] truncate">
-                      {t.name}
-                    </p>
-                    <p className="text-[10px] text-white/40 truncate">
-                      {t.title}
-                    </p>
+                    <p className="text-[13px] font-bold text-[#e2d9f3] truncate">{t.name}</p>
+                    <p className="text-[10px] text-white/40 truncate">{t.title}</p>
                   </div>
                 </div>
 
@@ -196,9 +175,7 @@ export default async function ProjectsPage() {
                       )}
                     </>
                   ) : (
-                    <span className="text-[9px] text-white/25 italic">
-                      no active project
-                    </span>
+                    <span className="text-[9px] text-white/25 italic">no active project</span>
                   )}
                   <Link
                     href={`/stages?character=${t.characterId}`}

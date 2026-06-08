@@ -1,291 +1,543 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Orchestration Design</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: #0f0a1e;
-    font-family: 'Segoe UI', sans-serif;
-    color: #e2d9f3;
-    padding: 24px 20px;
-    line-height: 1.6;
-  }
-  h1 { color: #f0abfc; font-size: 18px; font-weight: 800; margin-bottom: 2px; }
-  .sub { color: #4a3d62; font-size: 11px; margin-bottom: 24px; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Orchestration Design</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #0f0a1e;
+        font-family: 'Segoe UI', sans-serif;
+        color: #e2d9f3;
+        padding: 24px 20px;
+        line-height: 1.6;
+      }
+      h1 {
+        color: #f0abfc;
+        font-size: 18px;
+        font-weight: 800;
+        margin-bottom: 2px;
+      }
+      .sub {
+        color: #4a3d62;
+        font-size: 11px;
+        margin-bottom: 24px;
+      }
 
-  .section { margin-bottom: 22px; }
-  .sec-title {
-    font-size: 9px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
-    color: #4a3d62; border-bottom: 1px solid #160d2e;
-    padding-bottom: 5px; margin-bottom: 10px;
-  }
+      .section {
+        margin-bottom: 22px;
+      }
+      .sec-title {
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #4a3d62;
+        border-bottom: 1px solid #160d2e;
+        padding-bottom: 5px;
+        margin-bottom: 10px;
+      }
 
-  /* concept map */
-  .concept-row { display: flex; gap: 8px; margin-bottom: 8px; }
-  .concept-box {
-    flex: 1; background: #160d2e; border: 1px solid #1e1535;
-    border-radius: 8px; padding: 10px 12px;
-  }
-  .concept-title { font-size: 11px; font-weight: 700; margin-bottom: 4px; }
-  .concept-desc { font-size: 10px; color: #7c6b99; line-height: 1.5; }
-  code { font-size: 9px; background: rgba(167,139,250,0.15); color: #a78bfa; padding: 1px 4px; border-radius: 3px; }
-  .badge { font-size: 8px; padding: 1px 5px; border-radius: 3px; margin-left: 4px; vertical-align: middle; }
-  .badge-port { background: rgba(74,222,128,0.15); color: #4ade80; border: 1px solid rgba(74,222,94,0.25); }
-  .badge-new  { background: rgba(240,171,252,0.15); color: #f0abfc; border: 1px solid rgba(240,171,252,0.25); }
-  .badge-adapt { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.25); }
+      /* concept map */
+      .concept-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .concept-box {
+        flex: 1;
+        background: #160d2e;
+        border: 1px solid #1e1535;
+        border-radius: 8px;
+        padding: 10px 12px;
+      }
+      .concept-title {
+        font-size: 11px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .concept-desc {
+        font-size: 10px;
+        color: #7c6b99;
+        line-height: 1.5;
+      }
+      code {
+        font-size: 9px;
+        background: rgba(167, 139, 250, 0.15);
+        color: #a78bfa;
+        padding: 1px 4px;
+        border-radius: 3px;
+      }
+      .badge {
+        font-size: 8px;
+        padding: 1px 5px;
+        border-radius: 3px;
+        margin-left: 4px;
+        vertical-align: middle;
+      }
+      .badge-port {
+        background: rgba(74, 222, 128, 0.15);
+        color: #4ade80;
+        border: 1px solid rgba(74, 222, 94, 0.25);
+      }
+      .badge-new {
+        background: rgba(240, 171, 252, 0.15);
+        color: #f0abfc;
+        border: 1px solid rgba(240, 171, 252, 0.25);
+      }
+      .badge-adapt {
+        background: rgba(251, 191, 36, 0.15);
+        color: #fbbf24;
+        border: 1px solid rgba(251, 191, 36, 0.25);
+      }
 
-  /* flow */
-  .flow-row { display: flex; gap: 0; align-items: stretch; margin-bottom: 6px; }
-  .flow-box {
-    background: #160d2e; border: 1px solid #1e1535;
-    border-radius: 8px; padding: 8px 12px; flex: 1;
-    font-size: 10px; color: #94a3b8;
-  }
-  .flow-box strong { color: #e2d9f3; }
-  .flow-arrow {
-    display: flex; align-items: center; padding: 0 6px;
-    color: #2d1f4a; font-size: 16px;
-  }
+      /* flow */
+      .flow-row {
+        display: flex;
+        gap: 0;
+        align-items: stretch;
+        margin-bottom: 6px;
+      }
+      .flow-box {
+        background: #160d2e;
+        border: 1px solid #1e1535;
+        border-radius: 8px;
+        padding: 8px 12px;
+        flex: 1;
+        font-size: 10px;
+        color: #94a3b8;
+      }
+      .flow-box strong {
+        color: #e2d9f3;
+      }
+      .flow-arrow {
+        display: flex;
+        align-items: center;
+        padding: 0 6px;
+        color: #2d1f4a;
+        font-size: 16px;
+      }
 
-  /* orchestration diagram */
-  .orch-diagram {
-    background: #0a0616; border: 1px solid #1e1535; border-radius: 12px;
-    padding: 16px; display: flex; gap: 12px; align-items: flex-start;
-  }
-  .orch-left { display: flex; flex-direction: column; gap: 8px; flex: 1; }
-  .orch-right { display: flex; flex-direction: column; gap: 8px; width: 200px; }
-  .agent-node {
-    border-radius: 8px; padding: 8px 10px; display: flex; align-items: center; gap: 8px;
-    border: 1px solid;
-  }
-  .agent-node.coordinator { background: rgba(240,171,252,0.08); border-color: rgba(240,171,252,0.3); }
-  .agent-node.worker      { background: rgba(74,222,128,0.06); border-color: rgba(74,222,128,0.2); }
-  .agent-node.idle        { background: rgba(100,116,139,0.06); border-color: rgba(100,116,139,0.2); }
-  .agent-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
-  .agent-info { flex: 1; min-width: 0; }
-  .agent-name { font-size: 10px; font-weight: 700; }
-  .agent-task { font-size: 9px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .agent-state { font-size: 8px; padding: 1px 5px; border-radius: 99px; }
-  .state-live    { background: rgba(74,222,128,0.15); color: #4ade80; }
-  .state-wait    { background: rgba(251,146,60,0.15); color: #fb923c; }
-  .state-idle    { background: rgba(100,116,139,0.15); color: #94a3b8; }
-  .state-coord   { background: rgba(240,171,252,0.15); color: #f0abfc; }
+      /* orchestration diagram */
+      .orch-diagram {
+        background: #0a0616;
+        border: 1px solid #1e1535;
+        border-radius: 12px;
+        padding: 16px;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+      }
+      .orch-left {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex: 1;
+      }
+      .orch-right {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 200px;
+      }
+      .agent-node {
+        border-radius: 8px;
+        padding: 8px 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid;
+      }
+      .agent-node.coordinator {
+        background: rgba(240, 171, 252, 0.08);
+        border-color: rgba(240, 171, 252, 0.3);
+      }
+      .agent-node.worker {
+        background: rgba(74, 222, 128, 0.06);
+        border-color: rgba(74, 222, 128, 0.2);
+      }
+      .agent-node.idle {
+        background: rgba(100, 116, 139, 0.06);
+        border-color: rgba(100, 116, 139, 0.2);
+      }
+      .agent-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+      }
+      .agent-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .agent-name {
+        font-size: 10px;
+        font-weight: 700;
+      }
+      .agent-task {
+        font-size: 9px;
+        color: #64748b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .agent-state {
+        font-size: 8px;
+        padding: 1px 5px;
+        border-radius: 99px;
+      }
+      .state-live {
+        background: rgba(74, 222, 128, 0.15);
+        color: #4ade80;
+      }
+      .state-wait {
+        background: rgba(251, 146, 60, 0.15);
+        color: #fb923c;
+      }
+      .state-idle {
+        background: rgba(100, 116, 139, 0.15);
+        color: #94a3b8;
+      }
+      .state-coord {
+        background: rgba(240, 171, 252, 0.15);
+        color: #f0abfc;
+      }
 
-  .task-panel {
-    background: #160d2e; border: 1px solid #1e1535; border-radius: 8px; padding: 10px 12px;
-  }
-  .task-title { font-size: 10px; font-weight: 700; color: #c8a8e8; margin-bottom: 6px; }
-  .todo-item { font-size: 9px; color: #64748b; display: flex; align-items: center; gap: 5px; margin-bottom: 4px; }
-  .todo-item.done { color: #4ade80; }
-  .todo-item.active { color: #f0abfc; }
-  .todo-item.pending { color: #475569; }
-  .todo-checkbox { width: 10px; height: 10px; border-radius: 2px; border: 1px solid; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 7px; }
-  .todo-item.done .todo-checkbox   { border-color: #4ade80; color: #4ade80; background: rgba(74,222,128,0.15); }
-  .todo-item.active .todo-checkbox { border-color: #f0abfc; color: #f0abfc; background: rgba(240,171,252,0.1); }
-  .todo-item.pending .todo-checkbox { border-color: #334155; }
+      .task-panel {
+        background: #160d2e;
+        border: 1px solid #1e1535;
+        border-radius: 8px;
+        padding: 10px 12px;
+      }
+      .task-title {
+        font-size: 10px;
+        font-weight: 700;
+        color: #c8a8e8;
+        margin-bottom: 6px;
+      }
+      .todo-item {
+        font-size: 9px;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-bottom: 4px;
+      }
+      .todo-item.done {
+        color: #4ade80;
+      }
+      .todo-item.active {
+        color: #f0abfc;
+      }
+      .todo-item.pending {
+        color: #475569;
+      }
+      .todo-checkbox {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        border: 1px solid;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 7px;
+      }
+      .todo-item.done .todo-checkbox {
+        border-color: #4ade80;
+        color: #4ade80;
+        background: rgba(74, 222, 128, 0.15);
+      }
+      .todo-item.active .todo-checkbox {
+        border-color: #f0abfc;
+        color: #f0abfc;
+        background: rgba(240, 171, 252, 0.1);
+      }
+      .todo-item.pending .todo-checkbox {
+        border-color: #334155;
+      }
 
-  .channel-msg {
-    background: rgba(251,146,60,0.06); border: 1px solid rgba(251,146,60,0.2);
-    border-radius: 6px; padding: 6px 8px; font-size: 9px; color: #94a3b8; margin-bottom: 5px;
-  }
-  .channel-from { color: #fb923c; font-weight: 700; }
+      .channel-msg {
+        background: rgba(251, 146, 60, 0.06);
+        border: 1px solid rgba(251, 146, 60, 0.2);
+        border-radius: 6px;
+        padding: 6px 8px;
+        font-size: 9px;
+        color: #94a3b8;
+        margin-bottom: 5px;
+      }
+      .channel-from {
+        color: #fb923c;
+        font-weight: 700;
+      }
 
-  /* table */
-  table { width: 100%; border-collapse: collapse; font-size: 10px; }
-  th { background: #160d2e; padding: 6px 10px; text-align: left; color: #4a3d62; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; font-size: 9px; border-bottom: 1px solid #1e1535; }
-  td { padding: 6px 10px; border-bottom: 1px solid #1a1030; color: #94a3b8; }
-  td:first-child { color: #c8a8e8; font-weight: 600; }
-</style>
-</head>
-<body>
+      /* table */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10px;
+      }
+      th {
+        background: #160d2e;
+        padding: 6px 10px;
+        text-align: left;
+        color: #4a3d62;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        font-size: 9px;
+        border-bottom: 1px solid #1e1535;
+      }
+      td {
+        padding: 6px 10px;
+        border-bottom: 1px solid #1a1030;
+        color: #94a3b8;
+      }
+      td:first-child {
+        color: #c8a8e8;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>✦ Orchestration Layer ✧</h1>
+    <p class="sub">ported จาก tentacle/terminal/channel model — ปรับให้ใช้ Claude API แทน PTY</p>
 
-<h1>✦ Orchestration Layer ✧</h1>
-<p class="sub">ported จาก tentacle/terminal/channel model — ปรับให้ใช้ Claude API แทน PTY</p>
-
-<!-- CONCEPT MAPPING -->
-<div class="section">
-  <div class="sec-title">▸ Concept Mapping: Repo → ระบบใหม่</div>
-  <div class="concept-row">
-    <div class="concept-box">
-      <div class="concept-title">Tentacle <span class="badge badge-adapt">ADAPTED</span></div>
-      <div class="concept-desc">
-        Repo: folder <code>.octogent/tentacles/&lt;id&gt;/</code> พร้อม <code>CONTEXT.md</code> + <code>todo.md</code><br><br>
-        เรา: <strong>Task</strong> entity ใน PostgreSQL — มี <code>title</code>, <code>context</code> (markdown), <code>todos[]</code>, <code>assignedCharacterId</code>
-      </div>
-    </div>
-    <div class="concept-box">
-      <div class="concept-title">Terminal / Session <span class="badge badge-adapt">ADAPTED</span></div>
-      <div class="concept-desc">
-        Repo: PTY session ที่รัน <code>claude</code> CLI จริงๆ<br><br>
-        เรา: <strong>AgentSession</strong> — conversation กับ Claude API ที่มี <code>characterId</code>, <code>taskId</code>, <code>parentSessionId?</code>
-      </div>
-    </div>
-  </div>
-  <div class="concept-row">
-    <div class="concept-box">
-      <div class="concept-title">Parent Coordinator <span class="badge badge-port">PORTED</span></div>
-      <div class="concept-desc">
-        Character หนึ่งตัวรับ task ใหญ่ → วิเคราะห์ → สั่ง spawn worker sessions สำหรับ character อื่นๆ ผ่าน tool call พิเศษ <code>spawn_worker</code>
-      </div>
-    </div>
-    <div class="concept-box">
-      <div class="concept-title">Channel Messaging <span class="badge badge-port">PORTED</span></div>
-      <div class="concept-desc">
-        ส่ง message ระหว่าง characters — inject เข้า conversation ของ target character เมื่อเป็น idle ในรูป <code>[Message from Mai]: ...</code>
-      </div>
-    </div>
-    <div class="concept-box">
-      <div class="concept-title">Worker (up to 9) <span class="badge badge-port">PORTED</span></div>
-      <div class="concept-desc">
-        Child session ที่ spawn จาก todo item — แต่ละ worker รู้ว่าตัวเองทำ task ไหน, parent คือใคร
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- LIVE ORCHESTRATION DIAGRAM -->
-<div class="section">
-  <div class="sec-title">▸ Live Example — Task: "Build Login Feature"</div>
-  <div class="orch-diagram">
-    <div class="orch-left">
-      <!-- Coordinator -->
-      <div class="agent-node coordinator">
-        <div class="agent-avatar" style="background:linear-gradient(135deg,#fef9c3,#fde68a);">📖</div>
-        <div class="agent-info">
-          <div class="agent-name">Yui <span class="agent-state state-coord">👑 COORDINATOR</span></div>
-          <div class="agent-task">วิเคราะห์ task + มอบหมายงาน</div>
+    <!-- CONCEPT MAPPING -->
+    <div class="section">
+      <div class="sec-title">▸ Concept Mapping: Repo → ระบบใหม่</div>
+      <div class="concept-row">
+        <div class="concept-box">
+          <div class="concept-title">Tentacle <span class="badge badge-adapt">ADAPTED</span></div>
+          <div class="concept-desc">
+            Repo: folder <code>.octogent/tentacles/&lt;id&gt;/</code> พร้อม
+            <code>CONTEXT.md</code> + <code>todo.md</code><br /><br />
+            เรา: <strong>Task</strong> entity ใน PostgreSQL — มี <code>title</code>,
+            <code>context</code> (markdown), <code>todos[]</code>, <code>assignedCharacterId</code>
+          </div>
+        </div>
+        <div class="concept-box">
+          <div class="concept-title">
+            Terminal / Session <span class="badge badge-adapt">ADAPTED</span>
+          </div>
+          <div class="concept-desc">
+            Repo: PTY session ที่รัน <code>claude</code> CLI จริงๆ<br /><br />
+            เรา: <strong>AgentSession</strong> — conversation กับ Claude API ที่มี
+            <code>characterId</code>, <code>taskId</code>, <code>parentSessionId?</code>
+          </div>
         </div>
       </div>
-
-      <div style="text-align:center;color:#2d1f4a;font-size:11px;padding:2px 0;">↓ spawn workers ↓</div>
-
-      <!-- Workers -->
-      <div class="agent-node worker">
-        <div class="agent-avatar" style="background:linear-gradient(135deg,#ffd8ec,#c8a8e8);">🐱</div>
-        <div class="agent-info">
-          <div class="agent-name">Mai <span class="agent-state state-live">● LIVE</span></div>
-          <div class="agent-task">Build LoginForm component...</div>
+      <div class="concept-row">
+        <div class="concept-box">
+          <div class="concept-title">
+            Parent Coordinator <span class="badge badge-port">PORTED</span>
+          </div>
+          <div class="concept-desc">
+            Character หนึ่งตัวรับ task ใหญ่ → วิเคราะห์ → สั่ง spawn worker sessions สำหรับ
+            character อื่นๆ ผ่าน tool call พิเศษ <code>spawn_worker</code>
+          </div>
         </div>
-      </div>
-      <div class="agent-node worker">
-        <div class="agent-avatar" style="background:linear-gradient(135deg,#a8f0c8,#60a5fa);">⚔️</div>
-        <div class="agent-info">
-          <div class="agent-name">Ren <span class="agent-state state-wait">⏳ WAITING</span></div>
-          <div class="agent-task">Build /auth/login API endpoint</div>
+        <div class="concept-box">
+          <div class="concept-title">
+            Channel Messaging <span class="badge badge-port">PORTED</span>
+          </div>
+          <div class="concept-desc">
+            ส่ง message ระหว่าง characters — inject เข้า conversation ของ target character เมื่อเป็น
+            idle ในรูป <code>[Message from Mai]: ...</code>
+          </div>
         </div>
-      </div>
-      <div class="agent-node idle">
-        <div class="agent-avatar" style="background:linear-gradient(135deg,#fed7aa,#fb923c);">🔧</div>
-        <div class="agent-info">
-          <div class="agent-name">Aki <span class="agent-state state-idle">💤 IDLE</span></div>
-          <div class="agent-task">รอ: Setup JWT middleware</div>
+        <div class="concept-box">
+          <div class="concept-title">
+            Worker (up to 9) <span class="badge badge-port">PORTED</span>
+          </div>
+          <div class="concept-desc">
+            Child session ที่ spawn จาก todo item — แต่ละ worker รู้ว่าตัวเองทำ task ไหน, parent
+            คือใคร
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="orch-right">
-      <!-- Task/Todo panel -->
-      <div class="task-panel">
-        <div class="task-title">📋 Task: Login Feature</div>
-        <div class="todo-item done">
-          <div class="todo-checkbox">✓</div>
-          Design UI mockup
+    <!-- LIVE ORCHESTRATION DIAGRAM -->
+    <div class="section">
+      <div class="sec-title">▸ Live Example — Task: "Build Login Feature"</div>
+      <div class="orch-diagram">
+        <div class="orch-left">
+          <!-- Coordinator -->
+          <div class="agent-node coordinator">
+            <div class="agent-avatar" style="background: linear-gradient(135deg, #fef9c3, #fde68a)">
+              📖
+            </div>
+            <div class="agent-info">
+              <div class="agent-name">
+                Yui <span class="agent-state state-coord">👑 COORDINATOR</span>
+              </div>
+              <div class="agent-task">วิเคราะห์ task + มอบหมายงาน</div>
+            </div>
+          </div>
+
+          <div style="text-align: center; color: #2d1f4a; font-size: 11px; padding: 2px 0">
+            ↓ spawn workers ↓
+          </div>
+
+          <!-- Workers -->
+          <div class="agent-node worker">
+            <div class="agent-avatar" style="background: linear-gradient(135deg, #ffd8ec, #c8a8e8)">
+              🐱
+            </div>
+            <div class="agent-info">
+              <div class="agent-name">Mai <span class="agent-state state-live">● LIVE</span></div>
+              <div class="agent-task">Build LoginForm component...</div>
+            </div>
+          </div>
+          <div class="agent-node worker">
+            <div class="agent-avatar" style="background: linear-gradient(135deg, #a8f0c8, #60a5fa)">
+              ⚔️
+            </div>
+            <div class="agent-info">
+              <div class="agent-name">
+                Ren <span class="agent-state state-wait">⏳ WAITING</span>
+              </div>
+              <div class="agent-task">Build /auth/login API endpoint</div>
+            </div>
+          </div>
+          <div class="agent-node idle">
+            <div class="agent-avatar" style="background: linear-gradient(135deg, #fed7aa, #fb923c)">
+              🔧
+            </div>
+            <div class="agent-info">
+              <div class="agent-name">Aki <span class="agent-state state-idle">💤 IDLE</span></div>
+              <div class="agent-task">รอ: Setup JWT middleware</div>
+            </div>
+          </div>
         </div>
-        <div class="todo-item active">
-          <div class="todo-checkbox">~</div>
-          Build LoginForm (Mai)
-        </div>
-        <div class="todo-item active">
-          <div class="todo-checkbox">~</div>
-          /auth/login endpoint (Ren)
-        </div>
-        <div class="todo-item pending">
-          <div class="todo-checkbox"></div>
-          JWT middleware (Aki)
-        </div>
-        <div class="todo-item pending">
-          <div class="todo-checkbox"></div>
-          Integration test (Yui)
+
+        <div class="orch-right">
+          <!-- Task/Todo panel -->
+          <div class="task-panel">
+            <div class="task-title">📋 Task: Login Feature</div>
+            <div class="todo-item done">
+              <div class="todo-checkbox">✓</div>
+              Design UI mockup
+            </div>
+            <div class="todo-item active">
+              <div class="todo-checkbox">~</div>
+              Build LoginForm (Mai)
+            </div>
+            <div class="todo-item active">
+              <div class="todo-checkbox">~</div>
+              /auth/login endpoint (Ren)
+            </div>
+            <div class="todo-item pending">
+              <div class="todo-checkbox"></div>
+              JWT middleware (Aki)
+            </div>
+            <div class="todo-item pending">
+              <div class="todo-checkbox"></div>
+              Integration test (Yui)
+            </div>
+          </div>
+
+          <!-- Channel messages -->
+          <div style="font-size: 9px; color: #4a3d62; margin: 4px 0 4px">📡 Channel Messages</div>
+          <div class="channel-msg">
+            <span class="channel-from">Mai → Ren:</span> API endpoint ต้องการ field
+            <code>rememberMe</code> ด้วยนะ
+          </div>
+          <div class="channel-msg">
+            <span class="channel-from">Ren → Yui:</span> endpoint พร้อมแล้ว รอ review
+          </div>
         </div>
       </div>
+    </div>
 
-      <!-- Channel messages -->
-      <div style="font-size:9px;color:#4a3d62;margin:4px 0 4px;">📡 Channel Messages</div>
-      <div class="channel-msg">
-        <span class="channel-from">Mai → Ren:</span> API endpoint ต้องการ field <code>rememberMe</code> ด้วยนะ
+    <!-- SPAWN FLOW -->
+    <div class="section">
+      <div class="sec-title">▸ Orchestration Flow</div>
+      <div class="flow-row">
+        <div class="flow-box"><strong>1.</strong> User สร้าง Task พร้อม context + todos</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box"><strong>2.</strong> User เลือก coordinator character (เช่น Yui)</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">
+          <strong>3.</strong> Yui วิเคราะห์ todos → ส่ง <code>spawn_worker</code> tool call
+        </div>
       </div>
-      <div class="channel-msg">
-        <span class="channel-from">Ren → Yui:</span> endpoint พร้อมแล้ว รอ review
+      <div class="flow-row" style="margin-top: 6px">
+        <div class="flow-box">
+          <strong>4.</strong> Nest.js spawn AgentSessions สำหรับ character แต่ละตัว + inject task
+          context
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box"><strong>5.</strong> Workers ทำงานพร้อมกัน สูงสุด 9 ตัว</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">
+          <strong>6.</strong> Channel messaging ระหว่าง workers เมื่อต้องการ coordinate
+        </div>
       </div>
     </div>
-  </div>
-</div>
 
-<!-- SPAWN FLOW -->
-<div class="section">
-  <div class="sec-title">▸ Orchestration Flow</div>
-  <div class="flow-row">
-    <div class="flow-box"><strong>1.</strong> User สร้าง Task พร้อม context + todos</div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-box"><strong>2.</strong> User เลือก coordinator character (เช่น Yui)</div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-box"><strong>3.</strong> Yui วิเคราะห์ todos → ส่ง <code>spawn_worker</code> tool call</div>
-  </div>
-  <div class="flow-row" style="margin-top:6px;">
-    <div class="flow-box"><strong>4.</strong> Nest.js spawn AgentSessions สำหรับ character แต่ละตัว + inject task context</div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-box"><strong>5.</strong> Workers ทำงานพร้อมกัน สูงสุด 9 ตัว</div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-box"><strong>6.</strong> Channel messaging ระหว่าง workers เมื่อต้องการ coordinate</div>
-  </div>
-</div>
-
-<!-- NEW DB TABLES -->
-<div class="section">
-  <div class="sec-title">▸ Database Schema เพิ่มเติม</div>
-  <table>
-    <tr><th>Table</th><th>Fields</th><th>หมายเหตุ</th></tr>
-    <tr>
-      <td>Task</td>
-      <td><code>id, title, context, coordinatorCharacterId, status, createdAt</code></td>
-      <td>เทียบกับ Tentacle</td>
-    </tr>
-    <tr>
-      <td>TodoItem</td>
-      <td><code>id, taskId, text, status, assignedCharacterId?, workerSessionId?</code></td>
-      <td>ใน todo.md ของ repo</td>
-    </tr>
-    <tr>
-      <td>AgentSession</td>
-      <td><code>id, characterId, taskId?, parentSessionId?, state, createdAt</code></td>
-      <td>เทียบกับ Terminal</td>
-    </tr>
-    <tr>
-      <td>ChannelMessage</td>
-      <td><code>id, fromSessionId, toSessionId, content, delivered, createdAt</code></td>
-      <td>in-memory ใน repo, เราเก็บใน DB</td>
-    </tr>
-  </table>
-</div>
-
-<!-- WHAT STAYS SAME -->
-<div class="section">
-  <div class="sec-title">▸ Limits เหมือน repo (ported)</div>
-  <div style="display:flex;gap:8px;">
-    <div class="concept-box" style="flex:none;width:auto;">
-      <div class="concept-desc">Max <strong>9 workers per coordinator</strong> — เหมือน repo ทุกอย่าง</div>
+    <!-- NEW DB TABLES -->
+    <div class="section">
+      <div class="sec-title">▸ Database Schema เพิ่มเติม</div>
+      <table>
+        <tr>
+          <th>Table</th>
+          <th>Fields</th>
+          <th>หมายเหตุ</th>
+        </tr>
+        <tr>
+          <td>Task</td>
+          <td><code>id, title, context, coordinatorCharacterId, status, createdAt</code></td>
+          <td>เทียบกับ Tentacle</td>
+        </tr>
+        <tr>
+          <td>TodoItem</td>
+          <td><code>id, taskId, text, status, assignedCharacterId?, workerSessionId?</code></td>
+          <td>ใน todo.md ของ repo</td>
+        </tr>
+        <tr>
+          <td>AgentSession</td>
+          <td><code>id, characterId, taskId?, parentSessionId?, state, createdAt</code></td>
+          <td>เทียบกับ Terminal</td>
+        </tr>
+        <tr>
+          <td>ChannelMessage</td>
+          <td><code>id, fromSessionId, toSessionId, content, delivered, createdAt</code></td>
+          <td>in-memory ใน repo, เราเก็บใน DB</td>
+        </tr>
+      </table>
     </div>
-    <div class="concept-box" style="flex:none;width:auto;">
-      <div class="concept-desc">Channel message ส่งได้เฉพาะ <strong>idle session</strong> เท่านั้น</div>
-    </div>
-    <div class="concept-box" style="flex:none;width:auto;">
-      <div class="concept-desc">Character prompt <strong>prepend ทุก session</strong> — สไตล์ตัวละครอยู่ครบ</div>
-    </div>
-  </div>
-</div>
 
-</body>
+    <!-- WHAT STAYS SAME -->
+    <div class="section">
+      <div class="sec-title">▸ Limits เหมือน repo (ported)</div>
+      <div style="display: flex; gap: 8px">
+        <div class="concept-box" style="flex: none; width: auto">
+          <div class="concept-desc">
+            Max <strong>9 workers per coordinator</strong> — เหมือน repo ทุกอย่าง
+          </div>
+        </div>
+        <div class="concept-box" style="flex: none; width: auto">
+          <div class="concept-desc">
+            Channel message ส่งได้เฉพาะ <strong>idle session</strong> เท่านั้น
+          </div>
+        </div>
+        <div class="concept-box" style="flex: none; width: auto">
+          <div class="concept-desc">
+            Character prompt <strong>prepend ทุก session</strong> — สไตล์ตัวละครอยู่ครบ
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
 </html>

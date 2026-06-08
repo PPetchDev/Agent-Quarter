@@ -29,12 +29,12 @@ _Added: C-WORKFLOW-009_
 
 ### Mode Selection
 
-| Mode | Trigger | Workflow Files Read |
-|------|---------|-------------------|
-| **Micro** | Files known · 1–3 files · no arch/QA/DB/dep/handoff | None |
-| **Map** | Files unknown — locate before read | `ai/maps/` only |
-| **Lean** | Multi-file · unknowns · known contract | context-packet + required reads |
-| **Full Contract** | New contract · arch decision · multi-agent handoff | Full context flow |
+| Mode              | Trigger                                             | Workflow Files Read             |
+| ----------------- | --------------------------------------------------- | ------------------------------- |
+| **Micro**         | Files known · 1–3 files · no arch/QA/DB/dep/handoff | None                            |
+| **Map**           | Files unknown — locate before read                  | `ai/maps/` only                 |
+| **Lean**          | Multi-file · unknowns · known contract              | context-packet + required reads |
+| **Full Contract** | New contract · arch decision · multi-agent handoff  | Full context flow               |
 
 **Default: Micro Mode.** Escalate only when conditions require it.
 
@@ -70,12 +70,12 @@ _Added: C-WORKFLOW-009_
 
 ### Token Budgets
 
-| Mode | Target | Hard Stop |
-|------|--------|-----------|
-| Micro | <10K | 20K |
-| Map | <15K | 30K |
-| Lean | <20K | 90K (stop-compact at 60K) |
-| Full Contract | <35K | 90K (stop-compact at 60K) |
+| Mode          | Target | Hard Stop                 |
+| ------------- | ------ | ------------------------- |
+| Micro         | <10K   | 20K                       |
+| Map           | <15K   | 30K                       |
+| Lean          | <20K   | 90K (stop-compact at 60K) |
+| Full Contract | <35K   | 90K (stop-compact at 60K) |
 
 ### No Blind Search Rule
 
@@ -95,16 +95,16 @@ _Added: C-WORKFLOW-009_
 
 ### Command / Skill Routing
 
-| Context | Command | Skill |
-|---------|---------|-------|
-| Micro Mode | none | none |
-| Files unknown | `agent-map` | `graphify` (if map insufficient) |
-| Single impl task | `agent-run` | — |
-| UI polish | `agent-ui-polish` | `impeccable` |
-| Browser QA | `agent-browser-debug` | `browser-harness` |
-| Code review | `agent-review` | — |
-| Close out | `agent-closeout` | `caveman` |
-| Context generation | `agent-context` | `graphify` |
+| Context            | Command               | Skill                            |
+| ------------------ | --------------------- | -------------------------------- |
+| Micro Mode         | none                  | none                             |
+| Files unknown      | `agent-map`           | `graphify` (if map insufficient) |
+| Single impl task   | `agent-run`           | —                                |
+| UI polish          | `agent-ui-polish`     | `impeccable`                     |
+| Browser QA         | `agent-browser-debug` | `browser-harness`                |
+| Code review        | `agent-review`        | —                                |
+| Close out          | `agent-closeout`      | `caveman`                        |
+| Context generation | `agent-context`       | `graphify`                       |
 
 Do not run commands by default. Select only what the task requires.
 
@@ -122,12 +122,12 @@ These rules apply to all agents (Claude Code, Codex, Copilot, Antigravity, etc.)
 
 ## Agent Lanes
 
-| Agent | Role |
-|-------|------|
-| **Claude Code** | Contract compilation · architecture · review · gatekeeping · memory compression · focused execution |
-| **Codex** | Focused implementation · tests · type cleanup · small bug fixes |
-| **Antigravity** | UI shell · layout · live preview · interaction prototypes |
-| **GitHub Copilot** | Inline completion · helper functions · small local edits |
+| Agent              | Role                                                                                                |
+| ------------------ | --------------------------------------------------------------------------------------------------- |
+| **Claude Code**    | Contract compilation · architecture · review · gatekeeping · memory compression · focused execution |
+| **Codex**          | Focused implementation · tests · type cleanup · small bug fixes                                     |
+| **Antigravity**    | UI shell · layout · live preview · interaction prototypes                                           |
+| **GitHub Copilot** | Inline completion · helper functions · small local edits                                            |
 
 During C-BOOT-001: Claude Code is the sole active agent. Others introduced after review.
 
@@ -137,13 +137,13 @@ During C-BOOT-001: Claude Code is the sole active agent. Others introduced after
 
 `ai/maps/` is the shared retrieval layer. Read maps before reading source files.
 
-| Map | Purpose |
-|-----|---------|
-| `repo-map.md` | Directory structure and package layout |
-| `feature-map.md` | Feature → file mapping |
-| `symbol-index.md` | Key types, functions, constants |
-| `api-map.md` | API endpoints and socket events |
-| `test-map.md` | Test files and verification commands |
+| Map               | Purpose                                |
+| ----------------- | -------------------------------------- |
+| `repo-map.md`     | Directory structure and package layout |
+| `feature-map.md`  | Feature → file mapping                 |
+| `symbol-index.md` | Key types, functions, constants        |
+| `api-map.md`      | API endpoints and socket events        |
+| `test-map.md`     | Test files and verification commands   |
 
 Keep maps compact. Update when file locations change.
 
@@ -167,6 +167,7 @@ Keep maps compact. Update when file locations change.
 ## Stop Conditions
 
 Stop and request review if:
+
 - More than 3–5 files need unexpected changes
 - New external dependency required
 - Implementation would exceed active contract

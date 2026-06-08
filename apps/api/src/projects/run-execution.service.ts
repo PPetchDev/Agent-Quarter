@@ -33,15 +33,7 @@ export class RunExecutionService {
   ) {}
 
   async executeRun(input: RunExecutionInput): Promise<void> {
-    const {
-      runId,
-      taskId,
-      projectId,
-      agentId,
-      prompt,
-      cwd,
-      mode = 'read-only',
-    } = input;
+    const { runId, taskId, projectId, agentId, prompt, cwd, mode = 'read-only' } = input;
 
     // Emit execution started
     this.runsGateway.emitRunExecutionStarted({
@@ -57,11 +49,9 @@ export class RunExecutionService {
     // Run Codex with service-level timeout guard
     let timer: ReturnType<typeof setTimeout> | undefined;
 
-    const timeoutPromise = new Promise<typeof SERVICE_TIMEOUT_SENTINEL>(
-      (resolve) => {
-        timer = setTimeout(() => resolve(SERVICE_TIMEOUT_SENTINEL), SERVICE_TIMEOUT_MS);
-      },
-    );
+    const timeoutPromise = new Promise<typeof SERVICE_TIMEOUT_SENTINEL>((resolve) => {
+      timer = setTimeout(() => resolve(SERVICE_TIMEOUT_SENTINEL), SERVICE_TIMEOUT_MS);
+    });
 
     let result: LocalCodexRunnerResult;
     try {
