@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import Anthropic from '@anthropic-ai/sdk';
 import { getCharacterTemplate, parseEmotionOverride, stripEmotionTags, type CharacterMood } from '@squad/core';
+import type { LlmTextProvider, LlmTextProviderInput, LlmTextProviderResult } from '../llm/llm-provider.interface';
 
 export type StreamChunkEvent = {
   chunk: string;
@@ -8,7 +9,7 @@ export type StreamChunkEvent = {
 };
 
 @Injectable()
-export class ClaudeService {
+export class ClaudeService implements LlmTextProvider {
   private readonly client: Anthropic;
 
   constructor() {
@@ -45,5 +46,24 @@ export class ClaudeService {
         yield { chunk, moodOverride };
       }
     }
+  }
+
+  async generateText(input: LlmTextProviderInput): Promise<LlmTextProviderResult> {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not set');
+
+    const response = await this.client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: input.maxTokens ?? 256,
+      system: input.prompt,
+      messages: [{ role: 'user', content: 'Respond with the dialogue line only.' }],
+    });
+
+    const text = response.content
+      .map((block) => (block.type === 'text' ? block.text : ''))
+      .join('')
+      .trim();
+
+    return { text, model: 'claude-sonnet-4-6' };
   }
 }

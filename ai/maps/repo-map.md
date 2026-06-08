@@ -49,6 +49,7 @@ AnimeAgentSquad/
 - Station registry: `apps/web/src/game/scene/loungeStations.ts`
 - Static furniture collision grid: `apps/web/src/game/scene/loungePathGrid.ts`
 - Task resolver: `apps/web/src/game/agents/taskResolver.ts`
+- Office workflow planner, agent chat handoffs, and tool boundary data: `apps/web/src/game/agents/officeWorkflow.ts`
 - Pure grid planner: `apps/web/src/game/movement/gridPath.ts`
 - Segment movement helper: `apps/web/src/game/movement/moveToTarget.ts`
 - Movement hook, route waypoint runner, route debug data, and active route refresh: `apps/web/src/hooks/useAgentWalk.ts`

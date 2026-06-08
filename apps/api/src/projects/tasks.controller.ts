@@ -1,13 +1,20 @@
 import { Controller, Get, Post, Param, NotFoundException, BadRequestException, HttpCode, HttpStatus } from '@nestjs/common';
-import { TASKS, RUNS, canStartTask, getRunsByTaskId, getTaskById } from '@squad/core';
+import { TASKS, canStartTask, getTaskById } from '@squad/core';
+import { RunsService } from './runs.service';
+import { RunsGateway } from './runs.gateway';
 
 @Controller('tasks')
 export class TasksController {
+  constructor(
+    private readonly runsService: RunsService,
+    private readonly runsGateway: RunsGateway,
+  ) {}
+
   @Get(':id/runs')
   findRuns(@Param('id') id: string) {
     const task = getTaskById(TASKS, id);
     if (!task) throw new NotFoundException(`Task '${id}' not found`);
-    return getRunsByTaskId(RUNS, id);
+    return this.runsService.getRunsByTaskId(id);
   }
 
   @Post(':id/start')
@@ -18,6 +25,9 @@ export class TasksController {
     if (!canStartTask(task)) {
       throw new BadRequestException(`Task '${id}' cannot be started (status: ${task.status})`);
     }
-    return { ...task, status: 'in_progress' as const };
+
+    const run = this.runsService.createRun({ projectId: task.projectId, taskId: task.id });
+    this.runsGateway.emitRunStarted(run);
+    return run;
   }
 }

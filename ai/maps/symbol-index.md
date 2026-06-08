@@ -1,6 +1,6 @@
 # Symbol Index
 
-_Updated: C-DOMAIN-001_
+_Updated: C-OFFICE-RUN-EXECUTION-FRONTEND-HYDRATION-FIX-006F_
 
 ## Core Domain
 
@@ -60,6 +60,11 @@ _Updated: C-DOMAIN-001_
 | `useAgentWalk.enqueueTask` | hook API | Append a task to the agent's queue without interrupting the current task |
 | `useAgentWalk.clearQueue` | hook API | Empty the agent's task queue without affecting the active task |
 | `MAX_TASK_QUEUE_LENGTH` | constant | Default hard cap on the agent's pending task queue (8); `enqueueTask` and `useAgentWalk` accept `maxLength` / `maxQueueLength` overrides |
+| `OFFICE_WORKFLOW_AGENTS` | constant | Five visible office workflow agents (`Mai`, `Aki`, `Ren`, `Yui`, `Mika`) used by the lounge command board |
+| `OFFICE_TOOL_BOUNDARIES` | constant | Tool boundary labels and guardrails for map, patch, verify, browser, and closeout lanes |
+| `createOfficeWorkflowSteps` | function | Builds the deterministic five-step Map -> Build -> Contract -> Review -> Close handoff plan for a user command |
+| `inferPrimaryOfficeTask` | function | Maps command text to the primary `AgentTaskType` used by the build step |
+| `describeOfficeStepStart` / `describeOfficeStepDone` | functions | Format deterministic agent-to-agent chat messages for workflow handoffs |
 | `AmbientDrawContext` | type | PIXI-free draw context (`proj`, `fillQuad`, `strokeQuad`, `circle`, `ellipse`, `dim`) supplied to `applyStationAmbient` and to `custom`-kind shape draw fns |
 | `applyStationAmbient` | function | Pure interpreter — walks `STATION_AMBIENTS[type]` and dispatches each shape through a draw context |
 | `getStationDim` | function | Returns `FURNITURE_DIMS[type]` with a `{w:1,d:1,h:1}` fallback for unknown types |
@@ -74,8 +79,102 @@ _Updated: C-DOMAIN-001_
 
 ## Stage / Projects
 
+|| Symbol | Kind | Description ||
+|---|---|---|
+|| `ProjectsPage` | Next.js page | Renders project/task/run cards and places the dev-only read-only execution trigger beside an existing latest run when the local Codex UI env gate is enabled ||
+|| `RunExecutionButton` | client component | Dev-only Projects page button in `apps/web/src/app/projects/RunExecutionButton.tsx`; hidden unless non-production and `NEXT_PUBLIC_ENABLE_LOCAL_CODEX_UI=true`, calls `executeRunDev` with a fixed read-only prompt, disables while pending, and shows local accepted/error status only ||
+|| `READ_ONLY_EXECUTION_PROMPT` | constant | Fixed non-editable prompt used by `RunExecutionButton`; read-only UI smoke only, no user prompt textarea ||
+|| `shouldShowRunExecutionButton` | function | Pure visibility guard for real run ids plus local Codex UI env gate. Uses direct `process.env` references for Next.js inlining; accepts optional `env` object for testing. ||
+|| `isLocalCodexUiEnabled` | function | Env gate helper: returns true when `NODE_ENV !== 'production' && NEXT_PUBLIC_ENABLE_LOCAL_CODEX_UI === 'true'`. Uses direct `process.env` references for Next.js inlining; accepts optional `env` object for testing. ||
+|| `createRunExecutionClickHandler` | function | Testable click handler helper that prevents duplicate pending execution and maps adapter success/errors to local button status ||
+
+## Frontend Hooks
+
+| Symbol | Kind | Description |
+|---|---|---|
+| `useRunSocket` | hook | Connects to socket.io namespace `/runs`; emits `run.started`, `run.completed`, `run.failed`, `run.cancelled` via callbacks |
+| `useRunExecutionSocket` | hook | New hook in `apps/web/src/hooks/useRunExecutionSocket.ts`; connects to `/runs` namespace, consumes `run.execution.{started,log,tool,completed,failed}` events, scoped by runId, env-gated via `isExecutionUiEnabled`, resets on runId change. Accepts `UseRunExecutionSocketOptions` with `enabled` boolean to control connection. Socket effect depends on `[runId, enabled]` (006M: enabled added so socket connects after mount). |
+| `UseRunExecutionSocketOptions` | type | Hook options: `{ enabled?: boolean }` — when `false`, hook returns state but never connects socket. |
+| `executionReducer` | function | Pure reducer for execution events — supports STARTED/LOG/TOOL/COMPLETED/FAILED/RESET actions, caps at 20 events, delegates to `sanitizeMessage` |
+| `sanitizeMessage` | function | Pure safety filter: strips stack traces (before whitespace collapse), collapses whitespace, truncates to 240 chars, masks mixed-case+digit base64, API key prefixes, PEM markers |
+| `isExecutionUiEnabled` | function | Env gate: `NODE_ENV !== 'production' && NEXT_PUBLIC_ENABLE_LOCAL_CODEX_UI === 'true'` |
+| `ExecutionEvent` | type | Union event shape: type, runId, timestamp + optional provider/mode/level/message/toolName/status/summary/errorSummary |
+| `ExecutionEventType` | type | `'started' | 'log' | 'tool' | 'completed' | 'failed'` |
+| `ExecutionState` | type | Reducer state: `{ events: ExecutionEvent[]; terminalStatus: ExecutionTerminalStatus }` |
+| `ExecutionTerminalStatus` | type | `'idle' | 'completed' | 'failed'` |
+| `RunExecutionEventsPanel` | client component | Dev-only panel in `apps/web/src/app/projects/RunExecutionEventsPanel.tsx`; renders execution events as plain colored text, shows terminal status badge, hidden when env gate closed or no events. Calls `useRunExecutionSocket` unconditionally; uses `enabled` option to control socket connection. |
+| `formatEventLabel` | function | Pure display helper — formats each event type into a concise safe string (e.g. `"Execution started · provider: codex · mode: read-only"`) |
+| `RunEventPayload` | type | `{ run: Run }` payload shape for run events |
+| `UseRunSocketHandlers` | type | Callback handlers for run events |
+| `LoungeCanvas` | component | Consumes `useRunSocket` for `onRunFailed`/`onRunCancelled` only; appends to officeChat with kind "blocked" |
+| `pickAgentDialogue` | function | Pure deterministic dialogue scheduler — selects speaker/target, respects cooldown/probability/dedup, returns AgentDialogueMessage or null |
+| `AgentDialogueMessage` | type | Dialogue message shape: fromAgentId, toAgentId?, text, createdAt, source: 'deterministic' |
+| `PickAgentDialogueInput` | type | Input shape for pickAgentDialogue: now, lastDialogueAt, cooldownMs, probability, agents, recentTexts?, random? |
+| `AgentSnapshot` | type | Minimal agent view for the scheduler: id (OfficeAgentId) + optional state string |
+
+## Frontend API Adapters
+
+| Symbol | Kind | Description |
+|---|---|---|
+| `executeRunDev` | function | Frontend dev execution adapter in `apps/web/src/lib/api.ts`; POSTs to `/api/runs/:id/execute` with `{ prompt, mode: 'read-only' }`, validates empty prompt before request, never sends `cwd` or workspace-write options, and returns a structured success/error result |
+| `ExecuteRunDevResponse` | type | Successful dev execution trigger response: `{ runId: string; executionStarted: true }` |
+| `ExecuteRunDevResult` | type | Structured adapter result union: `{ ok: true; data }` or `{ ok: false; status?; message }` |
+
+
 | Symbol | Kind | Description |
 |---|---|---|
 | `ClaudeGateway` | class | Socket.io gateway, room-scoped emit |
 | `ProjectsController` | class | GET `/projects`, `/projects/:id`, `/projects/:id/tasks` |
-| `TasksController` | class | GET `/tasks/:id/runs` |
+| `TasksController` | class | GET `/tasks/:id/runs`; POST `/tasks/:id/start` returns `Run` via `RunsService.createRun` |
+| `RunsController` | class | PATCH `/runs/:id/{complete,fail,cancel}` + POST `/runs/:id/execute` (dev-only) via `RunsService` + `RunsGateway` + `RunExecutionService` |
+| `RunsController.executeRun` | method | POST /api/runs/:id/execute — dev-only fire-and-forget execution trigger; env-gated (NODE_ENV, ENABLE_LOCAL_CODEX, ALLOW_LOCAL_PROCESS_EXECUTION); 202 Accepted; cwd server-side only |
+| `RunsService` | class | Projects-module in-memory `Run` state owner (seed clone + create/read/complete/fail/cancel) |
+| `RunsGateway` | class | Socket.io gateway on namespace `/runs`; server-push `run.{started,completed,failed,cancelled}` + `run.execution.{started,log,tool,completed,failed}` |
+| `RunsGateway.emitRunExecutionStarted` | method | Emits `run.execution.started` with `RunExecutionStartedPayload` (provider, mode) |
+| `RunsGateway.emitRunExecutionLog` | method | Emits `run.execution.log` with `RunExecutionLogPayload` (level, message) |
+| `RunsGateway.emitRunExecutionTool` | method | Emits `run.execution.tool` with `RunExecutionToolPayload` (toolName, status, summary?) |
+| `RunsGateway.emitRunExecutionCompleted` | method | Emits `run.execution.completed` with `RunExecutionCompletedPayload` (summary) |
+| `RunsGateway.emitRunExecutionFailed` | method | Emits `run.execution.failed` with `RunExecutionFailedPayload` (errorSummary) |
+| `RunExecutionEventBase` | type | Base payload: runId, taskId?, projectId?, agentId?, timestamp |
+| `RunExecutionStartedPayload` | type | provider: 'codex'\|'mock'\|'manual', mode: 'read-only'\|'workspace-write' |
+| `RunExecutionLogPayload` | type | level: 'debug'\|'info'\|'warn'\|'error', message |
+| `RunExecutionToolPayload` | type | toolName, status: 'started'\|'completed'\|'failed', summary? |
+| `RunExecutionCompletedPayload` | type | summary |
+| `RunExecutionFailedPayload` | type | errorSummary |
+
+### Execution
+
+| Symbol | Kind | Description |
+|---|---|---|
+| `LocalCodexRunner` | class | Dev-only Codex CLI subprocess wrapper; spawns `codex exec --json` behind env gates, parses JSONL output |
+| `LocalCodexRunner.run` | method | Accepts `LocalCodexRunnerInput`, returns `LocalCodexRunnerResult` — never throws for expected failures |
+| `LocalCodexRunnerInput` | type | prompt, cwd, sandbox?, timeoutMs?, maxOutputBytes? |
+| `LocalCodexRunnerResult` | type | ok, finalMessage?, events[], exitCode?, errorSummary?, timedOut?, truncated? |
+| `LocalCodexRunnerEvent` | type | type, message?, raw? |
+| `CodexSandboxMode` | type | `'read-only' \| 'workspace-write'` |
+| `RunExecutionService` | class | Orchestrates LocalCodexRunner, emits `run.execution.*` events via RunsGateway; does NOT mutate run state |
+| `RunExecutionService.executeRun` | method | Takes `RunExecutionInput`, calls runner, emits started→log→completed/failed events |
+| `RunExecutionInput` | type | runId, taskId?, projectId?, agentId?, prompt, cwd, mode? |
+| `DialogueService` | class | Office dialogue service; depends on `LLM_TEXT_PROVIDER` injection token, tries provider → returns `source:'llm'` on success, `source:'deterministic'` on fallback |
+| `LlmTextProvider` | interface | Provider-neutral text generation interface: `generateText({prompt, maxTokens?}) → {text, model?}` |
+| `LlmTextProviderInput` | type | `{ prompt: string; maxTokens?: number }` |
+| `LlmTextProviderResult` | type | `{ text: string; model?: string }` |
+| `LLM_TEXT_PROVIDER` | constant | NestJS injection token — currently resolved to `ClaudeService` via `useExisting` |
+| `ClaudeService` | class | Implements `LlmTextProvider` — Anthropic one-shot + streaming; exported from ClaudeModule |
+| `ClaudeService.generateText` | method | One-shot text generation via Anthropic `messages.create`; returns `LlmTextProviderResult` with `model:'claude-sonnet-4-6'` |
+| `DialogueController` | class | `POST /dialogue/office` REST endpoint delegating to `DialogueService.generateOfficeDialogue` (async) |
+| `DialogueModule` | class | NestJS module wiring `DialogueController` + `DialogueService`, imports `ClaudeModule` |
+| `generateOfficeDialogue` | method | Async — tries Claude first (source:'llm', fallbackUsed:false), falls back to deterministic pool |
+| `GenerateOfficeDialogueInput` | type | fromAgentId, toAgentId?, officeStatus, recentDialogue?, now?, maxChars? |
+| `DialogueResponse` | type | fromAgentId, toAgentId?, text, source: 'deterministic'\|'llm', createdAt, fallbackUsed, errorSummary?, model? |
+| `DialogueSource` | type | `'deterministic' \| 'llm'` |
+| `buildOfficeDialoguePrompt` | function | Constructs Claude-ready system prompt from agent personas — used by DialogueService for Claude calls |
+| `sanitizeDialogueText` | function | Private helper — collapses newlines, strips markdown/code fences/quotes, normalizes whitespace |
+
+### Frontend Dialogue
+
+| Symbol | Kind | Description |
+|---|---|---|
+| `generateOfficeDialogue` (frontend) | function | Fetch adapter — POSTs to `/api/dialogue/office`, returns `DialogueResponse` or null on failure |
+| `GenerateOfficeDialogueRequest` | type | Frontend request shape: fromAgentId, toAgentId?, officeStatus?, recentDialogue?, now?, maxChars? |
+| `DialogueResponse` (frontend) | type | Frontend response shape: fromAgentId, toAgentId?, text, source:'llm'\|'deterministic', fallbackUsed, model?, errorSummary? |

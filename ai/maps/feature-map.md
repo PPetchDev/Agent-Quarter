@@ -18,6 +18,7 @@ _Updated: C-FURNITURE-GRID-001_
 | Agent task-to-station resolution + per-task work duration | `apps/web/src/game/agents/taskResolver.ts` |
 | Agent work timer lifecycle (walk → work → auto-idle) and progress fields | `apps/web/src/hooks/useAgentWalk.ts`, `apps/web/src/game/agents/agentTypes.ts` |
 | Agent task queue (auto-pop chain after work completion, shift-click enqueue) | `apps/web/src/game/agents/taskQueue.ts`, `apps/web/src/hooks/useAgentWalk.ts`, `apps/web/src/components/lounge/LoungeCanvas.tsx` |
+| Office workflow command board, agent handoff planner, chat bus, and tool boundary log | `apps/web/src/game/agents/officeWorkflow.ts`, `apps/web/src/components/lounge/LoungeCanvas.tsx` |
 | Agent type contracts | `apps/web/src/game/agents/agentTypes.ts` |
 | Isometric station registry | `apps/web/src/game/scene/loungeStations.ts` |
 | Lounge blocked-cell grid | `apps/web/src/game/scene/loungePathGrid.ts` |

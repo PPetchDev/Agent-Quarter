@@ -6,5 +6,6 @@ import { ConversationsModule } from '../conversations/conversations.module';
 @Module({
   imports: [ConversationsModule],
   providers: [ClaudeService, ClaudeGateway],
+  exports: [ClaudeService],
 })
 export class ClaudeModule {}

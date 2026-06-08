@@ -27,8 +27,27 @@ import { getDefaultSpawnPosition, type CatalogItem } from "./furnitureCatalog";
 import { selectPurchasePlacement } from "./purchasePlacement";
 import { useAgentWalk } from "@/hooks/useAgentWalk";
 import { useCountdown } from "@/hooks/useCountdown";
-import type { AgentState, AgentTaskType } from "@/game/agents/agentTypes";
+import type { Agent, AgentState, AgentTaskType } from "@/game/agents/agentTypes";
+import {
+  createOfficeToolEvent,
+  createOfficeWorkflowSteps,
+  describeOfficeStepDone,
+  describeOfficeStepStart,
+  OFFICE_TOOL_BOUNDARIES,
+  OFFICE_WORKFLOW_AGENTS,
+} from "@/game/agents/officeWorkflow";
+import type {
+  OfficeAgentId,
+  OfficeChatMessage,
+  OfficeToolEvent,
+  OfficeWorkflowStatus,
+  OfficeWorkflowStep,
+} from "@/game/agents/officeWorkflow";
+import { startOfficeRun, completeOfficeRun } from "@/game/agents/officeRunAdapter";
+import { useRunSocket } from "@/hooks/useRunSocket";
 import { loungeStations, type LoungeStationId } from "@/game/scene/loungeStations";
+import { pickAgentDialogue } from "@/game/dialogue/dialogueScheduler";
+import { generateOfficeDialogue } from "@/game/dialogue/dialogueAdapter";
 import Image from "next/image";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -165,6 +184,36 @@ const STATE_COLOR: Record<string, string> = {
   error:       "bg-[#fca5a5]/50 text-[#991b1b]",
 };
 
+const OFFICE_STATUS_LABEL: Record<OfficeWorkflowStatus, string> = {
+  idle: "Idle",
+  running: "Running",
+  paused: "Paused",
+  done: "Done",
+};
+
+const OFFICE_STATUS_CLASS: Record<OfficeWorkflowStatus, string> = {
+  idle: "bg-[#e8d0a0]/50 text-[#5a3c18]",
+  running: "bg-[#bbf7d0]/80 text-[#166534]",
+  paused: "bg-[#fde68a]/90 text-[#7a5000]",
+  done: "bg-[#bfdbfe]/90 text-[#1e40af]",
+};
+
+const OFFICE_CHAT_CLASS: Record<OfficeChatMessage["kind"], string> = {
+  status: "border-[#c8a870]/60 bg-[#fff8e8]/80 text-[#5a3c18]",
+  handoff: "border-[#93c5fd]/60 bg-[#eff6ff]/85 text-[#1e3a8a]",
+  done: "border-[#86efac]/70 bg-[#f0fdf4]/85 text-[#166534]",
+  blocked: "border-[#fca5a5]/80 bg-[#fef2f2]/90 text-[#991b1b]",
+  dialogue: "border-[#c4b5fd]/60 bg-[#f5f3ff]/85 text-[#5b21b6]",
+};
+
+/** Canonical seed task ID for REST adapter (fire-and-forget, degrade silently). */
+const OFFICE_CANONICAL_TASK_ID = "t-008"; // "File findings in backlog" (status: todo)
+
+const ENABLE_LLM_DIALOGUE =
+  process.env.NEXT_PUBLIC_ENABLE_LLM_DIALOGUE === 'true';
+
+const LLM_REQUEST_COOLDOWN_MS = 90_000;
+
 const STORAGE_KEY = "squad:lounge:v7";
 const ROOM_MAP_URL = "/maps/maple_hideout.json";
 const INITIAL_COINS = 500;
@@ -186,6 +235,14 @@ const SUPPLIES_LOW_THRESHOLD_PCT = 20;
 const SUPPLIES_LOW_REWARD_MULT = 0.75;
 
 type Mode = "visit" | "move";
+
+type OfficeWalker = {
+  agent: Agent;
+  assignTask: (task: AgentTaskType) => void;
+  clearAgentTask: () => void;
+};
+
+type OfficeWalkerMap = Record<OfficeAgentId, OfficeWalker>;
 
 type SharedLayoutPayload = {
   v: 1;
@@ -376,6 +433,7 @@ export function LoungeCanvas() {
   const [shopOpen, setShopOpen] = useState(false);
   const theme = useMemo<RoomTheme>(() => getTimeTheme(), []);
   const [showRoomSettings, setShowRoomSettings] = useState(false);
+  const [roomReady, setRoomReady] = useState(false);
   const [roomW, setRoomW] = useState(ROOM_TILES_X);
   const [roomH, setRoomH] = useState(ROOM_TILES_Y);
   const roomWRef = useRef(ROOM_TILES_X);
@@ -385,6 +443,7 @@ export function LoungeCanvas() {
     roomObjects: objects,
     roomWidth: roomW,
     roomHeight: roomH,
+    startIso: { wx: 7.2, wy: 5.2, wz: 0.2 },
   });
   const previousAgentStateRef = useRef(agent.state);
   const previousTaskTypeRef = useRef(agent.taskType);
@@ -397,17 +456,106 @@ export function LoungeCanvas() {
     agentId: 'agent-2',
     agentName: 'Aki',
     characterId: 'aki',
-    startIso: { wx: 7.0, wy: 0.65, wz: 0.2 },
+    startIso: { wx: 8.2, wy: 5.2, wz: 0.2 },
   });
+  const ren = useAgentWalk({
+    roomObjects: objects,
+    roomWidth: roomW,
+    roomHeight: roomH,
+    agentId: 'agent-3',
+    agentName: 'Ren',
+    characterId: 'ren',
+    startIso: { wx: 4.5, wy: 6.4, wz: 0.2 },
+  });
+  const yui = useAgentWalk({
+    roomObjects: objects,
+    roomWidth: roomW,
+    roomHeight: roomH,
+    agentId: 'agent-4',
+    agentName: 'Yui',
+    characterId: 'yui',
+    startIso: { wx: 6.4, wy: 5.2, wz: 0.2 },
+  });
+  const mika = useAgentWalk({
+    roomObjects: objects,
+    roomWidth: roomW,
+    roomHeight: roomH,
+    agentId: 'agent-5',
+    agentName: 'Mika',
+    characterId: 'mika',
+    startIso: { wx: 5.4, wy: 5.2, wz: 0.2 },
+  });
+  const [officeCommand, setOfficeCommand] = useState("Build a verified lounge workflow slice");
+  const [activeOfficeCommand, setActiveOfficeCommand] = useState("Build a verified lounge workflow slice");
+  const [officeStatus, setOfficeStatus] = useState<OfficeWorkflowStatus>("idle");
+  const [officeSteps, setOfficeSteps] = useState<OfficeWorkflowStep[]>(() =>
+    createOfficeWorkflowSteps("Build a verified lounge workflow slice"),
+  );
+  const [officeStepIndex, setOfficeStepIndex] = useState(0);
+  const [officeChat, setOfficeChat] = useState<OfficeChatMessage[]>([]);
+  const [officeToolEvents, setOfficeToolEvents] = useState<OfficeToolEvent[]>([]);
+  const officeStepInFlightRef = useRef<string | null>(null);
+  const officeInFlightRunIdRef = useRef<string | null>(null);
+  const officeChatIdRef = useRef(0);
+  const officeToolEventIdRef = useRef(0);
+  const officeWalkers = useMemo<OfficeWalkerMap>(() => ({
+    "agent-1": { agent, assignTask, clearAgentTask },
+    "agent-2": {
+      agent: aki.agent,
+      assignTask: aki.assignTask,
+      clearAgentTask: aki.clearAgentTask,
+    },
+    "agent-3": {
+      agent: ren.agent,
+      assignTask: ren.assignTask,
+      clearAgentTask: ren.clearAgentTask,
+    },
+    "agent-4": {
+      agent: yui.agent,
+      assignTask: yui.assignTask,
+      clearAgentTask: yui.clearAgentTask,
+    },
+    "agent-5": {
+      agent: mika.agent,
+      assignTask: mika.assignTask,
+      clearAgentTask: mika.clearAgentTask,
+    },
+  }), [
+    agent,
+    assignTask,
+    clearAgentTask,
+    aki.agent,
+    aki.assignTask,
+    aki.clearAgentTask,
+    ren.agent,
+    ren.assignTask,
+    ren.clearAgentTask,
+    yui.agent,
+    yui.assignTask,
+    yui.clearAgentTask,
+    mika.agent,
+    mika.assignTask,
+    mika.clearAgentTask,
+  ]);
+  const visibleOfficeAgents = useMemo(
+    () =>
+      OFFICE_WORKFLOW_AGENTS.map((spec) => ({
+        spec,
+        agent: officeWalkers[spec.id].agent,
+      })),
+    [officeWalkers],
+  );
   const akiTaskIndexRef = useRef(0);
   useEffect(() => {
+    if (!roomReady) return;
+    if (officeStatus !== 'idle') return;
     if (aki.agent.state !== 'idle') return;
     const cycle: AgentTaskType[] = ['code', 'research', 'meeting', 'document', 'print', 'rest'];
     const next = cycle[akiTaskIndexRef.current % cycle.length]!;
     akiTaskIndexRef.current += 1;
     const handle = window.setTimeout(() => aki.assignTask(next), 1500);
     return () => window.clearTimeout(handle);
-  }, [aki, aki.agent.state]);
+  }, [aki.agent.state, aki.assignTask, officeStatus, roomReady]);
   // Track character positions
   useEffect(() => {
     const update = (id: string, pos: {x:number;y:number}, dir: string) => {
@@ -416,7 +564,21 @@ export function LoungeCanvas() {
     };
     update('agent-1', agent.position, agent.direction);
     update('agent-2', aki.agent.position, aki.agent.direction);
-  }, [agent.position, agent.direction, aki.agent.position, aki.agent.direction]);
+    update('agent-3', ren.agent.position, ren.agent.direction);
+    update('agent-4', yui.agent.position, yui.agent.direction);
+    update('agent-5', mika.agent.position, mika.agent.direction);
+  }, [
+    agent.position,
+    agent.direction,
+    aki.agent.position,
+    aki.agent.direction,
+    ren.agent.position,
+    ren.agent.direction,
+    yui.agent.position,
+    yui.agent.direction,
+    mika.agent.position,
+    mika.agent.direction,
+  ]);
 
   // ── Spine animation state mapping ────────────────────────────────────────────
   const SPINE_ANIM_CANDIDATES: Record<AgentState, string[]> = {
@@ -464,7 +626,10 @@ export function LoungeCanvas() {
     };
     applyAnim('agent-1', agent.state);
     applyAnim('agent-2', aki.agent.state);
-  }, [agent.state, aki.agent.state]);
+    applyAnim('agent-3', ren.agent.state);
+    applyAnim('agent-4', yui.agent.state);
+    applyAnim('agent-5', mika.agent.state);
+  }, [agent.state, aki.agent.state, ren.agent.state, yui.agent.state, mika.agent.state]);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const timer = useCountdown(8 * 3600 + 23 * 60 + 17);
@@ -635,6 +800,7 @@ export function LoungeCanvas() {
 
         setObjects(roomObjects);
         objectsRef.current = roomObjects;
+        if (mounted) setRoomReady(true);
 
         setRoomProjection(roomWRef.current, roomHRef.current);
         const scene = buildRoomScene(app.stage, roomObjects, {
@@ -846,8 +1012,11 @@ export function LoungeCanvas() {
   }, [mode, roomW, roomH]);
 
   // ── Active station pulse (driven by agent work lifecycle) ───────────────────
-  const working = agent.workDurationMs !== undefined;
-  const stationId = agent.targetStationId as LoungeStationId | undefined;
+  const workingAgent = visibleOfficeAgents.find(
+    (entry) => entry.agent.workDurationMs !== undefined,
+  )?.agent;
+  const working = workingAgent?.workDurationMs !== undefined;
+  const stationId = workingAgent?.targetStationId as LoungeStationId | undefined;
   // Resolve the furniture id once per object/station change so the pulse RAF
   // only restarts when the matching furniture itself is added, removed, or
   // swapped — not on every unrelated edit to the objects array.
@@ -966,6 +1135,339 @@ export function LoungeCanvas() {
       }
     };
   }, []);
+
+  const appendOfficeChat = useCallback((message: Omit<OfficeChatMessage, "id">) => {
+    const id = `chat-${++officeChatIdRef.current}`;
+    setOfficeChat((prev) => [...prev, { id, ...message }].slice(-8));
+  }, []);
+
+  // ── Autonomous agent dialogue ──────────────────────────────────────────
+  const lastDialogueAtRef = useRef<number | null>(null);
+  const recentDialogueTextsRef = useRef<string[]>([]);
+  const [activeDialogueBubble, setActiveDialogueBubble] = useState<{
+    agentId: OfficeAgentId;
+    text: string;
+  } | null>(null);
+  const dialogueBubbleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // LLM guards
+  const llmInFlightRef = useRef(false);
+  const llmLastRequestAtRef = useRef<number | null>(null);
+  const dialogueMountedRef = useRef(true);
+  const officeStatusRef = useRef(officeStatus);
+  const llmRequestIdRef = useRef(0);
+
+  useEffect(() => {
+    officeStatusRef.current = officeStatus;
+  }, [officeStatus]);
+
+  useEffect(() => {
+    if (officeStatus !== 'idle') return;
+    if (!roomReady) return;
+
+    const tick = () => {
+      const message = pickAgentDialogue({
+        now: Date.now(),
+        lastDialogueAt: lastDialogueAtRef.current,
+        cooldownMs: 15_000,
+        probability: 0.1,
+        agents: [
+          { id: 'agent-1', state: agent.state },
+          { id: 'agent-2', state: aki.agent.state },
+          { id: 'agent-3', state: ren.agent.state },
+          { id: 'agent-4', state: yui.agent.state },
+          { id: 'agent-5', state: mika.agent.state },
+        ],
+        recentTexts: recentDialogueTextsRef.current,
+      });
+
+      if (message) {
+        const now = message.createdAt;
+        lastDialogueAtRef.current = now;
+
+        const appendDialogue = (fromAgentId: OfficeAgentId, toAgentId: OfficeAgentId | undefined, text: string) => {
+          recentDialogueTextsRef.current = [
+            ...recentDialogueTextsRef.current.slice(-4),
+            text,
+          ];
+          appendOfficeChat({
+            agentId: fromAgentId,
+            toAgentId,
+            kind: 'dialogue',
+            text,
+          });
+
+          // Show bubble above speaking agent
+          const bubble = { agentId: fromAgentId, text };
+          setActiveDialogueBubble(bubble);
+          if (dialogueBubbleTimeoutRef.current) {
+            clearTimeout(dialogueBubbleTimeoutRef.current);
+          }
+          dialogueBubbleTimeoutRef.current = setTimeout(() => {
+            setActiveDialogueBubble(null);
+            dialogueBubbleTimeoutRef.current = null;
+          }, 5_000);
+        };
+
+        // Try LLM
+        if (
+          ENABLE_LLM_DIALOGUE &&
+          !llmInFlightRef.current &&
+          (llmLastRequestAtRef.current === null ||
+            now - llmLastRequestAtRef.current >= LLM_REQUEST_COOLDOWN_MS)
+        ) {
+          llmInFlightRef.current = true;
+          llmLastRequestAtRef.current = now;
+          const requestId = ++llmRequestIdRef.current;
+
+          generateOfficeDialogue({
+            fromAgentId: message.fromAgentId,
+            toAgentId: message.toAgentId,
+            officeStatus: 'idle',
+            recentDialogue: recentDialogueTextsRef.current,
+            now,
+            maxChars: 80,
+          }).then((response) => {
+            llmInFlightRef.current = false;
+
+            if (
+              requestId !== llmRequestIdRef.current ||
+              !dialogueMountedRef.current ||
+              officeStatusRef.current !== 'idle'
+            ) {
+              return;
+            }
+
+            if (!response || !response.text?.trim()) {
+              // Fallback to deterministic
+              appendDialogue(
+                message.fromAgentId,
+                message.toAgentId,
+                message.text,
+              );
+              return;
+            }
+
+            appendDialogue(
+              response.fromAgentId,
+              response.toAgentId,
+              response.text,
+            );
+          }).catch(() => {
+            llmInFlightRef.current = false;
+            if (
+              requestId === llmRequestIdRef.current &&
+              dialogueMountedRef.current &&
+              officeStatusRef.current === 'idle'
+            ) {
+              appendDialogue(
+                message.fromAgentId,
+                message.toAgentId,
+                message.text,
+              );
+            }
+          });
+        } else {
+          // Deterministic only (guarded out or flag disabled)
+          appendDialogue(
+            message.fromAgentId,
+            message.toAgentId,
+            message.text,
+          );
+        }
+      }
+    };
+
+    const interval = setInterval(tick, 4_000);
+    return () => clearInterval(interval);
+  }, [
+    officeStatus,
+    roomReady,
+    agent.state,
+    aki.agent.state,
+    ren.agent.state,
+    yui.agent.state,
+    mika.agent.state,
+    appendOfficeChat,
+  ]);
+
+  // Cleanup dialogue bubble timeout on unmount
+  useEffect(() => {
+    return () => {
+      dialogueMountedRef.current = false;
+      if (dialogueBubbleTimeoutRef.current) {
+        clearTimeout(dialogueBubbleTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // ── socket run lifecycle (failed/cancelled only; started/completed handled by REST) ──
+  const handleRunFailed = useCallback(
+    ({ run }: { run: { id: string } }) => {
+      if (!officeInFlightRunIdRef.current) return;
+      if (run.id !== officeInFlightRunIdRef.current) return;
+      appendOfficeChat({
+        agentId: OFFICE_WORKFLOW_AGENTS[0].id,
+        kind: "blocked",
+        text: "⚠️ Backend run failed",
+      });
+    },
+    [],
+  );
+
+  const handleRunCancelled = useCallback(
+    ({ run }: { run: { id: string } }) => {
+      if (!officeInFlightRunIdRef.current) return;
+      if (run.id !== officeInFlightRunIdRef.current) return;
+      appendOfficeChat({
+        agentId: OFFICE_WORKFLOW_AGENTS[0].id,
+        kind: "blocked",
+        text: "✕ Backend run cancelled",
+      });
+    },
+    [],
+  );
+
+  useRunSocket({
+    onRunFailed: handleRunFailed,
+    onRunCancelled: handleRunCancelled,
+  });
+
+  const appendOfficeToolEvent = useCallback((event: Omit<OfficeToolEvent, "id">) => {
+    const id = `tool-${++officeToolEventIdRef.current}`;
+    setOfficeToolEvents((prev) => [...prev, { id, ...event }].slice(-6));
+  }, []);
+
+  const handleRunOfficeCommand = useCallback(() => {
+    if (!roomReady) {
+      showToast("Room is loading");
+      return;
+    }
+
+    const steps = createOfficeWorkflowSteps(officeCommand);
+    const first = steps[0];
+
+    officeStepInFlightRef.current = null;
+    setActiveOfficeCommand(officeCommand);
+    setOfficeSteps(steps);
+    setOfficeStepIndex(0);
+    setOfficeStatus("running");
+    setOfficeToolEvents([]);
+    setOfficeChat([]);
+
+    if (first) {
+      appendOfficeChat({
+        agentId: first.agentId,
+        toAgentId: first.handoffTo,
+        kind: "status",
+        text: "Command accepted. Starting map-first handoff.",
+      });
+    }
+    showToast("Office workflow started");
+  }, [appendOfficeChat, officeCommand, roomReady, showToast]);
+
+  const handlePauseOfficeWorkflow = useCallback(() => {
+    setOfficeStatus((current) => {
+      if (current === "running") return "paused";
+      if (current === "paused") return "running";
+      return current;
+    });
+  }, []);
+
+  const handleResetOfficeWorkflow = useCallback(() => {
+    officeStepInFlightRef.current = null;
+    Object.values(officeWalkers).forEach((walker) => walker.clearAgentTask());
+    setOfficeStatus("idle");
+    setOfficeStepIndex(0);
+    setOfficeToolEvents([]);
+    setOfficeChat([]);
+    showToast("Office workflow reset");
+  }, [officeWalkers, showToast]);
+
+  useEffect(() => {
+    if (officeStatus !== "running") return;
+
+    const step = officeSteps[officeStepIndex];
+    if (!step) {
+      setOfficeStatus("done");
+      return;
+    }
+
+    const walker = officeWalkers[step.agentId];
+
+    if (officeStepInFlightRef.current === null) {
+      if (walker.agent.state !== "idle") return;
+
+      walker.assignTask(step.taskType);
+      officeStepInFlightRef.current = step.id;
+      // Fire-and-forget: call backend run start, store returned run ID for completion
+      startOfficeRun(OFFICE_CANONICAL_TASK_ID).then((run) => {
+        if (run) {
+          officeInFlightRunIdRef.current = run.id;
+          appendOfficeChat({ agentId: step.agentId, kind: "status", text: "🔗 Backend run linked" });
+        } else {
+          appendOfficeChat({ agentId: step.agentId, kind: "status", text: "⚡ Demo fallback · backend unavailable" });
+        }
+      }).catch(() => {
+        appendOfficeChat({ agentId: step.agentId, kind: "status", text: "⚡ Demo fallback · backend unavailable" });
+      });
+      appendOfficeChat({
+        agentId: step.agentId,
+        toAgentId: step.handoffTo,
+        kind: "handoff",
+        text: describeOfficeStepStart(step, activeOfficeCommand),
+      });
+      appendOfficeToolEvent(createOfficeToolEvent(step));
+      return;
+    }
+
+    if (officeStepInFlightRef.current !== step.id) return;
+
+    if (walker.agent.state === "error") {
+      appendOfficeChat({
+        agentId: step.agentId,
+        kind: "blocked",
+        text: `${step.title} blocked. Waiting for path or layout fix.`,
+      });
+      setOfficeStatus("paused");
+      return;
+    }
+
+    if (walker.agent.state !== "idle") return;
+
+    const nextStep = officeSteps[officeStepIndex + 1];
+    officeStepInFlightRef.current = null;
+    appendOfficeChat({
+      agentId: step.agentId,
+      toAgentId: nextStep?.agentId,
+      kind: "done",
+      text: describeOfficeStepDone(step, nextStep),
+    });
+
+    if (nextStep) {
+      setOfficeStepIndex((current) => current + 1);
+    } else {
+      setOfficeStatus("done");
+      showToast("Office workflow done");
+    }
+    // Fire-and-forget: call backend run complete with in-flight run ID
+    const runId = officeInFlightRunIdRef.current;
+    if (runId) {
+      completeOfficeRun(runId).then((result) => {
+        if (result) appendOfficeChat({ agentId: step.agentId, kind: "status", text: "✅ Backend run completed" });
+      }).catch(() => {});
+      officeInFlightRunIdRef.current = null;
+    }
+  }, [
+    activeOfficeCommand,
+    appendOfficeChat,
+    appendOfficeToolEvent,
+    officeStatus,
+    officeStepIndex,
+    officeSteps,
+    officeWalkers,
+    showToast,
+  ]);
 
   // ── Happiness with cap ───────────────────────────────────────────────────────
   const addHappiness = useCallback((amount: number) => {
@@ -1185,6 +1687,10 @@ export function LoungeCanvas() {
     happiness + objects.reduce((s, o) => s + o.happiness, 0);
   const canUndo = historyRef.current.length > 0;
   const canRedo = redoRef.current.length > 0;
+  const currentOfficeStep = officeSteps[officeStepIndex];
+  const officeProgress = officeSteps.length > 0
+    ? `${Math.min(officeStepIndex + 1, officeSteps.length)}/${officeSteps.length}`
+    : "0/0";
 
   // ── JSX ──────────────────────────────────────────────────────────────────────
   return (
@@ -1269,6 +1775,182 @@ export function LoungeCanvas() {
               Empty
             </span>
           )}
+        </div>
+      </div>
+
+      {/* ── Office workflow command board ────────────────────────── */}
+      <div className="absolute left-3 top-16 z-30 flex w-[340px] max-w-[calc(100vw-1.5rem)] flex-col gap-2 rounded-2xl border border-[#c8a870] bg-[#f5e4c0]/95 p-3 shadow-xl backdrop-blur-sm max-sm:left-1 max-sm:right-1 max-sm:top-[4.25rem] max-sm:w-auto max-sm:gap-1.5 max-sm:p-2">
+        <div className="flex items-center gap-2">
+          <span className="text-[12px] font-black text-[#5a3c18] max-sm:text-[10px]">
+            Command Board
+          </span>
+          <span className={`ml-auto rounded-full px-2 py-0.5 text-[9px] font-black max-sm:text-[7px] ${OFFICE_STATUS_CLASS[officeStatus]}`}>
+            {OFFICE_STATUS_LABEL[officeStatus]} · {officeProgress}
+          </span>
+        </div>
+
+        <div className="flex min-w-0 items-center gap-1">
+          <input
+            value={officeCommand}
+            onChange={(e) => setOfficeCommand(e.target.value)}
+            className="min-w-0 flex-1 rounded-xl border border-[#c8a870]/70 bg-white/80 px-2 py-1.5 text-[11px] font-semibold text-[#5a3c18] outline-none focus:border-[#38bdf8] max-sm:text-[9px]"
+            aria-label="Office command"
+          />
+          <button
+            type="button"
+            onClick={handleRunOfficeCommand}
+            disabled={officeStatus === "running" || !roomReady}
+            title="Run office workflow"
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[12px] font-black shadow active:scale-95 transition ${
+              officeStatus === "running" || !roomReady
+                ? "bg-[#94a3b8] text-[#334155] cursor-not-allowed"
+                : "bg-[#16a34a] text-white hover:bg-[#15803d]"
+            }`}
+          >
+            ▶
+          </button>
+          <button
+            type="button"
+            onClick={handlePauseOfficeWorkflow}
+            disabled={officeStatus !== "running" && officeStatus !== "paused"}
+            title={officeStatus === "paused" ? "Resume" : "Pause"}
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[12px] font-black shadow active:scale-95 transition ${
+              officeStatus === "running" || officeStatus === "paused"
+                ? "bg-[#fde68a] text-[#7a5000] hover:bg-[#facc15]"
+                : "bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed"
+            }`}
+          >
+            {officeStatus === "paused" ? "▶" : "Ⅱ"}
+          </button>
+          <button
+            type="button"
+            onClick={handleResetOfficeWorkflow}
+            title="Reset office workflow"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#fee2e2] text-[12px] font-black text-[#991b1b] shadow hover:bg-[#fecaca] active:scale-95 transition"
+          >
+            ↻
+          </button>
+        </div>
+
+        <div className="grid grid-cols-5 gap-1">
+          {visibleOfficeAgents.map(({ spec, agent: boardAgent }) => {
+            const active = currentOfficeStep?.agentId === spec.id;
+            return (
+              <div
+                key={spec.id}
+                title={`${spec.title} · ${spec.focus}`}
+                className={`min-w-0 rounded-xl border px-1.5 py-1 text-center ${
+                  active
+                    ? "border-[#38bdf8] bg-[#e0f2fe]"
+                    : "border-[#c8a870]/70 bg-[#fff8e8]/70"
+                }`}
+              >
+                <Image
+                  src={`/characters/${spec.characterId}/01-idle.jpg`}
+                  alt={spec.name}
+                  width={24}
+                  height={24}
+                  className="mx-auto h-6 w-6 rounded-full object-cover"
+                  unoptimized
+                />
+                <div className="mt-0.5 truncate text-[8px] font-black text-[#5a3c18]">
+                  {spec.name}
+                </div>
+                <div className="truncate text-[7px] font-bold text-[#8b6030]">
+                  {TASK_ICON[boardAgent.taskType ?? "idle"] ?? "·"} {TASK_ICON_LABEL[boardAgent.taskType ?? "idle"]}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="flex min-w-0 items-center gap-1 overflow-hidden">
+          {officeSteps.map((step, index) => (
+            <span
+              key={step.id}
+              title={step.detail}
+              className={`min-w-0 flex-1 truncate rounded-full px-1.5 py-0.5 text-center text-[8px] font-black ${
+                index < officeStepIndex
+                  ? "bg-[#bbf7d0] text-[#166534]"
+                  : index === officeStepIndex
+                    ? "bg-[#bfdbfe] text-[#1e40af]"
+                    : "bg-[#e8d0a0]/70 text-[#7a5000]"
+              }`}
+            >
+              {step.title}
+            </span>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-[1.15fr_0.85fr] gap-2 max-sm:grid-cols-1 max-sm:gap-1.5">
+          <div className="min-h-[82px] rounded-xl border border-[#c8a870]/70 bg-white/60 p-1.5">
+            <div className="mb-1 text-[8px] font-black uppercase tracking-wide text-[#8b6030]">
+              Agent Chat
+            </div>
+            <div className="flex max-h-[92px] flex-col gap-1 overflow-hidden">
+              {officeChat.length === 0 ? (
+                <div className="rounded-lg border border-[#c8a870]/40 bg-[#fff8e8]/80 px-2 py-1 text-[9px] font-semibold text-[#8b6030]">
+                  Ready
+                </div>
+              ) : (
+                officeChat.map((message) => {
+                  const speaker = OFFICE_WORKFLOW_AGENTS.find((item) => item.id === message.agentId);
+                  const target = message.toAgentId
+                    ? OFFICE_WORKFLOW_AGENTS.find((item) => item.id === message.toAgentId)
+                    : null;
+                  return (
+                    <div
+                      key={message.id}
+                      className={`rounded-lg border px-2 py-1 text-[8px] font-semibold leading-snug ${OFFICE_CHAT_CLASS[message.kind]}`}
+                    >
+                      <span className="font-black">
+                        {speaker?.name ?? message.agentId}
+                        {target ? ` → ${target.name}` : ""}
+                      </span>
+                      <span className="ml-1">{message.text}</span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          <div className="min-h-[82px] rounded-xl border border-[#c8a870]/70 bg-white/60 p-1.5">
+            <div className="mb-1 text-[8px] font-black uppercase tracking-wide text-[#8b6030]">
+              Tool Boundary
+            </div>
+            <div className="mb-1 flex flex-wrap gap-1">
+              {Object.entries(OFFICE_TOOL_BOUNDARIES).map(([toolId, tool]) => (
+                <span
+                  key={toolId}
+                  title={tool.guardrail}
+                  className="rounded-full bg-[#f5e4c0] px-1.5 py-0.5 text-[7px] font-black text-[#5a3c18]"
+                >
+                  {tool.label}
+                </span>
+              ))}
+            </div>
+            <div className="flex max-h-[64px] flex-col gap-1 overflow-hidden">
+              {officeToolEvents.length === 0 ? (
+                <div className="rounded-lg border border-[#c8a870]/40 bg-[#fff8e8]/80 px-2 py-1 text-[9px] font-semibold text-[#8b6030]">
+                  Awaiting run
+                </div>
+              ) : (
+                officeToolEvents.slice(-3).map((event) => {
+                  const owner = OFFICE_WORKFLOW_AGENTS.find((item) => item.id === event.agentId);
+                  return (
+                    <div
+                      key={event.id}
+                      className="rounded-lg border border-[#bbf7d0]/70 bg-[#f0fdf4]/85 px-2 py-1 text-[8px] font-semibold leading-snug text-[#166534]"
+                    >
+                      <span className="font-black">{event.label}</span>
+                      <span className="ml-1">{owner?.name ?? event.agentId}: {event.detail}</span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1426,7 +2108,7 @@ export function LoungeCanvas() {
             )}
 
             {/* ── Lounge agents walking overlay ─────────────────────── */}
-            {[agent, aki.agent].map((a) => {
+            {visibleOfficeAgents.map(({ agent: a }) => {
               const ANIM_FILE: Record<string, string> = {
                 idle: "01-idle",
                 walk_up: "04-thinking",
@@ -1461,6 +2143,21 @@ export function LoungeCanvas() {
                     >
                       {a.bubbleText}
                       <span className="pointer-events-none absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-white/95" />
+                    </div>
+                  )}
+                  {activeDialogueBubble && a.id === activeDialogueBubble.agentId && (
+                    <div
+                      className="pointer-events-none absolute z-20 max-w-[180px] rounded-2xl bg-[#f5f3ff]/95 px-3 py-1.5 text-[11px] font-semibold text-[#5b21b6] shadow-lg border border-[#ddd6fe]/60"
+                      style={{
+                        left: x,
+                        top: y - SZ - 8,
+                        transform: "translate(-50%, -100%)",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      <span className="font-black">{a.name}/</span>
+                      {activeDialogueBubble.text}
+                      <span className="pointer-events-none absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-[#f5f3ff]/95" />
                     </div>
                   )}
                   <div
@@ -1602,27 +2299,34 @@ export function LoungeCanvas() {
         </button>
 
         {/* Character roster cards */}
-        <div className="flex items-center gap-2 mt-1 max-sm:gap-1 max-sm:mt-0.5">
-          <div className="flex items-center gap-1.5 rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-2 py-1 max-sm:px-1.5 max-sm:py-0.5 max-sm:gap-1">
-            <div className="w-7 h-7 rounded-full overflow-hidden bg-[#ffe4ec] max-sm:w-5 max-sm:h-5">
-              <Image src="/azur-char/qiye_h.png" alt="Mai" width={28} height={28}
-                className="object-cover scale-[3] translate-x-[2px] translate-y-[4px]" />
+        <div className="mt-1 flex max-w-[92vw] flex-wrap items-center justify-center gap-1.5 max-sm:mt-0.5 max-sm:max-w-[96vw] max-sm:gap-1">
+          {visibleOfficeAgents.map(({ spec, agent: rosterAgent }) => (
+            <div
+              key={spec.id}
+              className={`flex min-w-0 items-center gap-1.5 rounded-xl border px-2 py-1 max-sm:px-1.5 max-sm:py-0.5 max-sm:gap-1 ${
+                officeSteps[officeStepIndex]?.agentId === spec.id && officeStatus === "running"
+                  ? "border-[#38bdf8] bg-[#e0f2fe]/95"
+                  : "border-[#c8a870] bg-[#f5e4c0]/90"
+              }`}
+            >
+              <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-[#fff0f5] max-sm:h-5 max-sm:w-5">
+                <Image
+                  src={`/characters/${spec.characterId}/01-idle.jpg`}
+                  alt={spec.name}
+                  width={28}
+                  height={28}
+                  className="h-full w-full object-cover"
+                  unoptimized
+                />
+              </div>
+              <span className="truncate text-[10px] font-bold text-[#5a3c18] max-sm:text-[8px]">
+                {spec.name}
+              </span>
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold max-sm:px-1.5 max-sm:text-[7px] ${STATE_COLOR[rosterAgent.state] ?? "bg-[#e8d0a0]/30 text-[#5a3c18]"}`}>
+                {STATE_LABEL[rosterAgent.state] ?? rosterAgent.state}
+              </span>
             </div>
-            <span className="text-[10px] font-bold text-[#5a3c18] max-sm:text-[8px]">Mai</span>
-            <span className={`text-[9px] font-bold rounded-full px-2 py-0.5 max-sm:text-[7px] max-sm:px-1.5 ${STATE_COLOR[agent.state] ?? "bg-[#e8d0a0]/30 text-[#5a3c18]"}`}>
-              {STATE_LABEL[agent.state] ?? agent.state}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-2 py-1 max-sm:px-1.5 max-sm:py-0.5 max-sm:gap-1">
-            <div className="w-7 h-7 rounded-full overflow-hidden bg-[#e8f0ff] max-sm:w-5 max-sm:h-5">
-              <Image src="/azur-char/dunkeerke.png" alt="Aki" width={28} height={28}
-                className="object-cover scale-[3] translate-x-[2px] translate-y-[4px]" />
-            </div>
-            <span className="text-[10px] font-bold text-[#5a3c18] max-sm:text-[8px]">Aki</span>
-            <span className={`text-[9px] font-bold rounded-full px-2 py-0.5 max-sm:text-[7px] max-sm:px-1.5 ${STATE_COLOR[aki.agent.state] ?? "bg-[#e8d0a0]/30 text-[#5a3c18]"}`}>
-              {STATE_LABEL[aki.agent.state] ?? aki.agent.state}
-            </span>
-          </div>
+          ))}
         </div>
         {agent.state === "error" && agent.bubbleText && (
           <span className="flex items-center gap-1 rounded-full border border-[#991b1b]/30 bg-[#fca5a5]/40 px-2 py-0.5 text-[8px] font-semibold text-[#991b1b] max-sm:text-[7px]">

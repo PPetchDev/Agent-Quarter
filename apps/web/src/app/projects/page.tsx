@@ -8,6 +8,8 @@ import {
   getProjectStatusLabel,
 } from "@squad/core";
 import { fetchProjects, fetchProjectTasks, fetchTaskRuns } from "@/lib/api";
+import { RunExecutionButton } from "./RunExecutionButton";
+import { RunExecutionEventsPanel } from "./RunExecutionEventsPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -175,17 +177,21 @@ export default async function ProjectsPage() {
                         </p>
                       )}
                       {activeTask && (
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="text-[9px] text-white/30 truncate flex-1">
-                            ↳ {activeTask.title}
-                          </span>
-                          {latestRun && (
-                            <span
-                              className={`text-[8px] font-semibold shrink-0 ${RUN_STATUS_COLOR[latestRun.status]}`}
-                            >
-                              {latestRun.status}
+                        <div className="flex items-start gap-1.5 min-w-0">
+                          <div className="min-w-0 flex-1">
+                            <span className="block text-[9px] text-white/30 truncate">
+                              ↳ {activeTask.title}
                             </span>
-                          )}
+                            {latestRun && (
+                              <span
+                                className={`text-[8px] font-semibold ${RUN_STATUS_COLOR[latestRun.status]}`}
+                              >
+                                {latestRun.status}
+                              </span>
+                            )}
+                          </div>
+                          {latestRun && <RunExecutionButton runId={latestRun.id} />}
+                          {latestRun && <RunExecutionEventsPanel runId={latestRun.id} />}
                         </div>
                       )}
                     </>
