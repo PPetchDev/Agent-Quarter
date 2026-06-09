@@ -40,6 +40,13 @@ _Updated: C-OFFICE-RUN-EXECUTION-FRONTEND-HYDRATION-FIX-006F_
 | `AmbientShape` | type | Union of ambient shape kinds for `STATION_AMBIENTS` entries — defined in `stationAmbients.ts` |
 | `RoomScene.setActiveStation` | method | Draws or clears the pulsing active-station highlight on its own graphics layer |
 | `activeStationGraphics` | PIXI layer | Scene layer hosting the active-station pulse, drawn below `highlightGraphics` |
+| `OFFICE_AGENT_SPINE_ASSET_BY_ID` | constant | Deterministic mapping from the five visible office workflow agents to prepared Spine assets in `apps/web/public/azur-char/*` |
+| `OFFICE_AGENT_SPINE_ASSETS` | constant | Ordered asset list used by `LoungeCanvas` to load all visible in-room Spine agents |
+| `createInitialSpineLoadStatus` | function | Initializes every mapped office agent as `loading` until Pixi confirms Spine load success/failure |
+| `shouldShowHtmlAgentAvatar` | function | Keeps the HTML avatar hidden for mapped Spine agents unless the Spine asset fails, preventing overlay avatars from covering Spine bodies |
+| `getAgentOverlayLayout` | function | Moves speech/status bubbles beside Spine bodies while preserving avatar fallback layout |
+| `resolveAgentBubbleAnchor` | function | Resolves speech/status bubble position from the same agent anchor used by the Spine body |
+| `normalizeSpineFootAnchor` | function | Private `LoungeCanvas` helper that normalizes loaded Spine local bounds to a bottom-center foot anchor before movement updates |
 | `FURNITURE_CATALOG` | constant | Furniture shop metadata, including role-aligned station types |
 | `loungeStations` | constant | Canonical station registry for agent tasks |
 | `resolveAgentTask` | function | Maps task types to lounge station ids and target iso points |

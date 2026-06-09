@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import * as PIXI from 'pixi.js';
 import 'pixi-spine';
@@ -25,6 +25,17 @@ import { FurnitureInspector } from './FurnitureInspector';
 import { ShopModal } from './ShopModal';
 import { getDefaultSpawnPosition, type CatalogItem } from './furnitureCatalog';
 import { selectPurchasePlacement } from './purchasePlacement';
+import {
+  createInitialSpineLoadStatus,
+  getAgentOverlayLayout,
+  hasOfficeAgentSpineAsset,
+  OFFICE_AGENT_SPINE_ASSETS,
+  OFFICE_AGENT_SPINE_ASSET_BY_ID,
+  resolveAgentBubbleAnchor,
+  shouldShowHtmlAgentAvatar,
+  type SpineAgentAsset,
+  type SpineLoadStatus,
+} from './spineAgents';
 import { useAgentWalk } from '@/hooks/useAgentWalk';
 import { useCountdown } from '@/hooks/useCountdown';
 import type { Agent, AgentState, AgentTaskType } from '@/game/agents/agentTypes';
@@ -248,6 +259,34 @@ type SharedLayoutPayload = {
 
 const LAYOUT_QUERY_PARAM = 'layout';
 
+type AgentVisualState = {
+  position: { x: number; y: number };
+  direction: Agent['direction'];
+};
+
+type SpineAgentDisplay = PIXI.Container & {
+  spine: Spine;
+};
+
+function normalizeSpineFootAnchor(spine: Spine): void {
+  const bounds = spine.getLocalBounds();
+  if (bounds.width <= 0 || bounds.height <= 0) return;
+  spine.x = -(bounds.x + bounds.width / 2);
+  spine.y = -(bounds.y + bounds.height);
+}
+
+function positionSpineAgent(
+  display: SpineAgentDisplay,
+  visual: AgentVisualState,
+  asset: Pick<SpineAgentAsset, 'scale'>,
+): void {
+  display.x = visual.position.x;
+  display.y = visual.position.y;
+  display.scale.x = visual.direction === 'left' ? -asset.scale : asset.scale;
+  display.scale.y = asset.scale;
+  display.zIndex = visual.position.y + 12;
+}
+
 function useTimer(startSecs = 8 * 3600 + 23 * 60 + 17) {
   const [s, setS] = useState(startSecs);
   useEffect(() => {
@@ -364,7 +403,8 @@ export function LoungeCanvas() {
   const viewportRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<PIXI.Application | null>(null);
   const sceneRef = useRef<RoomScene | null>(null);
-  const charSpritesRef = useRef<Map<string, PIXI.Container>>(new Map());
+  const charSpritesRef = useRef<Map<OfficeAgentId, SpineAgentDisplay>>(new Map());
+  const agentVisualStateRef = useRef<Partial<Record<OfficeAgentId, AgentVisualState>>>({});
   const lastCollectRef = useRef<Record<string, number>>({});
   const lastCooldownToastRef = useRef(0);
   const collectButtonCooldownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -419,14 +459,18 @@ export function LoungeCanvas() {
   const [roomReady, setRoomReady] = useState(false);
   const [roomW, setRoomW] = useState(ROOM_TILES_X);
   const [roomH, setRoomH] = useState(ROOM_TILES_Y);
+  const [spineLoadStatus, setSpineLoadStatus] = useState<Record<OfficeAgentId, SpineLoadStatus>>(
+    () => createInitialSpineLoadStatus(),
+  );
   const roomWRef = useRef(ROOM_TILES_X);
   const roomHRef = useRef(ROOM_TILES_Y);
   const coinsRef = useRef(INITIAL_COINS);
+  const maiSpineAsset = OFFICE_AGENT_SPINE_ASSET_BY_ID['agent-1'];
   const { agent, assignTask, clearAgentTask, enqueueTask, clearQueue, routeDebug } = useAgentWalk({
     roomObjects: objects,
     roomWidth: roomW,
     roomHeight: roomH,
-    startIso: { wx: 7.2, wy: 5.2, wz: 0.2 },
+    startIso: maiSpineAsset.fallbackIso,
   });
   const previousAgentStateRef = useRef(agent.state);
   const previousTaskTypeRef = useRef(agent.taskType);
@@ -439,7 +483,7 @@ export function LoungeCanvas() {
     agentId: 'agent-2',
     agentName: 'Aki',
     characterId: 'aki',
-    startIso: { wx: 8.2, wy: 5.2, wz: 0.2 },
+    startIso: OFFICE_AGENT_SPINE_ASSET_BY_ID['agent-2'].fallbackIso,
   });
   const ren = useAgentWalk({
     roomObjects: objects,
@@ -448,7 +492,7 @@ export function LoungeCanvas() {
     agentId: 'agent-3',
     agentName: 'Ren',
     characterId: 'ren',
-    startIso: { wx: 4.5, wy: 6.4, wz: 0.2 },
+    startIso: OFFICE_AGENT_SPINE_ASSET_BY_ID['agent-3'].fallbackIso,
   });
   const yui = useAgentWalk({
     roomObjects: objects,
@@ -457,7 +501,7 @@ export function LoungeCanvas() {
     agentId: 'agent-4',
     agentName: 'Yui',
     characterId: 'yui',
-    startIso: { wx: 6.4, wy: 5.2, wz: 0.2 },
+    startIso: OFFICE_AGENT_SPINE_ASSET_BY_ID['agent-4'].fallbackIso,
   });
   const mika = useAgentWalk({
     roomObjects: objects,
@@ -466,7 +510,7 @@ export function LoungeCanvas() {
     agentId: 'agent-5',
     agentName: 'Mika',
     characterId: 'mika',
-    startIso: { wx: 5.4, wy: 5.2, wz: 0.2 },
+    startIso: OFFICE_AGENT_SPINE_ASSET_BY_ID['agent-5'].fallbackIso,
   });
   const [officeCommand, setOfficeCommand] = useState('Build a verified lounge workflow slice');
   const [activeOfficeCommand, setActiveOfficeCommand] = useState(
@@ -545,20 +589,27 @@ export function LoungeCanvas() {
     return () => window.clearTimeout(handle);
   }, [aki.agent.state, aki.assignTask, officeStatus, roomReady]);
   // Track character positions
-  useEffect(() => {
-    const update = (id: string, pos: { x: number; y: number }, dir: string) => {
+  useLayoutEffect(() => {
+    const visualState: Partial<Record<OfficeAgentId, AgentVisualState>> = {
+      'agent-1': { position: agent.position, direction: agent.direction },
+      'agent-2': { position: aki.agent.position, direction: aki.agent.direction },
+      'agent-3': { position: ren.agent.position, direction: ren.agent.direction },
+      'agent-4': { position: yui.agent.position, direction: yui.agent.direction },
+      'agent-5': { position: mika.agent.position, direction: mika.agent.direction },
+    };
+    agentVisualStateRef.current = visualState;
+
+    const update = (id: OfficeAgentId, visual: AgentVisualState) => {
       const c = charSpritesRef.current.get(id);
       if (c) {
-        c.x = pos.x;
-        c.y = pos.y - 40;
-        c.scale.x = dir === 'left' ? -Math.abs(c.scale.x) : Math.abs(c.scale.x);
+        positionSpineAgent(c, visual, OFFICE_AGENT_SPINE_ASSET_BY_ID[id]);
       }
     };
-    update('agent-1', agent.position, agent.direction);
-    update('agent-2', aki.agent.position, aki.agent.direction);
-    update('agent-3', ren.agent.position, ren.agent.direction);
-    update('agent-4', yui.agent.position, yui.agent.direction);
-    update('agent-5', mika.agent.position, mika.agent.direction);
+
+    for (const asset of OFFICE_AGENT_SPINE_ASSETS) {
+      const visual = visualState[asset.agentId];
+      if (visual) update(asset.agentId, visual);
+    }
   }, [
     agent.position,
     agent.direction,
@@ -592,8 +643,8 @@ export function LoungeCanvas() {
   const CALM_ANIMS = ['normal', 'stand', 'stand2', 'sit', 'sleep'];
 
   useEffect(() => {
-    const applyAnim = (id: string, state: AgentState) => {
-      const spine = charSpritesRef.current.get(id) as any;
+    const applyAnim = (id: OfficeAgentId, state: AgentState) => {
+      const spine = charSpritesRef.current.get(id)?.spine as any;
       if (!spine?.state) return;
       const candidates = SPINE_ANIM_CANDIDATES[state];
       if (!candidates) return;
@@ -852,62 +903,61 @@ export function LoungeCanvas() {
       drawBackground(scene.backgroundGraphics, roomWRef.current, roomHRef.current, theme);
 
       // ── Load real Spine 3.8 characters ────────────────────────────────────
-      const CHAR_DEFS = [
-        {
-          skel: '/azur-char/qiye/qiye_h.skel',
-          atlas: '/azur-char/qiye/qiye_h.atlas',
-          wx: 5.0,
-          wy: 0.65,
-          wz: 0.0,
-          id: 'agent-1',
-          name: 'qiye',
-        },
-        {
-          skel: '/azur-char/dunkeerke/dunkeerke.skel',
-          atlas: '/azur-char/dunkeerke/dunkeerke.atlas',
-          wx: 8.0,
-          wy: 0.65,
-          wz: 0.0,
-          id: 'agent-2',
-          name: 'dunkeerke',
-        },
-      ];
-
-      for (const def of CHAR_DEFS) {
+      for (const def of OFFICE_AGENT_SPINE_ASSETS) {
         PIXI.Assets.load([def.skel, def.atlas])
           .then((loaded: Record<string, any>) => {
+            if (!mounted) return;
             const skelKey = def.skel;
             const spineData = loaded[skelKey]?.spineData;
             if (!spineData) {
-              console.warn(`[Spine] No spineData for ${def.name}`);
+              console.warn(`[Spine] No spineData for ${def.assetId}`);
+              setSpineLoadStatus((prev) => ({ ...prev, [def.agentId]: 'failed' }));
               return;
             }
             const spine = new Spine(spineData);
-            const [sx, sy] = proj(def.wx, def.wy, def.wz);
-            spine.x = sx;
-            spine.y = sy - 30;
-            spine.scale.set(0.28);
-            // Depth sort with furniture: character footprint ~1×1 tile
-            const [, backY] = proj(def.wx + 0.5, def.wy + 1.0, def.wz);
-            spine.zIndex = backY + def.wx * 4 + def.wz * 25;
-            scene.furnitureLayer.addChild(spine);
-            charSpritesRef.current.set(def.id, spine);
+            const [sx, sy] = proj(def.fallbackIso.wx, def.fallbackIso.wy, def.fallbackIso.wz);
+            // Log animation names + play calm lounge default before measuring
+            // bounds; Spine assets do not share a consistent skeleton origin.
+            const animNames = spine.spineData.animations.map((a: any) => a.name);
+            console.log(`[Spine] ${def.assetId} animations:`, animNames);
+            if (animNames.length > 0) {
+              const priority = ['normal', 'stand', 'stand2', 'sit', 'sleep'];
+              const target = priority.find((a) => animNames.includes(a)) ?? animNames[0];
+              spine.state.setAnimation(0, target, true);
+              (spine as any).update?.(0);
+            }
+            normalizeSpineFootAnchor(spine);
+
+            const display = new PIXI.Container() as SpineAgentDisplay;
+            display.spine = spine;
+            display.addChild(spine);
+            positionSpineAgent(
+              display,
+              agentVisualStateRef.current[def.agentId] ?? {
+                position: { x: sx, y: sy },
+                direction: 'down',
+              },
+              def,
+            );
+            scene.furnitureLayer.addChild(display);
+            charSpritesRef.current.set(def.agentId, display);
+            setSpineLoadStatus((prev) => ({ ...prev, [def.agentId]: 'loaded' }));
 
             // ── Tap interaction ──────────────────────────────────────────
-            spine.eventMode = 'static';
-            spine.cursor = 'pointer';
-            spine.hitArea = new PIXI.Circle(0, -15, 40);
-            spine.on('pointertap', () => {
+            display.eventMode = 'static';
+            display.cursor = 'pointer';
+            display.hitArea = new PIXI.Circle(0, -def.hitAreaRadius, def.hitAreaRadius);
+            display.on('pointertap', () => {
               // ── Collect cooldown (3s per character) ──
               const now = Date.now();
-              if (now - (lastCollectRef.current[def.id] ?? 0) < 3000) {
+              if (now - (lastCollectRef.current[def.agentId] ?? 0) < 3000) {
                 if (now - lastCooldownToastRef.current > 1000) {
                   lastCooldownToastRef.current = now;
                   showToast('Wait a moment~');
                 }
                 return;
               }
-              lastCollectRef.current[def.id] = now;
+              lastCollectRef.current[def.agentId] = now;
 
               const state = (spine as any).state;
               const anims = ((spine as any).spineData.animations as any[]).map((a: any) => a.name);
@@ -937,18 +987,11 @@ export function LoungeCanvas() {
               ]);
               showToast('♡+3 🪙+15');
             });
-
-            // Log animation names + play calm lounge default
-            const animNames = spine.spineData.animations.map((a: any) => a.name);
-            console.log(`[Spine] ${def.name} animations:`, animNames);
-            if (animNames.length > 0) {
-              const priority = ['normal', 'stand', 'stand2', 'sit', 'sleep'];
-              const target = priority.find((a) => animNames.includes(a)) ?? animNames[0];
-              spine.state.setAnimation(0, target, true);
-            }
           })
           .catch((e: Error) => {
-            console.error(`[Spine] Failed to load ${def.name}:`, e.message);
+            if (!mounted) return;
+            console.error(`[Spine] Failed to load ${def.assetId}:`, e.message);
+            setSpineLoadStatus((prev) => ({ ...prev, [def.agentId]: 'failed' }));
           });
       }
 
@@ -1010,6 +1053,7 @@ export function LoungeCanvas() {
 
     return () => {
       mounted = false;
+      charSpritesRef.current.clear();
       appRef.current?.destroy();
       appRef.current = null;
       sceneRef.current = null;
@@ -2130,7 +2174,7 @@ export function LoungeCanvas() {
             )}
 
             {/* ── Lounge agents walking overlay ─────────────────────── */}
-            {visibleOfficeAgents.map(({ agent: a }) => {
+            {visibleOfficeAgents.map(({ spec, agent: a }) => {
               const ANIM_FILE: Record<string, string> = {
                 idle: '01-idle',
                 walk_up: '04-thinking',
@@ -2150,16 +2194,29 @@ export function LoungeCanvas() {
               const moodFile = ANIM_FILE[a.animation] ?? '01-idle';
               const imgSrc = `/characters/${a.characterId}/${moodFile}.jpg`;
               const { x, y } = a.position;
-              const SZ = 64;
+              const hasSpineAsset = hasOfficeAgentSpineAsset(spec.id);
+              const spineStatus = spineLoadStatus[spec.id];
+              const showAvatarFallback = shouldShowHtmlAgentAvatar({
+                hasSpineAsset,
+                spineStatus,
+              });
+              const overlayLayout = getAgentOverlayLayout(hasSpineAsset);
+              const bubbleAnchor = resolveAgentBubbleAnchor(a.position, hasSpineAsset);
+              const SZ = overlayLayout.avatarSize;
               return (
-                <div key={a.id}>
+                <div
+                  key={a.id}
+                  data-agent-id={a.id}
+                  data-agent-spine-status={spineStatus ?? 'none'}
+                  data-agent-avatar-fallback={showAvatarFallback ? 'true' : 'false'}
+                >
                   {a.bubbleText && (
                     <div
                       className="pointer-events-none absolute z-20 max-w-[160px] rounded-2xl bg-white/95 px-3 py-1.5 text-[11px] font-semibold text-gray-800 shadow-lg"
                       style={{
-                        left: x,
-                        top: y - SZ - 8,
-                        transform: 'translate(-50%, -100%)',
+                        left: bubbleAnchor.left,
+                        top: bubbleAnchor.top,
+                        transform: bubbleAnchor.transform,
                         whiteSpace: 'nowrap',
                       }}
                     >
@@ -2171,9 +2228,9 @@ export function LoungeCanvas() {
                     <div
                       className="pointer-events-none absolute z-20 max-w-[180px] rounded-2xl bg-[#f5f3ff]/95 px-3 py-1.5 text-[11px] font-semibold text-[#5b21b6] shadow-lg border border-[#ddd6fe]/60"
                       style={{
-                        left: x,
-                        top: y - SZ - 8,
-                        transform: 'translate(-50%, -100%)',
+                        left: bubbleAnchor.left,
+                        top: bubbleAnchor.top,
+                        transform: bubbleAnchor.transform,
                         whiteSpace: 'nowrap',
                       }}
                     >
@@ -2182,25 +2239,27 @@ export function LoungeCanvas() {
                       <span className="pointer-events-none absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-[#f5f3ff]/95" />
                     </div>
                   )}
-                  <div
-                    className="absolute z-10"
-                    style={{
-                      left: x,
-                      top: y,
-                      transform: 'translate(-50%, -100%)',
-                      width: SZ,
-                      height: SZ,
-                    }}
-                  >
-                    <Image
-                      src={imgSrc}
-                      alt={a.name}
-                      width={SZ}
-                      height={SZ}
-                      className="rounded-full border-2 border-white shadow-md object-cover"
-                      unoptimized
-                    />
-                  </div>
+                  {showAvatarFallback && (
+                    <div
+                      className="absolute z-10"
+                      style={{
+                        left: x,
+                        top: y,
+                        transform: 'translate(-50%, -100%)',
+                        width: SZ,
+                        height: SZ,
+                      }}
+                    >
+                      <Image
+                        src={imgSrc}
+                        alt={a.name}
+                        width={SZ}
+                        height={SZ}
+                        className="rounded-full border-2 border-white shadow-md object-cover"
+                        unoptimized
+                      />
+                    </div>
+                  )}
                 </div>
               );
             })}

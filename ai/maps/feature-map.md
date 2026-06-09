@@ -12,13 +12,14 @@ _Updated: C-FURNITURE-GRID-001_
 | Furniture catalog / shop metadata | `apps/web/src/components/lounge/furnitureCatalog.ts` |
 | PixiJS scene construction, depth sorting, active-station pulse layer | `apps/web/src/components/lounge/roomLoader.ts` |
 | Active station pulse highlight (gold floor ring + per-station body ambient during work) | `apps/web/src/components/lounge/pixiRoom.ts` (`drawActiveStationHighlight`, `drawStationAmbient`), `apps/web/src/components/lounge/stationAmbients.ts` (`STATION_AMBIENTS` data table), `apps/web/src/components/lounge/LoungeCanvas.tsx` (RAF pulse loop) |
-| Lounge canvas, compact HUD, route debug overlay, single walking agent overlay | `apps/web/src/components/lounge/LoungeCanvas.tsx` |
+| Lounge canvas, compact HUD, route debug overlay, Spine agent rendering, and non-occluding status overlay | `apps/web/src/components/lounge/LoungeCanvas.tsx`, `apps/web/src/components/lounge/spineAgents.ts` |
 | Pure layout/share helpers | `apps/web/src/components/lounge/loungeHelpers.ts` |
 | Countdown timer hook (meal/supplies timers) | `apps/web/src/hooks/useCountdown.ts` |
 | Agent task-to-station resolution + per-task work duration | `apps/web/src/game/agents/taskResolver.ts` |
 | Agent work timer lifecycle (walk → work → auto-idle) and progress fields | `apps/web/src/hooks/useAgentWalk.ts`, `apps/web/src/game/agents/agentTypes.ts` |
 | Agent task queue (auto-pop chain after work completion, shift-click enqueue) | `apps/web/src/game/agents/taskQueue.ts`, `apps/web/src/hooks/useAgentWalk.ts`, `apps/web/src/components/lounge/LoungeCanvas.tsx` |
 | Office workflow command board, agent handoff planner, chat bus, and tool boundary log | `apps/web/src/game/agents/officeWorkflow.ts`, `apps/web/src/components/lounge/LoungeCanvas.tsx` |
+| Office agent Spine asset mapping and HTML-avatar fallback rules | `apps/web/src/components/lounge/spineAgents.ts`, `apps/web/src/components/lounge/spineAgents.test.ts` |
 | Agent type contracts | `apps/web/src/game/agents/agentTypes.ts` |
 | Isometric station registry | `apps/web/src/game/scene/loungeStations.ts` |
 | Lounge blocked-cell grid | `apps/web/src/game/scene/loungePathGrid.ts` |

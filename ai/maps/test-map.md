@@ -36,6 +36,7 @@ pnpm --filter @squad/core run build; echo "EXIT:$?"
 | Animation resolver | `apps/web/src/game/animation/animationResolver.test.ts` |
 | Lounge furniture catalog | `apps/web/src/components/lounge/furnitureCatalog.test.ts` |
 | Lounge furniture dimensions | `apps/web/src/components/lounge/roomDefs.test.ts` |
+| Office agent Spine asset mapping, fallback overlay rules, and bubble anchor resolver | `apps/web/src/components/lounge/spineAgents.test.ts` |
 | Dialogue scheduler | `apps/web/src/game/dialogue/dialogueScheduler.test.ts` |
 
 ## Verification Commands
