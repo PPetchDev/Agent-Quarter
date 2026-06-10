@@ -151,7 +151,7 @@
           "height": 0,
           "rotation": 0,
           "properties": [
-            { "name": "wx", "type": "float", "value": 5 },
+            { "name": "wx", "type": "float", "value": 3 },
             { "name": "wy", "type": "float", "value": 0 },
             { "name": "wz", "type": "float", "value": 0 },
             { "name": "label", "type": "string", "value": "Bedside Cabinet" },

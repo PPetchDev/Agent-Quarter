@@ -57,6 +57,7 @@ import type {
 import { startOfficeRun, completeOfficeRun } from '@/game/agents/officeRunAdapter';
 import { useRunSocket } from '@/hooks/useRunSocket';
 import { loungeStations, type LoungeStationId } from '@/game/scene/loungeStations';
+import { buildLoungeRouteGrid } from '@/game/scene/loungePathGrid';
 import { pickAgentDialogue } from '@/game/dialogue/dialogueScheduler';
 import { generateOfficeDialogue } from '@/game/dialogue/dialogueAdapter';
 import Image from 'next/image';
@@ -466,8 +467,14 @@ export function LoungeCanvas() {
   const roomHRef = useRef(ROOM_TILES_Y);
   const coinsRef = useRef(INITIAL_COINS);
   const maiSpineAsset = OFFICE_AGENT_SPINE_ASSET_BY_ID['agent-1'];
+  const routeGrid = useMemo(() => buildLoungeRouteGrid(objects, roomW, roomH), [
+    objects,
+    roomW,
+    roomH,
+  ]);
   const { agent, assignTask, clearAgentTask, enqueueTask, clearQueue, routeDebug } = useAgentWalk({
     roomObjects: objects,
+    routeGrid,
     roomWidth: roomW,
     roomHeight: roomH,
     startIso: maiSpineAsset.fallbackIso,
@@ -478,6 +485,7 @@ export function LoungeCanvas() {
   // idle so the multi-agent foundation is visible without extra HUD chrome.
   const aki = useAgentWalk({
     roomObjects: objects,
+    routeGrid,
     roomWidth: roomW,
     roomHeight: roomH,
     agentId: 'agent-2',
@@ -487,6 +495,7 @@ export function LoungeCanvas() {
   });
   const ren = useAgentWalk({
     roomObjects: objects,
+    routeGrid,
     roomWidth: roomW,
     roomHeight: roomH,
     agentId: 'agent-3',
@@ -496,6 +505,7 @@ export function LoungeCanvas() {
   });
   const yui = useAgentWalk({
     roomObjects: objects,
+    routeGrid,
     roomWidth: roomW,
     roomHeight: roomH,
     agentId: 'agent-4',
@@ -505,6 +515,7 @@ export function LoungeCanvas() {
   });
   const mika = useAgentWalk({
     roomObjects: objects,
+    routeGrid,
     roomWidth: roomW,
     roomHeight: roomH,
     agentId: 'agent-5',

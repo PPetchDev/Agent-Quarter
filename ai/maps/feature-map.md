@@ -1,6 +1,6 @@
 # Feature Map
 
-_Updated: C-FURNITURE-GRID-001_
+_Updated: C-LOUNGE-PERF-ROUTE-GRID-002_
 
 | Feature | Canonical Files |
 |---|---|
@@ -22,7 +22,7 @@ _Updated: C-FURNITURE-GRID-001_
 | Office agent Spine asset mapping and HTML-avatar fallback rules | `apps/web/src/components/lounge/spineAgents.ts`, `apps/web/src/components/lounge/spineAgents.test.ts` |
 | Agent type contracts | `apps/web/src/game/agents/agentTypes.ts` |
 | Isometric station registry | `apps/web/src/game/scene/loungeStations.ts` |
-| Lounge blocked-cell grid | `apps/web/src/game/scene/loungePathGrid.ts` |
+| Lounge shared blocked-cell route grid | `apps/web/src/game/scene/loungePathGrid.ts`, `apps/web/src/components/lounge/LoungeCanvas.tsx`, `apps/web/src/hooks/useAgentWalk.ts` |
 | Isometric projection helpers | `apps/web/src/game/isometric/isoProjection.ts` |
 | Movement logic | `apps/web/src/game/movement/direction.ts`, `apps/web/src/game/movement/moveToTarget.ts`, `apps/web/src/game/movement/gridPath.ts` |
 | Animation resolver | `apps/web/src/game/animation/animationResolver.ts` |
@@ -51,8 +51,8 @@ _Updated: C-FURNITURE-GRID-001_
 ## Pathfinding Mapping
 
 - Grid planner -> `apps/web/src/game/movement/gridPath.ts`.
-- Furniture blocked cells -> `apps/web/src/game/scene/loungePathGrid.ts`.
-- Active furniture inputs -> `LoungeCanvas` passes current `RoomObject[]`, room width, and room height into `useAgentWalk`.
+- Furniture blocked cells and reusable route grid -> `apps/web/src/game/scene/loungePathGrid.ts`.
+- Active furniture inputs -> `LoungeCanvas` builds one shared `LoungeRouteGrid` from current `RoomObject[]`, room width, and room height, then passes it into all five `useAgentWalk` instances.
 - Waypoint animation -> `useAgentWalk` plans a route at task assignment and advances through projected waypoints with `moveTowardsTarget`.
 - Route debug overlay -> `useAgentWalk` exposes route debug points; `LoungeCanvas` renders them only in move/edit mode.
 - Dynamic static-obstacle refresh -> `useAgentWalk` re-plans while walking after committed room object or room dimension changes.

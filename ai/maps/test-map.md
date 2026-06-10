@@ -1,6 +1,6 @@
 # Test Map
 
-_Updated: C-OFFICE-RUN-EXECUTION-FRONTEND-HYDRATION-FIX-006F_
+_Updated: C-LOUNGE-PERF-ROUTE-GRID-002_
 
 ## Core Domain Tests
 
@@ -27,12 +27,13 @@ pnpm --filter @squad/core run build; echo "EXIT:$?"
 | Task queue helpers | `apps/web/src/game/agents/taskQueue.test.ts` |
 | Office workflow planner, chat handoff formatter, and tool boundary events | `apps/web/src/game/agents/officeWorkflow.test.ts` |
 | Office run adapter — startOfficeRun / completeOfficeRun / createAndStartRun | `apps/web/src/game/agents/officeRunAdapter.test.ts` |
+| Agent walking hook idle RAF loop and task activation | `apps/web/src/hooks/useAgentWalk.test.ts` |
 | useRunSocket hook — socket /runs namespace connection + event registration + cleanup | `apps/web/src/hooks/useRunSocket.test.ts` |
 | Station ambient shape table invariants | `apps/web/src/components/lounge/stationAmbients.test.ts` |
 | Direction resolver | `apps/web/src/game/movement/direction.test.ts` |
 | Movement helper | `apps/web/src/game/movement/moveToTarget.test.ts` |
 | Grid path planner | `apps/web/src/game/movement/gridPath.test.ts` |
-| Lounge blocked-cell routing | `apps/web/src/game/scene/loungePathGrid.test.ts` |
+| Lounge blocked-cell routing and shared route grid reuse | `apps/web/src/game/scene/loungePathGrid.test.ts` |
 | Animation resolver | `apps/web/src/game/animation/animationResolver.test.ts` |
 | Lounge furniture catalog | `apps/web/src/components/lounge/furnitureCatalog.test.ts` |
 | Lounge furniture dimensions | `apps/web/src/components/lounge/roomDefs.test.ts` |
@@ -55,7 +56,8 @@ pnpm exec tsc -p apps/web/tsconfig.json --noEmit; echo "EXIT:$?"
 - Grid planner tests validate obstacle avoidance, blocked target snapping, and null route failure.
 - Furniture catalog tests validate role-aligned station furniture exists.
 - Lounge path grid tests validate semantic map furniture, furniture blocked cells, all required station routes, and re-planning around a newly committed blocker.
-- Visual layout still requires manual browser inspection at `/lounge`.
+- Browser smoke covers `/lounge` nonblank desktop/mobile canvas, loaded Spine agents, avatar fallback state, and console/runtime errors.
+- Use `LOUNGE_SMOKE_URL` and `LOUNGE_SMOKE_DEBUG_PORT` when port 3000 or the default Chrome debug port is occupied.
 
 ## API Tests
 

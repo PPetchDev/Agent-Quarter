@@ -1,6 +1,6 @@
 # Symbol Index
 
-_Updated: C-OFFICE-RUN-EXECUTION-FRONTEND-HYDRATION-FIX-006F_
+_Updated: C-LOUNGE-PERF-ROUTE-GRID-002_
 
 ## Core Domain
 
@@ -51,11 +51,13 @@ _Updated: C-OFFICE-RUN-EXECUTION-FRONTEND-HYDRATION-FIX-006F_
 | `loungeStations` | constant | Canonical station registry for agent tasks |
 | `resolveAgentTask` | function | Maps task types to lounge station ids and target iso points |
 | `buildLoungeBlockedCells` | function | Converts floor furniture footprints into blocked lounge grid cells |
+| `buildLoungeRouteGrid` | function | Precomputes a reusable lounge route grid (`roomWidth`, `roomHeight`, `blockedCells`) for a room layout so multiple walkers can share blocked-cell work |
+| `LoungeRouteGrid` | type | Shared route-planning input passed from `LoungeCanvas` into each `useAgentWalk` instance |
 | `planLoungeGridRoute` | function | Plans a lounge route around static furniture to a station target |
 | `planIsoGridPath` | function | Pure grid route planner for bounded room cells |
 | `findGridPath` | function | Breadth-first path search over unblocked cells |
 | `AgentRouteDebug` | type | Route overlay data exposed by `useAgentWalk` |
-| `useAgentWalk` | hook | Plans route waypoints, animates segment by segment, exposes route debug data, refreshes routes after committed layout changes, and ticks the post-arrival work timer to auto-return the agent to idle |
+| `useAgentWalk` | hook | Plans route waypoints using the shared `LoungeRouteGrid` when provided, animates segment by segment, exposes route debug data, refreshes routes after committed layout changes, and ticks the post-arrival work timer to auto-return the agent to idle |
 | `TASK_CONFIG` | constant | Consolidated task config: stationId, arriveState, walkingBubble, bubble, doneBubble, workDurationMs per task type in `taskResolver.ts` (replaces 6 separate Record maps) |
 | `useCountdown` | hook | Reusable countdown timer hook returning formatted HH:MM:SS in `hooks/useCountdown.ts` |
 | `projAt` | function | Pure isometric projection with explicit S/OX/OY params in `pixiRoom.ts` (used by `useAgentWalk` to avoid duplicating projection math) |

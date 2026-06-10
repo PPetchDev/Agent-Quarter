@@ -4,7 +4,11 @@ import { parseTiledMap, type RoomObject, type TiledMap } from '../../components/
 import { resolveAgentTask } from '../agents/taskResolver';
 import type { AgentTaskType } from '../agents/agentTypes';
 import { cellKey, isoToGridCell } from '../movement/gridPath';
-import { buildLoungeBlockedCells, planLoungeGridRoute } from './loungePathGrid';
+import {
+  buildLoungeBlockedCells,
+  buildLoungeRouteGrid,
+  planLoungeGridRoute,
+} from './loungePathGrid';
 
 const roomWidth = 10;
 const roomHeight = 8;
@@ -35,6 +39,31 @@ describe('buildLoungeBlockedCells', () => {
     expect(blocked.has(cellKey({ x: 4, y: 7 }))).toBe(false);
     expect(blocked.has(cellKey({ x: 8, y: 5 }))).toBe(false);
     expect(blocked.has(cellKey({ x: 9, y: 5 }))).toBe(true);
+  });
+});
+
+describe('buildLoungeRouteGrid', () => {
+  it('reuses a precomputed blocked-cell grid for route planning', () => {
+    const routeGrid = buildLoungeRouteGrid(roomObjects, roomWidth, roomHeight);
+    const resolved = resolveAgentTask('code', roomObjects);
+    const route = planLoungeGridRoute({
+      objects: [],
+      routeGrid,
+      roomWidth,
+      roomHeight,
+      start: defaultStart,
+      target: resolved.targetIsoPoint,
+    });
+    const blocked = new Set(routeGrid.blockedCells.map(cellKey));
+
+    expect(routeGrid.blockedCells.length).toBeGreaterThan(0);
+    expect(route).not.toBeNull();
+    for (const point of route ?? []) {
+      expect(blocked.has(cellKey(point.cell))).toBe(false);
+    }
+    expect(route?.at(-1)?.cell).toEqual(
+      isoToGridCell(resolved.targetIsoPoint, roomWidth, roomHeight),
+    );
   });
 });
 

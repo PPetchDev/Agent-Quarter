@@ -6,10 +6,17 @@ import { isCellInBounds, planIsoGridPath } from '../movement/gridPath';
 
 export type LoungeGridRouteParams = {
   objects: RoomObject[];
+  routeGrid?: LoungeRouteGrid;
   roomWidth: number;
   roomHeight: number;
   start: IsoWorldPoint;
   target: IsoWorldPoint;
+};
+
+export type LoungeRouteGrid = {
+  roomWidth: number;
+  roomHeight: number;
+  blockedCells: GridCell[];
 };
 
 export function buildLoungeBlockedCells(
@@ -39,13 +46,28 @@ export function buildLoungeBlockedCells(
   return blocked;
 }
 
+export function buildLoungeRouteGrid(
+  objects: RoomObject[],
+  roomWidth: number,
+  roomHeight: number,
+): LoungeRouteGrid {
+  return {
+    roomWidth,
+    roomHeight,
+    blockedCells: buildLoungeBlockedCells(objects, roomWidth, roomHeight),
+  };
+}
+
 export function planLoungeGridRoute(params: LoungeGridRouteParams): IsoRoutePoint[] | null {
+  const routeGrid =
+    params.routeGrid ?? buildLoungeRouteGrid(params.objects, params.roomWidth, params.roomHeight);
+
   return planIsoGridPath({
-    cols: params.roomWidth,
-    rows: params.roomHeight,
+    cols: routeGrid.roomWidth,
+    rows: routeGrid.roomHeight,
     start: params.start,
     target: params.target,
-    blockedCells: buildLoungeBlockedCells(params.objects, params.roomWidth, params.roomHeight),
+    blockedCells: routeGrid.blockedCells,
   });
 }
 

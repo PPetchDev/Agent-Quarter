@@ -4,7 +4,7 @@ import type { Agent, AgentTaskType, AgentState } from '@/game/agents/agentTypes'
 import type { IsoWorldPoint, Position } from '@/game/agents/agentTypes';
 import { resolveAgentTask } from '@/game/agents/taskResolver';
 import { moveTowardsTarget } from '@/game/movement/moveToTarget';
-import { planLoungeGridRoute } from '@/game/scene/loungePathGrid';
+import { planLoungeGridRoute, type LoungeRouteGrid } from '@/game/scene/loungePathGrid';
 import type { GridCell, IsoRoutePoint } from '@/game/movement/gridPath';
 import { resolveWalkingAnimation, resolveStateAnimation } from '@/game/animation/animationResolver';
 import { resolveDirection } from '@/game/movement/direction';
@@ -38,6 +38,8 @@ type UseAgentWalkOptions = {
   characterId?: string;
   /** Initial iso world position. Defaults to `DEFAULT_START_ISO`. */
   startIso?: IsoWorldPoint;
+  /** Shared blocked-cell grid for the current room layout. */
+  routeGrid?: LoungeRouteGrid;
 };
 
 export type AgentRouteDebugPoint = {
@@ -95,6 +97,7 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
     agentName = 'Mai',
     characterId = 'mai',
     startIso = DEFAULT_START_ISO,
+    routeGrid,
   } = options;
   void _legacyAgentId;
   const [agent, setAgent] = useState<Agent>(() => ({
@@ -182,6 +185,7 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
       const resolved = resolveAgentTask(taskType, roomObjects);
       const route = planLoungeGridRoute({
         objects: roomObjects,
+        routeGrid,
         roomWidth,
         roomHeight,
         start: currentIsoRef.current,
@@ -218,7 +222,7 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
         workElapsedMs: undefined,
       }));
     },
-    [failBlockedRoute, roomHeight, roomObjects, roomWidth, updateAgent, updateRouteDebug],
+    [failBlockedRoute, roomHeight, roomObjects, roomWidth, routeGrid, updateAgent, updateRouteDebug],
   );
 
   useEffect(() => {
@@ -228,6 +232,7 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
     const resolved = resolveAgentTask(current.taskType, roomObjects);
     const route = planLoungeGridRoute({
       objects: roomObjects,
+      routeGrid,
       roomWidth,
       roomHeight,
       start: currentIsoRef.current,
@@ -259,7 +264,7 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
       workDurationMs: resolved.workDurationMs > 0 ? resolved.workDurationMs : undefined,
       workElapsedMs: undefined,
     }));
-  }, [failBlockedRoute, roomHeight, roomObjects, roomWidth, updateAgent, updateRouteDebug]);
+  }, [failBlockedRoute, roomHeight, roomObjects, roomWidth, routeGrid, updateAgent, updateRouteDebug]);
 
   const tickAgent = useCallback(
     (deltaTime: number) => {
@@ -427,8 +432,12 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
     [assignTask, roomObjects, updateAgent],
   );
 
-  // RAF game loop
+  const agentLoopActive = Boolean(agent.targetPosition) || agent.workDurationMs !== undefined;
+
+  // RAF game loop. Keep it asleep while idle; /lounge mounts one hook per visible agent.
   useEffect(() => {
+    if (!agentLoopActive) return;
+
     let animId: number;
 
     const loop = (timestamp: number) => {
@@ -456,7 +465,7 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
       cancelAnimationFrame(animId);
       lastTimeRef.current = 0;
     };
-  }, [tickAgent, tickWork]);
+  }, [agentLoopActive, tickAgent, tickWork]);
 
   const setAgentState = useCallback(
     (state: AgentState) => {
