@@ -54,4 +54,37 @@ describe('useAgentWalk RAF loop', () => {
 
     expect(globalThis.cancelAnimationFrame).toHaveBeenCalledWith(handle);
   });
+
+  it('walkToIso starts a stationless wander stroll from idle', () => {
+    const { result } = renderHook(() => useAgentWalk());
+
+    let started = false;
+    act(() => {
+      started = result.current.walkToIso({ wx: 5, wy: 4, wz: 0 });
+    });
+
+    expect(started).toBe(true);
+    expect(result.current.agent.state).toBe('walking');
+    expect(result.current.agent.targetStationId).toBeUndefined();
+    expect(result.current.agent.workDurationMs).toBeUndefined();
+    expect(result.current.agent.bubbleText).toBeUndefined();
+    expect(globalThis.requestAnimationFrame).toHaveBeenCalled();
+  });
+
+  it('walkToIso refuses to interrupt a non-idle agent', () => {
+    const { result } = renderHook(() => useAgentWalk());
+
+    act(() => {
+      result.current.assignTask('code');
+    });
+    const stationId = result.current.agent.targetStationId;
+
+    let started = true;
+    act(() => {
+      started = result.current.walkToIso({ wx: 5, wy: 4, wz: 0 });
+    });
+
+    expect(started).toBe(false);
+    expect(result.current.agent.targetStationId).toBe(stationId);
+  });
 });

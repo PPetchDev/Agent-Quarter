@@ -225,9 +225,69 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
     [failBlockedRoute, roomHeight, roomObjects, roomWidth, routeGrid, updateAgent, updateRouteDebug],
   );
 
+  /**
+   * Walks the agent to an arbitrary iso point (dorm wandering). Only starts
+   * from idle, arrives back into idle, and never enters the error state —
+   * a blocked stroll is silently skipped. Returns whether a route started.
+   */
+  const walkToIso = useCallback(
+    (target: IsoWorldPoint): boolean => {
+      const current = agentRef.current;
+      if (current.state !== 'idle') return false;
+
+      const route = planLoungeGridRoute({
+        objects: roomObjects,
+        routeGrid,
+        roomWidth,
+        roomHeight,
+        start: currentIsoRef.current,
+        target,
+      });
+      if (!route || route.length === 0) return false;
+
+      const waypoints = buildWaypoints(route, roomWidth, roomHeight);
+      routeRef.current = waypoints;
+      routeIndexRef.current = 0;
+      segmentStartIsoRef.current = currentIsoRef.current;
+      segmentStartPositionRef.current = agentRef.current.position;
+      updateRouteDebug(waypoints, 0);
+
+      updateAgent((prev) => ({
+        ...prev,
+        state: 'walking',
+        taskType: 'idle',
+        targetPosition: waypoints[0]!.position,
+        targetStationId: undefined,
+        arriveState: 'idle',
+        arriveBubbleText: undefined,
+        bubbleText: undefined,
+        animation: resolveWalkingAnimation(prev.direction),
+        workDurationMs: undefined,
+        workElapsedMs: undefined,
+      }));
+      return true;
+    },
+    [roomHeight, roomObjects, roomWidth, routeGrid, updateAgent, updateRouteDebug],
+  );
+
   useEffect(() => {
     const current = agentRef.current;
     if (current.state !== 'walking' || !current.taskType || !current.targetPosition) return;
+
+    // Wander strolls have no target station; cancel them instead of
+    // re-resolving a station route when the layout changes mid-walk.
+    if (!current.targetStationId) {
+      clearRoute();
+      updateAgent((prev) => ({
+        ...prev,
+        state: 'idle',
+        animation: resolveStateAnimation('idle'),
+        targetPosition: undefined,
+        arriveState: undefined,
+        arriveBubbleText: undefined,
+      }));
+      return;
+    }
 
     const resolved = resolveAgentTask(current.taskType, roomObjects);
     const route = planLoungeGridRoute({
@@ -264,7 +324,16 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
       workDurationMs: resolved.workDurationMs > 0 ? resolved.workDurationMs : undefined,
       workElapsedMs: undefined,
     }));
-  }, [failBlockedRoute, roomHeight, roomObjects, roomWidth, routeGrid, updateAgent, updateRouteDebug]);
+  }, [
+    clearRoute,
+    failBlockedRoute,
+    roomHeight,
+    roomObjects,
+    roomWidth,
+    routeGrid,
+    updateAgent,
+    updateRouteDebug,
+  ]);
 
   const tickAgent = useCallback(
     (deltaTime: number) => {
@@ -512,5 +581,14 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
     updateAgent((prev) => ({ ...prev, taskQueue: [] }));
   }, [updateAgent]);
 
-  return { agent, assignTask, setAgentState, clearAgentTask, enqueueTask, clearQueue, routeDebug };
+  return {
+    agent,
+    assignTask,
+    walkToIso,
+    setAgentState,
+    clearAgentTask,
+    enqueueTask,
+    clearQueue,
+    routeDebug,
+  };
 }

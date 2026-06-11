@@ -163,7 +163,9 @@ export type RoomTheme = {
   floorTintAlpha: number;
 };
 
-const THEMES: Record<string, RoomTheme> = {
+export type RoomThemeKey = 'dawn' | 'day' | 'dusk' | 'night';
+
+const THEMES: Record<RoomThemeKey, RoomTheme> = {
   dawn: {
     skyTop: '#ffd1dc',
     skyBot: '#ffe4e1',
@@ -204,6 +206,17 @@ export function getTimeTheme(): RoomTheme {
   if (h >= 8 && h < 18) return THEMES.day!;
   if (h >= 18 && h < 21) return THEMES.dusk!;
   return THEMES.night!;
+}
+
+/** Wallpaper presets selectable from the room settings panel. */
+export const ROOM_THEME_KEYS: RoomThemeKey[] = ['dawn', 'day', 'dusk', 'night'];
+
+/** Resolves a manual wallpaper key; 'auto' (or unknown) follows local time. */
+export function resolveRoomTheme(key: string | undefined): RoomTheme {
+  if (key && key !== 'auto' && (ROOM_THEME_KEYS as string[]).includes(key)) {
+    return THEMES[key as RoomThemeKey];
+  }
+  return getTimeTheme();
 }
 
 export function drawBackground(

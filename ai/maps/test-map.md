@@ -1,6 +1,17 @@
 # Test Map
 
-_Updated: C-LOUNGE-PERF-ROUTE-GRID-002_
+_Updated: C-DORM-AZUR-001_
+
+## Dorm Tests
+
+| Area | File |
+|---|---|
+| Dorm engine (comfort, food drain, XP/levels, morale, affection, headpat cooldown, training, offline cap, revival clamps) | `apps/web/src/game/dorm/dormEngine.test.ts` |
+| Wander stroll (`walkToIso` from idle, refuses non-idle) | `apps/web/src/hooks/useAgentWalk.test.ts` |
+
+```bash
+pnpm --filter @squad/web exec vitest run src/game/dorm/dormEngine.test.ts src/hooks/useAgentWalk.test.ts --passWithNoTests; echo "EXIT:$?"
+```
 
 ## Core Domain Tests
 

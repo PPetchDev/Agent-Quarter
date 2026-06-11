@@ -146,7 +146,13 @@ export function buildRoomScene(
   const items = new Map<number, FurnitureItem>();
 
   function populateFurniture(objs: RoomObject[]) {
-    furnitureLayer.removeChildren();
+    // Remove only tracked furniture containers — the layer also hosts
+    // non-furniture children (e.g. Spine agent displays) that must survive
+    // rebuilds triggered by floor switches, room resizes, and layout resets.
+    for (const item of items.values()) {
+      furnitureLayer.removeChild(item.container);
+      item.container.destroy({ children: true });
+    }
     items.clear();
     for (const obj of objs) {
       const item = createFurnitureItem(obj, handlers);

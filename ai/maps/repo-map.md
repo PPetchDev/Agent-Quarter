@@ -1,6 +1,6 @@
 # Repo Map
 
-_Updated: C-FURNITURE-GRID-001_
+_Updated: C-DORM-AZUR-001_
 
 ## Monorepo Layout
 
@@ -27,6 +27,7 @@ AnimeAgentSquad/
 │       ├── src/game/
 │       │   ├── agents/
 │       │   ├── animation/
+│       │   ├── dorm/              # Azur Lane style dorm engine (comfort/food/XP/morale/affection)
 │       │   ├── isometric/
 │       │   ├── movement/          # Direction, linear segment movement, grid pathfinding
 │       │   └── scene/             # Lounge stations and furniture-blocked path grid

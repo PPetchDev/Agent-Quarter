@@ -27,4 +27,12 @@ describe('furniture catalog smoke', () => {
       expect(pos.wz).toBe(0);
     }
   });
+
+  it('prices every item in coins plus decor tokens', () => {
+    for (const item of FURNITURE_CATALOG) {
+      expect(item.cost).toBeGreaterThan(0);
+      expect(item.tokenCost).toBeGreaterThanOrEqual(1);
+      expect(Number.isInteger(item.tokenCost)).toBe(true);
+    }
+  });
 });

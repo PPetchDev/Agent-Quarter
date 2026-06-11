@@ -14,16 +14,36 @@ import {
   ROOM_TILES_X,
   ROOM_TILES_Y,
   setRoomProjection,
-  getTimeTheme,
+  resolveRoomTheme,
+  ROOM_THEME_KEYS,
 } from './pixiRoom';
-import type { RoomTheme } from './pixiRoom';
+import type { RoomTheme, RoomThemeKey } from './pixiRoom';
 import { buildRoomScene, loadRoomJSON } from './roomLoader';
 import type { RoomScene } from './roomLoader';
 import type { RoomObject } from './roomDefs';
 import { checkCollision, FURNITURE_TILES } from './roomDefs';
 import { FurnitureInspector } from './FurnitureInspector';
 import { ShopModal } from './ShopModal';
+import { SupplyPanel } from './SupplyPanel';
 import { getDefaultSpawnPosition, type CatalogItem } from './furnitureCatalog';
+import {
+  AFFECTION_MAX,
+  FOOD_CAP,
+  HEADPAT_AFFECTION,
+  MORALE_EMOJI,
+  applyHeadpat,
+  applyTaskMorale,
+  applyTrainingXp,
+  computeComfort,
+  createDormState,
+  feedDorm,
+  foodDepletionSeconds,
+  moraleBand,
+  reviveDormState,
+  tickDorm,
+  type DormState,
+  type FoodItem,
+} from '@/game/dorm/dormEngine';
 import { selectPurchasePlacement } from './purchasePlacement';
 import {
   createInitialSpineLoadStatus,
@@ -37,7 +57,6 @@ import {
   type SpineLoadStatus,
 } from './spineAgents';
 import { useAgentWalk } from '@/hooks/useAgentWalk';
-import { useCountdown } from '@/hooks/useCountdown';
 import type { Agent, AgentState, AgentTaskType } from '@/game/agents/agentTypes';
 import {
   createOfficeToolEvent,
@@ -217,15 +236,25 @@ const ENABLE_LLM_DIALOGUE = process.env.NEXT_PUBLIC_ENABLE_LLM_DIALOGUE === 'tru
 
 const LLM_REQUEST_COOLDOWN_MS = 90_000;
 
-const STORAGE_KEY = 'squad:lounge:v7';
+const STORAGE_KEY = 'squad:lounge:v8';
+const LEGACY_STORAGE_KEY = 'squad:lounge:v7';
 const ROOM_MAP_URL = '/maps/maple_hideout.json';
 const INITIAL_COINS = 500;
+const INITIAL_TOKENS = 20;
+const TASK_DONE_TOKENS = 1;
 const TRAIN_REWARD = 25;
 const TRAIN_MAX = 4;
+const TRAIN_XP = 60;
+const TRAIN_TOKENS = 2;
+const WORKFLOW_DONE_TOKENS = 3;
 const TRAIN_DATE_KEY = 'squad:lounge:trainDate';
 const TRAIN_COUNT_KEY = 'squad:lounge:trainCount';
-const COLLECT_BUTTON_COOLDOWN_MS = 8000;
 const HAPPINESS_MAX = 200;
+/** Dorm simulation tick cadence while the page is open. */
+const DORM_TICK_MS = 10_000;
+/** Cadence for picking a new idle wanderer. */
+const WANDER_INTERVAL_MS = 9_000;
+const DORM_AGENT_IDS = OFFICE_WORKFLOW_AGENTS.map((spec) => spec.id);
 
 function getLocalDateKey(): string {
   const d = new Date();
@@ -234,8 +263,60 @@ function getLocalDateKey(): string {
   const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
-const SUPPLIES_LOW_THRESHOLD_PCT = 20;
-const SUPPLIES_LOW_REWARD_MULT = 0.75;
+const FOOD_LOW_THRESHOLD_PCT = 20;
+const FOOD_LOW_REWARD_MULT = 0.75;
+
+function formatSecondsHMS(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const h = String(Math.floor(s / 3600)).padStart(2, '0');
+  const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+  const ss = String(s % 60).padStart(2, '0');
+  return `${h}:${m}:${ss}`;
+}
+
+/** Starter rest-floor layout used the first time the player visits floor 2. */
+const DEFAULT_FLOOR2_TEMPLATE: Omit<RoomObject, 'id'>[] = [
+  {
+    furnitureType: 'low_table',
+    label: 'Tea Table',
+    description: 'A low Japanese tea table',
+    wx: 3,
+    wy: 3,
+    wz: 0,
+    happiness: 8,
+    draggable: true,
+  },
+  {
+    furnitureType: 'zabuton',
+    label: 'Floor Cushion',
+    description: 'A soft zabuton floor cushion',
+    wx: 3,
+    wy: 5,
+    wz: 0,
+    happiness: 4,
+    draggable: true,
+  },
+  {
+    furnitureType: 'plant',
+    label: 'Tropical Plant',
+    description: 'A lush plant in a terracotta pot',
+    wx: 0,
+    wy: 0,
+    wz: 0,
+    happiness: 7,
+    draggable: true,
+  },
+  {
+    furnitureType: 'bookcase',
+    label: 'Bookcase',
+    description: 'A tall bookcase packed with colorful books',
+    wx: 6,
+    wy: 0,
+    wz: 0,
+    happiness: 10,
+    draggable: true,
+  },
+];
 
 type Mode = 'visit' | 'move';
 
@@ -243,6 +324,7 @@ type OfficeWalker = {
   agent: Agent;
   assignTask: (task: AgentTaskType) => void;
   clearAgentTask: () => void;
+  walkToIso: (target: { wx: number; wy: number; wz: number }) => boolean;
 };
 
 type OfficeWalkerMap = Record<OfficeAgentId, OfficeWalker>;
@@ -286,30 +368,6 @@ function positionSpineAgent(
   display.scale.x = visual.direction === 'left' ? -asset.scale : asset.scale;
   display.scale.y = asset.scale;
   display.zIndex = visual.position.y + 12;
-}
-
-function useTimer(startSecs = 8 * 3600 + 23 * 60 + 17) {
-  const [s, setS] = useState(startSecs);
-  useEffect(() => {
-    const id = setInterval(() => setS((p) => Math.max(0, p - 1)), 1000);
-    return () => clearInterval(id);
-  }, []);
-  const h = String(Math.floor(s / 3600)).padStart(2, '0');
-  const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
-  const ss = String(s % 60).padStart(2, '0');
-  return `${h}:${m}:${ss}`;
-}
-
-function useSuppliesTimer(startSecs = 12 * 3600 + 45 * 60 + 30) {
-  const [s, setS] = useState(startSecs);
-  useEffect(() => {
-    const id = setInterval(() => setS((p) => Math.max(0, p - 1)), 1000);
-    return () => clearInterval(id);
-  }, []);
-  const h = String(Math.floor(s / 3600)).padStart(2, '0');
-  const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
-  const ss = String(s % 60).padStart(2, '0');
-  return `${h}:${m}:${ss}`;
 }
 
 function encodeBase64Url(input: string): string {
@@ -406,12 +464,10 @@ export function LoungeCanvas() {
   const sceneRef = useRef<RoomScene | null>(null);
   const charSpritesRef = useRef<Map<OfficeAgentId, SpineAgentDisplay>>(new Map());
   const agentVisualStateRef = useRef<Partial<Record<OfficeAgentId, AgentVisualState>>>({});
-  const lastCollectRef = useRef<Record<string, number>>({});
   const lastCooldownToastRef = useRef(0);
-  const collectButtonCooldownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const suppliesProgressRef = useRef(28640);
+  const dormRef = useRef<DormState | null>(null);
+  const comfortRef = useRef(0);
   const trainStorageLoadedRef = useRef(false);
-  const happinessRef = useRef(128);
   const happinessMaxReachedRef = useRef(false);
   const dragRef = useRef<{
     id: number;
@@ -446,16 +502,21 @@ export function LoungeCanvas() {
   const [coins, setCoins] = useState(INITIAL_COINS);
   const [floor, setFloor] = useState(1);
   const [trainCount, setTrainCount] = useState(0);
-  const [suppliesProgress, setSuppliesProgress] = useState(28640);
-  const [suppliesMax] = useState(40000);
   const [agentBubble, setAgentBubble] = useState<string | null>(null);
   const [floatingHearts, setFloatingHearts] = useState<
     { id: number; x: number; y: number; createdAt: number }[]
   >([]);
-  const [collectButtonCooldownUntil, setCollectButtonCooldownUntil] = useState(0);
   const heartIdRef = useRef(0);
   const [shopOpen, setShopOpen] = useState(false);
-  const theme = useMemo<RoomTheme>(() => getTimeTheme(), []);
+  const [supplyOpen, setSupplyOpen] = useState(false);
+  // ── Dorm simulation state (Azur Lane style) ────────────────────────────────
+  const [dorm, setDorm] = useState<DormState>(() => createDormState(DORM_AGENT_IDS, Date.now()));
+  const [tokens, setTokens] = useState(INITIAL_TOKENS);
+  const tokensRef = useRef(INITIAL_TOKENS);
+  // Furniture layout of the floor currently NOT shown (each floor keeps its own layout).
+  const [inactiveFloorObjects, setInactiveFloorObjects] = useState<RoomObject[]>([]);
+  const [themeKey, setThemeKey] = useState<'auto' | RoomThemeKey>('auto');
+  const theme = useMemo<RoomTheme>(() => resolveRoomTheme(themeKey), [themeKey]);
   const [showRoomSettings, setShowRoomSettings] = useState(false);
   const [roomReady, setRoomReady] = useState(false);
   const [roomW, setRoomW] = useState(ROOM_TILES_X);
@@ -472,13 +533,14 @@ export function LoungeCanvas() {
     roomW,
     roomH,
   ]);
-  const { agent, assignTask, clearAgentTask, enqueueTask, clearQueue, routeDebug } = useAgentWalk({
-    roomObjects: objects,
-    routeGrid,
-    roomWidth: roomW,
-    roomHeight: roomH,
-    startIso: maiSpineAsset.fallbackIso,
-  });
+  const { agent, assignTask, walkToIso, clearAgentTask, enqueueTask, clearQueue, routeDebug } =
+    useAgentWalk({
+      roomObjects: objects,
+      routeGrid,
+      roomWidth: roomW,
+      roomHeight: roomH,
+      startIso: maiSpineAsset.fallbackIso,
+    });
   const previousAgentStateRef = useRef(agent.state);
   const previousTaskTypeRef = useRef(agent.taskType);
   // Second agent — autopilot demo. Cycles through tasks deterministically when
@@ -540,44 +602,53 @@ export function LoungeCanvas() {
   const officeToolEventIdRef = useRef(0);
   const officeWalkers = useMemo<OfficeWalkerMap>(
     () => ({
-      'agent-1': { agent, assignTask, clearAgentTask },
+      'agent-1': { agent, assignTask, clearAgentTask, walkToIso },
       'agent-2': {
         agent: aki.agent,
         assignTask: aki.assignTask,
         clearAgentTask: aki.clearAgentTask,
+        walkToIso: aki.walkToIso,
       },
       'agent-3': {
         agent: ren.agent,
         assignTask: ren.assignTask,
         clearAgentTask: ren.clearAgentTask,
+        walkToIso: ren.walkToIso,
       },
       'agent-4': {
         agent: yui.agent,
         assignTask: yui.assignTask,
         clearAgentTask: yui.clearAgentTask,
+        walkToIso: yui.walkToIso,
       },
       'agent-5': {
         agent: mika.agent,
         assignTask: mika.assignTask,
         clearAgentTask: mika.clearAgentTask,
+        walkToIso: mika.walkToIso,
       },
     }),
     [
       agent,
       assignTask,
       clearAgentTask,
+      walkToIso,
       aki.agent,
       aki.assignTask,
       aki.clearAgentTask,
+      aki.walkToIso,
       ren.agent,
       ren.assignTask,
       ren.clearAgentTask,
+      ren.walkToIso,
       yui.agent,
       yui.assignTask,
       yui.clearAgentTask,
+      yui.walkToIso,
       mika.agent,
       mika.assignTask,
       mika.clearAgentTask,
+      mika.walkToIso,
     ],
   );
   const visibleOfficeAgents = useMemo(
@@ -592,13 +663,15 @@ export function LoungeCanvas() {
   useEffect(() => {
     if (!roomReady) return;
     if (officeStatus !== 'idle') return;
+    // Work stations live on floor 1; floor 2 is the rest floor (wander only).
+    if (floor !== 1) return;
     if (aki.agent.state !== 'idle') return;
     const cycle: AgentTaskType[] = ['code', 'research', 'meeting', 'document', 'print', 'rest'];
     const next = cycle[akiTaskIndexRef.current % cycle.length]!;
     akiTaskIndexRef.current += 1;
     const handle = window.setTimeout(() => aki.assignTask(next), 1500);
     return () => window.clearTimeout(handle);
-  }, [aki.agent.state, aki.assignTask, officeStatus, roomReady]);
+  }, [aki.agent.state, aki.assignTask, floor, officeStatus, roomReady]);
   // Track character positions
   useLayoutEffect(() => {
     const visualState: Partial<Record<OfficeAgentId, AgentVisualState>> = {
@@ -686,23 +759,62 @@ export function LoungeCanvas() {
   }, [agent.state, aki.agent.state, ren.agent.state, yui.agent.state, mika.agent.state]);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const timer = useCountdown(8 * 3600 + 23 * 60 + 17);
-  const suppliesTimer = useCountdown(12 * 3600 + 45 * 60 + 30);
 
-  // ── Game mechanics ──────────────────────────────────────────────────────────
-  // Food drain
+  // ── Dorm mechanics (Azur Lane style) ────────────────────────────────────────
+  // Comfort counts furniture on both floors.
+  const comfort = useMemo(
+    () => computeComfort(objects) + computeComfort(inactiveFloorObjects),
+    [objects, inactiveFloorObjects],
+  );
+  const officeWalkersRef = useRef(officeWalkers);
   useEffect(() => {
-    const id = setInterval(() => setSuppliesProgress((p) => Math.max(0, p - 3)), 3000);
+    officeWalkersRef.current = officeWalkers;
+  }, [officeWalkers]);
+  useEffect(() => {
+    dormRef.current = dorm;
+  }, [dorm]);
+  useEffect(() => {
+    comfortRef.current = comfort;
+  }, [comfort]);
+  // Dorm tick: food drain + passive XP / morale / affection.
+  useEffect(() => {
+    if (!roomReady) return;
+    const id = setInterval(() => {
+      const restingIds = DORM_AGENT_IDS.filter(
+        (agentId) => officeWalkersRef.current[agentId]?.agent.state === 'resting',
+      );
+      setDorm(
+        (prev) => tickDorm(prev, Date.now(), { comfort: comfortRef.current, restingIds }).state,
+      );
+    }, DORM_TICK_MS);
     return () => clearInterval(id);
-  }, []);
-  // Keep suppliesProgressRef in sync for safe reads inside reward effect
+  }, [roomReady]);
+  // Idle chibi wandering: send a random idle agent for a stroll.
   useEffect(() => {
-    suppliesProgressRef.current = suppliesProgress;
-  }, [suppliesProgress]);
-  // Keep happinessRef in sync for safe reads inside addHappiness
+    if (!roomReady) return;
+    if (mode === 'move') return;
+    const id = setInterval(() => {
+      if (document.hidden) return;
+      if (officeStatusRef.current !== 'idle') return;
+      const idleWalkers = DORM_AGENT_IDS.map(
+        (agentId) => officeWalkersRef.current[agentId],
+      ).filter((walker) => walker.agent.state === 'idle');
+      if (idleWalkers.length === 0) return;
+      const walker = idleWalkers[Math.floor(Math.random() * idleWalkers.length)]!;
+      const blocked = new Set(routeGrid.blockedCells.map((cell) => `${cell.x},${cell.y}`));
+      for (let attempt = 0; attempt < 10; attempt++) {
+        const cx = Math.floor(Math.random() * roomW);
+        const cy = Math.floor(Math.random() * roomH);
+        if (blocked.has(`${cx},${cy}`)) continue;
+        if (walker.walkToIso({ wx: cx, wy: cy, wz: 0 })) break;
+      }
+    }, WANDER_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [roomReady, mode, routeGrid, roomW, roomH]);
+  // Keep tokensRef in sync for safe reads inside purchase handlers
   useEffect(() => {
-    happinessRef.current = happiness;
-  }, [happiness]);
+    tokensRef.current = tokens;
+  }, [tokens]);
   // Persist Train daily state when trainCount changes (skip pre-load fire)
   useEffect(() => {
     if (!trainStorageLoadedRef.current) return;
@@ -746,15 +858,6 @@ export function LoungeCanvas() {
     );
     return () => clearInterval(id);
   }, [floatingHearts.length]);
-  // Collect button cooldown cleanup on unmount
-  useEffect(
-    () => () => {
-      if (collectButtonCooldownTimeoutRef.current)
-        clearTimeout(collectButtonCooldownTimeoutRef.current);
-    },
-    [],
-  );
-
   // Keep refs in sync
   useEffect(() => {
     objectsRef.current = objects;
@@ -801,18 +904,26 @@ export function LoungeCanvas() {
         /* use defaults */
       }
 
+      let loadedInactiveFloor: RoomObject[] = [];
+      let loadedDormRaw: unknown = null;
       try {
-        const saved = localStorage.getItem(STORAGE_KEY);
+        // v8 first, then legacy v7 (which has no dorm/floor2/token fields).
+        const saved =
+          localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY);
         if (saved) {
           const parsed = JSON.parse(saved) as {
             objects?: RoomObject[];
+            floor2Objects?: RoomObject[];
             roomName?: string;
             happiness?: number;
             floor?: number;
             coins?: number;
+            tokens?: number;
             nextId?: number;
             roomW?: number;
             roomH?: number;
+            themeKey?: string;
+            dorm?: unknown;
           };
           const loadedW =
             typeof parsed.roomW === 'number'
@@ -828,13 +939,26 @@ export function LoungeCanvas() {
           roomHRef.current = loadedH;
           if (parsed.objects?.length)
             roomObjects = parsed.objects.map((o) => snapObj(o, loadedW, loadedH));
+          if (Array.isArray(parsed.floor2Objects))
+            loadedInactiveFloor = parsed.floor2Objects.map((o) => snapObj(o, loadedW, loadedH));
           if (parsed.roomName) setRoomName(parsed.roomName);
           if (typeof parsed.happiness === 'number') setHappiness(parsed.happiness);
-          if (typeof parsed.floor === 'number') setFloor(parsed.floor);
           if (typeof parsed.coins === 'number') {
             setCoins(parsed.coins);
             coinsRef.current = parsed.coins;
           }
+          if (typeof parsed.tokens === 'number') {
+            const loadedTokens = Math.max(0, parsed.tokens);
+            setTokens(loadedTokens);
+            tokensRef.current = loadedTokens;
+          }
+          if (
+            parsed.themeKey === 'auto' ||
+            (ROOM_THEME_KEYS as string[]).includes(parsed.themeKey ?? '')
+          ) {
+            setThemeKey(parsed.themeKey as 'auto' | RoomThemeKey);
+          }
+          loadedDormRaw = parsed.dorm ?? null;
           if (typeof parsed.nextId === 'number') nextIdRef.current = parsed.nextId;
         }
       } catch {
@@ -876,9 +1000,29 @@ export function LoungeCanvas() {
         removeSharedLayoutQuery();
       }
 
-      // Ensure nextIdRef is greater than any existing id
-      const maxId = Math.max(...roomObjects.map((o) => o.id), 999);
+      // Ensure nextIdRef is greater than any existing id on either floor
+      const maxId = Math.max(
+        ...roomObjects.map((o) => o.id),
+        ...loadedInactiveFloor.map((o) => o.id),
+        999,
+      );
       if (nextIdRef.current <= maxId) nextIdRef.current = maxId + 1;
+
+      setInactiveFloorObjects(loadedInactiveFloor);
+
+      // ── Dorm offline catch-up ─────────────────────────────────────────────
+      const nowMs = Date.now();
+      const revivedDorm = reviveDormState(loadedDormRaw, DORM_AGENT_IDS, nowMs);
+      const comfortAtLoad = computeComfort(roomObjects) + computeComfort(loadedInactiveFloor);
+      const catchUp = tickDorm(revivedDorm, nowMs, { comfort: comfortAtLoad });
+      setDorm(catchUp.state);
+      dormRef.current = catchUp.state;
+      if (catchUp.elapsedMs >= 60_000) {
+        const awayMinutes = Math.round(catchUp.elapsedMs / 60_000);
+        showToast(
+          `Away ${awayMinutes}m · +${catchUp.xpPerCharacter} XP each · 🍙 -${catchUp.foodConsumed.toLocaleString()}`,
+        );
+      }
 
       setObjects(roomObjects);
       objectsRef.current = roomObjects;
@@ -959,34 +1103,37 @@ export function LoungeCanvas() {
             display.cursor = 'pointer';
             display.hitArea = new PIXI.Circle(0, -def.hitAreaRadius, def.hitAreaRadius);
             display.on('pointertap', () => {
-              // ── Collect cooldown (3s per character) ──
+              // ── Headpat: affection gain with per-character cooldown ──
               const now = Date.now();
-              if (now - (lastCollectRef.current[def.agentId] ?? 0) < 3000) {
+              const dormNow = dormRef.current;
+              if (!dormNow) return;
+              const headpat = applyHeadpat(dormNow, def.agentId, now);
+              if (!headpat.accepted) {
                 if (now - lastCooldownToastRef.current > 1000) {
                   lastCooldownToastRef.current = now;
                   showToast('Wait a moment~');
                 }
                 return;
               }
-              lastCollectRef.current[def.agentId] = now;
+              dormRef.current = headpat.state;
+              setDorm(headpat.state);
 
               const state = (spine as any).state;
               const anims = ((spine as any).spineData.animations as any[]).map((a: any) => a.name);
               const oneShotAnims = new Set(['victory', 'break']);
               const current = state.getCurrent(0);
-              if (current && oneShotAnims.has(current.animation.name)) return;
-              const tap = ['touch', 'motou'].find((a) => anims.includes(a));
-              if (!tap) return;
-              if (current?.animation?.name === tap) return;
-              state.setAnimation(0, tap, false);
-              const calm =
-                ['normal', 'stand', 'stand2', 'sit', 'sleep'].find((c) => anims.includes(c)) ??
-                anims[0];
-              if (calm) state.addAnimation(0, calm, true, 0);
+              if (!current || !oneShotAnims.has(current.animation.name)) {
+                const tap = ['touch', 'motou'].find((a) => anims.includes(a));
+                if (tap && current?.animation?.name !== tap) {
+                  state.setAnimation(0, tap, false);
+                  const calm =
+                    ['normal', 'stand', 'stand2', 'sit', 'sleep'].find((c) => anims.includes(c)) ??
+                    anims[0];
+                  if (calm) state.addAnimation(0, calm, true, 0);
+                }
+              }
 
-              // ── Collect rewards ──
-              addHappiness(3);
-              setCoins((c) => c + 15);
+              const spec = OFFICE_WORKFLOW_AGENTS.find((item) => item.id === def.agentId);
               setFloatingHearts((prev) => [
                 ...prev,
                 {
@@ -996,7 +1143,9 @@ export function LoungeCanvas() {
                   createdAt: performance.now(),
                 },
               ]);
-              showToast('♡+3 🪙+15');
+              showToast(
+                `♥ ${spec?.name ?? def.agentId} +${HEADPAT_AFFECTION} · ${Math.floor(headpat.affection)}/${AFFECTION_MAX}`,
+              );
             });
           })
           .catch((e: Error) => {
@@ -1188,24 +1337,48 @@ export function LoungeCanvas() {
 
   // ── Persist ──────────────────────────────────────────────────────────────────
   useEffect(() => {
+    // Initial mount renders default state before the async load applies the
+    // saved snapshot — persisting then would clobber real progress.
+    if (!roomReady) return;
     try {
+      // `objects` always holds the visible floor; persist both floors explicitly.
+      const floor1Objects = floor === 1 ? objects : inactiveFloorObjects;
+      const floor2Objects = floor === 1 ? inactiveFloorObjects : objects;
       localStorage.setItem(
         STORAGE_KEY,
         JSON.stringify({
-          objects,
+          objects: floor1Objects,
+          floor2Objects,
           roomName,
           happiness,
           floor,
           coins,
+          tokens,
+          themeKey,
+          dorm,
           nextId: nextIdRef.current,
           roomW,
           roomH,
+          savedAt: Date.now(),
         }),
       );
     } catch {
       /* ignore */
     }
-  }, [objects, roomName, happiness, floor, coins, roomW, roomH]);
+  }, [
+    roomReady,
+    objects,
+    inactiveFloorObjects,
+    roomName,
+    happiness,
+    floor,
+    coins,
+    tokens,
+    themeKey,
+    dorm,
+    roomW,
+    roomH,
+  ]);
 
   // ── Toast helper ─────────────────────────────────────────────────────────────
   const showToast = useCallback((text: string) => {
@@ -1532,7 +1705,8 @@ export function LoungeCanvas() {
       setOfficeStepIndex((current) => current + 1);
     } else {
       setOfficeStatus('done');
-      showToast('Office workflow done');
+      setTokens((t) => t + WORKFLOW_DONE_TOKENS);
+      showToast(`Office workflow done · +${WORKFLOW_DONE_TOKENS} 🎀`);
     }
     // Fire-and-forget: call backend run complete with in-flight run ID
     const runId = officeInFlightRunIdRef.current;
@@ -1561,19 +1735,17 @@ export function LoungeCanvas() {
   ]);
 
   // ── Happiness with cap ───────────────────────────────────────────────────────
-  const addHappiness = useCallback(
-    (amount: number) => {
-      const prev = happinessRef.current;
-      if (prev >= HAPPINESS_MAX) return;
-      const next = Math.min(HAPPINESS_MAX, prev + amount);
-      setHappiness(next);
-      if (next >= HAPPINESS_MAX && !happinessMaxReachedRef.current) {
-        happinessMaxReachedRef.current = true;
-        showToast('Max happiness! 🥳');
-      }
-    },
-    [showToast],
-  );
+  // Functional update so rapid same-frame calls never read a stale snapshot.
+  const addHappiness = useCallback((amount: number) => {
+    setHappiness((prev) => Math.min(HAPPINESS_MAX, prev + amount));
+  }, []);
+
+  useEffect(() => {
+    if (happiness >= HAPPINESS_MAX && !happinessMaxReachedRef.current) {
+      happinessMaxReachedRef.current = true;
+      showToast('Max happiness! 🥳');
+    }
+  }, [happiness, showToast]);
 
   // ── Task completion reward ──────────────────────────────────────────────────
   useEffect(() => {
@@ -1589,20 +1761,50 @@ export function LoungeCanvas() {
     ) {
       const reward = TASK_REWARDS[prevTaskType] ?? { coins: 0, happiness: 0 };
       if (reward.coins > 0 || reward.happiness > 0) {
-        const currentPct = Math.round((suppliesProgressRef.current / 40000) * 100);
-        const isLowSupplies = currentPct <= SUPPLIES_LOW_THRESHOLD_PCT;
-        const rewardMult = isLowSupplies ? SUPPLIES_LOW_REWARD_MULT : 1;
+        const foodPctNow = Math.round(((dormRef.current?.food ?? 0) / FOOD_CAP) * 100);
+        const isLowFood = foodPctNow <= FOOD_LOW_THRESHOLD_PCT;
+        const rewardMult = isLowFood ? FOOD_LOW_REWARD_MULT : 1;
         const rewardCoins = Math.round(reward.coins * rewardMult);
         const rewardHappiness = Math.round(reward.happiness * rewardMult);
         setCoins((c) => c + rewardCoins);
+        setTokens((t) => t + TASK_DONE_TOKENS);
         addHappiness(rewardHappiness);
-        const toastSuffix = isLowSupplies ? '  📉 Low supplies' : '';
-        showToast(`+${rewardCoins} 🪙  +${rewardHappiness} ♡${toastSuffix}`);
+        const toastSuffix = isLowFood ? '  📉 Low food' : '';
+        showToast(
+          `+${rewardCoins} 🪙  +${TASK_DONE_TOKENS} 🎀  +${rewardHappiness} ♡${toastSuffix}`,
+        );
       }
     }
     previousAgentStateRef.current = agent.state;
     previousTaskTypeRef.current = agent.taskType;
   }, [agent.state, agent.taskType, showToast]);
+
+  // ── Morale: every agent's task completion drains (rest restores) ────────────
+  const prevWalkerSnapshotRef = useRef<
+    Record<string, { state: AgentState; taskType?: AgentTaskType }>
+  >({});
+  useEffect(() => {
+    const prevSnapshot = prevWalkerSnapshotRef.current;
+    const nextSnapshot: Record<string, { state: AgentState; taskType?: AgentTaskType }> = {};
+    for (const { spec, agent: walkerAgent } of visibleOfficeAgents) {
+      nextSnapshot[spec.id] = { state: walkerAgent.state, taskType: walkerAgent.taskType };
+      const prev = prevSnapshot[spec.id];
+      if (!prev) continue;
+      const completedTask =
+        walkerAgent.state === 'idle' &&
+        prev.state !== 'idle' &&
+        prev.state !== 'walking' &&
+        prev.state !== 'error' &&
+        prev.taskType !== undefined &&
+        prev.taskType !== 'idle'
+          ? prev.taskType
+          : null;
+      if (completedTask) {
+        setDorm((d) => applyTaskMorale(d, spec.id, completedTask));
+      }
+    }
+    prevWalkerSnapshotRef.current = nextSnapshot;
+  }, [visibleOfficeAgents]);
 
   const applyLayoutObjects = useCallback((nextObjects: RoomObject[]) => {
     const snapped = nextObjects.map((obj) => snapObj(obj, roomWRef.current, roomHRef.current));
@@ -1659,14 +1861,29 @@ export function LoungeCanvas() {
     }
     addHappiness(5);
     setCoins((c) => c + TRAIN_REWARD);
+    setTokens((t) => t + TRAIN_TOKENS);
     setTrainCount((t) => t + 1);
-    showToast(`+${TRAIN_REWARD} 🪙  +5 😊`);
-  }, [trainCount, showToast]);
+    // Tactical class: every dorm character gains XP.
+    const dormNow = dormRef.current;
+    if (dormNow) {
+      const trained = applyTrainingXp(dormNow, TRAIN_XP);
+      dormRef.current = trained.state;
+      setDorm(trained.state);
+      const levelNote = trained.levelUps > 0 ? `  ⬆ Lv +${trained.levelUps}` : '';
+      showToast(`+${TRAIN_REWARD} 🪙  +${TRAIN_TOKENS} 🎀  +${TRAIN_XP} XP${levelNote}`);
+    } else {
+      showToast(`+${TRAIN_REWARD} 🪙  +${TRAIN_TOKENS} 🎀`);
+    }
+  }, [addHappiness, trainCount, showToast]);
 
   const handlePurchase = useCallback(
     (item: CatalogItem) => {
       if (coinsRef.current < item.cost) {
         showToast('Not enough coins');
+        return;
+      }
+      if (tokensRef.current < item.tokenCost) {
+        showToast('Not enough decor tokens');
         return;
       }
 
@@ -1687,6 +1904,8 @@ export function LoungeCanvas() {
       pushHistorySnapshot(objectsRef.current);
       coinsRef.current -= item.cost;
       setCoins(coinsRef.current);
+      tokensRef.current -= item.tokenCost;
+      setTokens(tokensRef.current);
       addHappiness(item.happiness);
 
       const newId = nextIdRef.current++;
@@ -1762,9 +1981,57 @@ export function LoungeCanvas() {
     }
   }, [coins, floor, happiness, roomH, roomName, roomW, showToast]);
 
+  const handleFeed = useCallback(
+    (item: FoodItem) => {
+      if (coinsRef.current < item.cost) {
+        showToast('Not enough coins');
+        return;
+      }
+      const dormNow = dormRef.current;
+      if (!dormNow) return;
+      const fed = feedDorm(dormNow, item);
+      if (fed.added <= 0) {
+        showToast('Food gauge is full');
+        return;
+      }
+      coinsRef.current -= item.cost;
+      setCoins(coinsRef.current);
+      dormRef.current = fed.state;
+      setDorm(fed.state);
+      showToast(`${item.icon} +${fed.added.toLocaleString()} 🍙`);
+    },
+    [showToast],
+  );
+
+  const handleFloorToggle = useCallback(() => {
+    if (mode === 'move') {
+      showToast('Finish editing first');
+      return;
+    }
+    const currentLayout = cloneLayout(objectsRef.current);
+    let nextLayout = inactiveFloorObjects;
+    if (floor === 1 && nextLayout.length === 0) {
+      // First visit to floor 2: seed the rest-floor starter layout.
+      nextLayout = DEFAULT_FLOOR2_TEMPLATE.map((template) => ({
+        ...template,
+        id: nextIdRef.current++,
+      }));
+    }
+    // Stations differ per floor — stop current activities so nobody re-plans
+    // a route into the other floor's furniture.
+    Object.values(officeWalkers).forEach((walker) => walker.clearAgentTask());
+    setInactiveFloorObjects(currentLayout);
+    applyLayoutObjects(nextLayout);
+    setSelectedId(null);
+    historyRef.current = [];
+    redoRef.current = [];
+    setFloor((f) => (f === 1 ? 2 : 1));
+    showToast(floor === 1 ? 'Moved to Floor 2' : 'Moved to Floor 1');
+  }, [applyLayoutObjects, floor, inactiveFloorObjects, mode, officeWalkers, showToast]);
+
   const selectedObj = objects.find((o) => o.id === selectedId) ?? null;
-  const suppliesPct = Math.round((suppliesProgress / suppliesMax) * 100);
-  const totalHappiness = happiness + objects.reduce((s, o) => s + o.happiness, 0);
+  const foodPct = Math.round((dorm.food / FOOD_CAP) * 100);
+  const foodEtaLabel = formatSecondsHMS(foodDepletionSeconds(dorm.food, DORM_AGENT_IDS.length));
   const canUndo = historyRef.current.length > 0;
   const canRedo = redoRef.current.length > 0;
   const currentOfficeStep = officeSteps[officeStepIndex];
@@ -1829,7 +2096,17 @@ export function LoungeCanvas() {
         >
           <span className="text-[12px] leading-none max-sm:text-[10px]">😊</span>
           <span className="text-[11px] font-bold text-[#5a3c18] tabular-nums max-sm:text-[9px]">
-            {totalHappiness}
+            {happiness}
+          </span>
+        </div>
+        <span className="my-1.5 w-px self-stretch bg-[#c8a870]/60" />
+        <div
+          className="flex items-center gap-1 px-2.5 py-1.5 max-sm:px-1.5 max-sm:py-1"
+          title="Comfort — boosts dorm XP rate"
+        >
+          <span className="text-[12px] leading-none max-sm:text-[10px]">🛋️</span>
+          <span className="text-[11px] font-bold text-[#5a3c18] tabular-nums max-sm:text-[9px]">
+            {comfort}
           </span>
         </div>
         <span className="my-1.5 w-px self-stretch bg-[#c8a870]/60" />
@@ -1845,13 +2122,23 @@ export function LoungeCanvas() {
         <span className="my-1.5 w-px self-stretch bg-[#c8a870]/60" />
         <div
           className="flex items-center gap-1 px-2.5 py-1.5 max-sm:px-1.5 max-sm:py-1"
-          title="Next meal"
+          title="Decor tokens"
+        >
+          <span className="text-[12px] leading-none max-sm:text-[10px]">🎀</span>
+          <span className="text-[11px] font-bold text-[#5a3c18] tabular-nums max-sm:text-[9px]">
+            {tokens}
+          </span>
+        </div>
+        <span className="my-1.5 w-px self-stretch bg-[#c8a870]/60" />
+        <div
+          className="flex items-center gap-1 px-2.5 py-1.5 max-sm:px-1.5 max-sm:py-1"
+          title="Dorm food"
         >
           <span className="text-[11px] leading-none max-sm:text-[9px]">🍱</span>
           <span className="text-[10px] font-mono font-bold text-[#5a3c18] tabular-nums max-sm:text-[8px]">
-            {suppliesPct}%
+            {foodPct}%
           </span>
-          {suppliesProgress === 0 && (
+          {dorm.food === 0 && (
             <span className="text-[7px] font-black text-[#991b1b] bg-[#fecaca] rounded-full px-1 py-px animate-pulse max-sm:text-[6px]">
               Empty
             </span>
@@ -2117,6 +2404,23 @@ export function LoungeCanvas() {
           <span className="text-[9px] text-[#8b5e30] text-center">
             {roomW} × {roomH} tiles — saved automatically
           </span>
+          <span className="mt-1 text-[11px] font-black text-[#5a3c18]">Wallpaper</span>
+          <div className="flex flex-wrap items-center gap-1">
+            {(['auto', ...ROOM_THEME_KEYS] as const).map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setThemeKey(key)}
+                className={`rounded-full px-2 py-0.5 text-[9px] font-black capitalize active:scale-95 transition ${
+                  themeKey === key
+                    ? 'bg-[#e8a030] text-white shadow'
+                    : 'bg-[#e8d0a0]/60 text-[#7a5000] hover:bg-[#e8d0a0]'
+                }`}
+              >
+                {key}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -2354,42 +2658,11 @@ export function LoungeCanvas() {
         )}
         <button
           type="button"
-          onClick={() => {
-            const now = Date.now();
-            if (now < collectButtonCooldownUntil) {
-              showToast('Wait a moment~');
-              return;
-            }
-            // Set cooldown
-            if (collectButtonCooldownTimeoutRef.current)
-              clearTimeout(collectButtonCooldownTimeoutRef.current);
-            setCollectButtonCooldownUntil(now + COLLECT_BUTTON_COOLDOWN_MS);
-            collectButtonCooldownTimeoutRef.current = setTimeout(
-              () => setCollectButtonCooldownUntil(0),
-              COLLECT_BUTTON_COOLDOWN_MS,
-            );
-            // Grant reward
-            addHappiness(3);
-            setCoins((c) => c + 15);
-            setSuppliesProgress((p) => Math.min(40000, p + 50));
-            setFloatingHearts((prev) => [
-              ...prev,
-              {
-                id: ++heartIdRef.current,
-                x: 45 + Math.random() * 10,
-                y: 50,
-                createdAt: performance.now(),
-              },
-            ]);
-            showToast('♡+3 🪙+15 🍱+50');
-          }}
-          className={
-            Date.now() < collectButtonCooldownUntil
-              ? 'rounded-full bg-[#ff69b4]/5 border border-[#ff69b4]/15 px-2.5 py-0.5 text-[9px] font-bold text-[#d4708a]/40 cursor-not-allowed opacity-50 transition max-sm:px-2 max-sm:text-[8px]'
-              : 'rounded-full bg-[#ff69b4]/15 border border-[#ff69b4]/30 px-2.5 py-0.5 text-[9px] font-bold text-[#d4708a] hover:bg-[#ff69b4]/25 active:scale-95 transition max-sm:px-2 max-sm:text-[8px]'
-          }
+          onClick={() => setSupplyOpen(true)}
+          title="Feed the dorm"
+          className="rounded-full bg-[#ff69b4]/15 border border-[#ff69b4]/30 px-2.5 py-0.5 text-[9px] font-bold text-[#d4708a] hover:bg-[#ff69b4]/25 active:scale-95 transition max-sm:px-2 max-sm:text-[8px]"
         >
-          {Date.now() < collectButtonCooldownUntil ? '♡ Wait…' : '♡ Collect'}
+          🍱 Feed
         </button>
 
         {/* Character roster cards */}
@@ -2416,6 +2689,20 @@ export function LoungeCanvas() {
               <span className="truncate text-[10px] font-bold text-[#5a3c18] max-sm:text-[8px]">
                 {spec.name}
               </span>
+              {(() => {
+                const stats = dorm.characters[spec.id];
+                if (!stats) return null;
+                return (
+                  <span
+                    className="flex shrink-0 items-center gap-1 text-[8px] font-bold text-[#7a5000] tabular-nums max-sm:text-[7px]"
+                    title={`Lv ${stats.level} · Morale ${Math.round(stats.morale)}/150 · Affection ${Math.floor(stats.affection)}/100`}
+                  >
+                    <span className="rounded-full bg-[#fde68a]/80 px-1 py-px">Lv{stats.level}</span>
+                    <span>{MORALE_EMOJI[moraleBand(stats.morale)]}</span>
+                    <span className="text-[#d4708a]">♥{Math.floor(stats.affection)}</span>
+                  </span>
+                );
+              })()}
               <span
                 className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold max-sm:px-1.5 max-sm:text-[7px] ${STATE_COLOR[rosterAgent.state] ?? 'bg-[#e8d0a0]/30 text-[#5a3c18]'}`}
               >
@@ -2470,24 +2757,29 @@ export function LoungeCanvas() {
             </span>
           </button>
         </div>
-        <div className="rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-2.5 py-1.5 shadow-md backdrop-blur-sm min-w-[168px]">
+        <button
+          type="button"
+          onClick={() => setSupplyOpen(true)}
+          title="Open dorm supplies"
+          className="rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-2.5 py-1.5 shadow-md backdrop-blur-sm min-w-[168px] text-left hover:bg-[#f0d8a8] active:scale-[0.98] transition"
+        >
           <div className="flex items-center gap-1 mb-1">
-            <span className="text-[10px]">📦</span>
-            <span className="text-[9px] font-bold text-[#5a3c18]">Supplies</span>
+            <span className="text-[10px]">🍱</span>
+            <span className="text-[9px] font-bold text-[#5a3c18]">Food</span>
             <span className="ml-auto text-[9px] font-mono font-bold text-[#2a7a30] tabular-nums">
-              {suppliesTimer}
+              {dorm.food > 0 ? foodEtaLabel : 'Empty!'}
             </span>
           </div>
           <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-[#e8d0a0]">
             <div
               className="absolute inset-y-0 left-0 rounded-full bg-[#e84040] transition-all"
-              style={{ width: `${suppliesPct}%` }}
+              style={{ width: `${foodPct}%` }}
             />
           </div>
           <div className="mt-0.5 text-right text-[8px] font-bold text-[#5a3c18] tabular-nums">
-            {suppliesProgress.toLocaleString()}/{suppliesMax.toLocaleString()}
+            {Math.round(dorm.food).toLocaleString()}/{FOOD_CAP.toLocaleString()}
           </div>
-        </div>
+        </button>
 
         {/* Speech bubble */}
         {agentBubble && (
@@ -2542,13 +2834,13 @@ export function LoungeCanvas() {
         </button>
         <button
           type="button"
-          onClick={() => setFloor((f) => (f === 1 ? 2 : 1))}
-          title="Change floor"
+          onClick={handleFloorToggle}
+          title={`Go to floor ${floor === 1 ? 2 : 1}`}
           className="flex flex-col items-center justify-center gap-0 rounded-xl border border-[#c8a870] bg-[#f5e4c0]/90 px-2.5 py-1.5 shadow-md hover:bg-[#f0d8a8] active:scale-95 transition min-w-[54px] max-sm:min-w-[44px] max-sm:px-2 max-sm:py-1"
         >
           <span className="text-[18px] leading-none max-sm:text-[16px]">🪜</span>
           <span className="text-[9px] font-bold text-[#5a3c18] mt-0.5 max-sm:text-[7px]">
-            Floor
+            Floor {floor}
           </span>
         </button>
       </div>
@@ -2557,8 +2849,19 @@ export function LoungeCanvas() {
       <ShopModal
         open={shopOpen}
         coins={coins}
+        tokens={tokens}
         onClose={() => setShopOpen(false)}
         onPurchase={(item) => handlePurchase(item)}
+      />
+
+      {/* ── Dorm supply panel ──────────────────────────────────────── */}
+      <SupplyPanel
+        open={supplyOpen}
+        coins={coins}
+        food={dorm.food}
+        depletionLabel={foodEtaLabel}
+        onClose={() => setSupplyOpen(false)}
+        onFeed={handleFeed}
       />
     </div>
   );

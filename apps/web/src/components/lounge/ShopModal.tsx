@@ -7,6 +7,7 @@ type Category = 'all' | 'essential' | 'decor' | 'entertainment' | 'wall';
 interface Props {
   open: boolean;
   coins: number;
+  tokens: number;
   onClose: () => void;
   onPurchase: (item: CatalogItem) => void;
 }
@@ -19,7 +20,7 @@ const CATEGORIES: { id: Category; label: string; icon: string }[] = [
   { id: 'wall', label: 'Wall', icon: '🖼' },
 ];
 
-export function ShopModal({ open, coins, onClose, onPurchase }: Props) {
+export function ShopModal({ open, coins, tokens, onClose, onPurchase }: Props) {
   const [category, setCategory] = useState<Category>('all');
   const [feedback, setFeedback] = useState<{
     id: string;
@@ -35,8 +36,9 @@ export function ShopModal({ open, coins, onClose, onPurchase }: Props) {
       : FURNITURE_CATALOG.filter((c) => c.category === category);
 
   const handleBuy = (item: CatalogItem) => {
-    if (coins < item.cost) {
-      setFeedback({ id: item.type + Date.now(), type: 'fail', text: 'Not enough coins!' });
+    if (coins < item.cost || tokens < item.tokenCost) {
+      const missing = coins < item.cost ? 'coins' : 'decor tokens';
+      setFeedback({ id: item.type + Date.now(), type: 'fail', text: `Not enough ${missing}!` });
       setTimeout(() => setFeedback(null), 1500);
       return;
     }
@@ -65,6 +67,12 @@ export function ShopModal({ open, coins, onClose, onPurchase }: Props) {
               <span className="text-[14px]">🪙</span>
               <span className="text-[12px] font-black text-[#7a5000]">
                 {coins.toLocaleString()}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 rounded-full bg-[#fbcfe8] px-3 py-1 shadow-sm">
+              <span className="text-[14px]">🎀</span>
+              <span className="text-[12px] font-black text-[#9d174d]">
+                {tokens.toLocaleString()}
               </span>
             </div>
             <button
@@ -99,7 +107,7 @@ export function ShopModal({ open, coins, onClose, onPurchase }: Props) {
         {/* Grid */}
         <div className="overflow-y-auto px-4 py-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
           {items.map((item) => {
-            const canAfford = coins >= item.cost;
+            const canAfford = coins >= item.cost && tokens >= item.tokenCost;
             return (
               <div
                 key={item.type}
@@ -124,8 +132,15 @@ export function ShopModal({ open, coins, onClose, onPurchase }: Props) {
                   {item.description}
                 </p>
                 <div className="flex items-center justify-between gap-1 mb-2">
-                  <span className="text-[10px] font-bold text-[#5a3c18]">😊 +{item.happiness}</span>
-                  <span className="text-[10px] font-bold text-[#7a5000]">🪙 {item.cost}</span>
+                  <span className="text-[10px] font-bold text-[#5a3c18]">🛋️ +{item.happiness}</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold text-[#7a5000]">🪙 {item.cost}</span>
+                    {item.tokenCost > 0 && (
+                      <span className="text-[10px] font-bold text-[#9d174d]">
+                        🎀 {item.tokenCost}
+                      </span>
+                    )}
+                  </span>
                 </div>
                 <button
                   type="button"
@@ -137,7 +152,7 @@ export function ShopModal({ open, coins, onClose, onPurchase }: Props) {
                       : 'bg-[#d4b880] text-[#8b5e30] cursor-not-allowed'
                   }`}
                 >
-                  {canAfford ? 'Buy' : 'Need coins'}
+                  {canAfford ? 'Buy' : coins < item.cost ? 'Need coins' : 'Need tokens'}
                 </button>
               </div>
             );

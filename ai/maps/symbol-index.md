@@ -1,6 +1,24 @@
 # Symbol Index
 
-_Updated: C-LOUNGE-PERF-ROUTE-GRID-002_
+_Updated: C-DORM-AZUR-001_
+
+## Dorm Engine (`apps/web/src/game/dorm/dormEngine.ts`)
+
+| Symbol | Kind | Description |
+|---|---|---|
+| `DormState` / `DormCharacterStats` | types | Dorm food gauge + per-character level/xp/morale/affection/lastHeadpatAt |
+| `createDormState` / `reviveDormState` | functions | Fresh state for character ids; clamped revival of persisted state |
+| `computeComfort` | function | Sum of placed furniture happiness values (Azur Lane comfort) |
+| `comfortXpBonus` | function | Diminishing bonus `c/(c+100)` applied to dorm XP rate |
+| `tickDorm` | function | Pure tick: food drain per char/min, XP while fed, morale/affection recovery, offline cap 8h |
+| `feedDorm` / `FOOD_ITEMS` / `FOOD_CAP` | fn/consts | Add food item units to gauge (cap 40000); 4-item supply catalog |
+| `applyHeadpat` / `HEADPAT_COOLDOWN_MS` | fn/const | +affection with 30s per-character cooldown |
+| `applyTaskMorale` / `TASK_MORALE_DELTA` | fn/const | Morale drain on task completion; rest restores |
+| `applyTrainingXp` | function | Train button: flat XP to all characters, reports level-ups |
+| `moraleBand` / `MORALE_EMOJI` / `affectionBand` / `AFFECTION_LABEL` | fns/consts | Display bands for morale (5) and affection (5) |
+| `xpToNextLevel` / `foodDepletionSeconds` | functions | Level curve; seconds until food gauge empties |
+| `useAgentWalk.walkToIso` | hook API | Stationless wander stroll from idle; never errors; cancelled on layout change |
+| `resolveRoomTheme` / `ROOM_THEME_KEYS` / `RoomThemeKey` | fn/consts | Manual wallpaper override ('auto' follows local time) in `pixiRoom.ts` |
 
 ## Core Domain
 
