@@ -1,4 +1,4 @@
-# C-LOUNGE-003 — Time Theme: Split Day → Morning + Afternoon
+# C-MOOD-001 — Character Mood Animation (Float Loop + Enhanced Glow)
 
 ## Type
 IMPLEMENT
@@ -7,45 +7,59 @@ IMPLEMENT
 Full Contract
 
 ## Goal
-Refine the existing 4-period time theme system (dawn/day/dusk/night) into 5 periods matching the design spec §2.1 by splitting "day" into "morning" (เช้า) and "afternoon" (บ่าย).
+Add gentle Y-axis float (bobbing) to Spine characters in the lounge, with speed and amplitude varying by agent state. Enhance existing alpha breath glow with state-based intensity scaling.
 
 ## User Evidence
-- Design spec §2.1 defines 5 time periods: กลางคืน/เช้าตรู่/เช้า/บ่าย/พระอาทิตย์ตก
-- C-LOUNGE-002 audit found `getTimeTheme()` already exists with 4 periods; `day` (08:00–18:00) covers both "เช้า" and "บ่าย"
-- User requested split to match spec exactly
+- Design spec §2.1: "Animation: float loop ตลอดเวลา, ความเร็วและ glow ตาม agent state (working/idle/sleeping)"
+- Backlog Parking Lot: "Character mood animation (float loop, glow based on agent state)"
+- Azur Lane dorm: characters continuously bob up and down with subtle glow pulses
 
-## Scope (1 slice)
+## Current State (Investigation Findings)
 
-### Slice A — Split day → morning + afternoon
-- **`pixiRoom.ts`**:
-  - Change `RoomThemeKey` type: `'dawn' | 'day' | 'dusk' | 'night'` → `'dawn' | 'morning' | 'afternoon' | 'dusk' | 'night'`
-  - Replace `day` theme with `morning` (blue sky, bright room) + `afternoon` (bright blue, full daylight)
-  - Update `getTimeTheme()` time ranges:
-    - `night`: 20:00–05:00 (was 21:00–05:00)
-    - `dawn`: 05:00–07:30 (was 05:00–08:00)
-    - `morning`: 07:30–12:00 (NEW)
-    - `afternoon`: 12:00–17:00 (NEW)
-    - `dusk`: 17:00–20:00 (was 18:00–21:00)
-  - Update `ROOM_THEME_KEYS` array
-- **`LoungeCanvas.tsx`**: No changes needed — `RoomThemeKey` type flows through `useState<'auto' | RoomThemeKey>` and picker renders `ROOM_THEME_KEYS` dynamically
-- **Persistence**: Existing `themeKey` values — `'day'` won't exist anymore. Add migration: if stored key is `'day'`, resolve to `'morning'` (safe default)
+### Already exists:
+- **Alpha breath glow** (LoungeCanvas.tsx:780-808): Per-character RAF loop with `display.alpha` oscillation. Period varies by state: working=1.8s, idle=3s, resting=4s. Range: 0.88–1.0.
+- **SPINE_ANIM_CANDIDATES** (LoungeCanvas.tsx:711-728): Maps AgentState → Spine animation priority lists. Idle includes `yun` (dreamy float) and `dance`.
+- **Spine character rendering**: 5 characters rendered via `charSpritesRef` with position tracking.
+
+### Missing:
+- **Y-axis float (bobbing)**: Azur Lane-style gentle up/down position oscillation — NOT implemented
+- **Glow intensity variation**: Currently only alpha 0.88–1.0 for all non-walking states — could enhance with amplitude/intensity scaling per state
+- **Color tint glow**: No per-state color overlay (e.g., warm yellow for coding, blue for resting)
+
+## Scope (Single Slice)
+
+### Float Loop
+- Add continuous Y-axis bobbing to all 5 Spine characters
+- Float amplitude varies by state: idle=2px, working=4px, resting=1px, walking=0px
+- Float speed varies by state: idle=3s period, working=1.5s period, resting=5s period
+- Float is ADDITIVE to existing spine.y position (characters already positioned via projection)
+- Use separate RAF from existing glow loop for clean separation
+
+### Enhanced Glow
+- Increase alpha range for working states: 0.80–1.0 (more pronounced)
+- Add per-state glow intensity multiplier: working=1.0, idle=0.6, resting=0.3
+- Keep existing `walking`/`error` behavior (alpha=1.0, no float)
 
 ## Files In Scope
-- `apps/web/src/components/lounge/pixiRoom.ts`
-- `ai/active.contract.md`, `ai/context-packet.md`, `ai/patches/latest.md`, `ai/handoff.md`, `ai/changelog.md`
+- `apps/web/src/components/lounge/LoungeCanvas.tsx` (float + glow RAF)
+- `apps/web/src/components/lounge/spineAgents.ts` (float config constants)
+- `ai/active.contract.md`, `ai/context-packet.md`, `ai/handoff.md`, `ai/changelog.md`
 
 ## Out Of Scope
-- Backend/API/Prisma changes
-- `packages/core` changes
-- New visual assets or Spine changes
-- UI redesign
+- Backend/API changes
+- `packages/core` changes (mood system is stable)
+- New Spine assets or animations
+- Color tint / glow color overlay (deferred to future contract)
+- Float on HTML avatar fallbacks (Spine-only)
 
 ## Acceptance Criteria
-- [ ] 5 themes: dawn, morning, afternoon, dusk, night
-- [ ] Time boundaries match spec: night(20-5), dawn(5-7:30), morning(7:30-12), afternoon(12-17), dusk(17-20)
-- [ ] `'day'` key in localStorage gracefully falls back to `'morning'`
-- [ ] Room settings picker shows 5 options + auto
-- [ ] All existing tests pass
+- [ ] All 5 Spine characters gently bob up/down continuously
+- [ ] Float amplitude: idle=2px, working=4px, resting=1px, walking=0px
+- [ ] Float speed: idle=3s, working=1.5s, resting=5s
+- [ ] Alpha breath: working=0.80–1.0 (enhanced), idle=0.88–1.0 (unchanged), resting=0.92–1.0 (subtle)
+- [ ] Walking/error: no float, alpha=1.0
+- [ ] No visual glitches when state transitions
+- [ ] All existing tests pass + new float unit test
 - [ ] TypeScript clean
 
 ## Verification Commands
@@ -56,5 +70,6 @@ pnpm lint; echo "EXIT:$?"
 ```
 
 ## Stop Conditions
+- Stop if Spine character position glitches (characters jump/drift)
 - Stop if tests regress
-- Stop if TypeScript errors
+- Stop if any new dependencies needed

@@ -1,4 +1,5 @@
 import type { OfficeAgentId } from '@/game/agents/officeWorkflow';
+import type { AgentState } from '@/game/agents/agentTypes';
 
 export type SpineLoadStatus = 'loading' | 'loaded' | 'failed';
 
@@ -124,5 +125,69 @@ export function resolveAgentBubbleAnchor(
     left: position.x + layout.bubbleOffsetX,
     top: position.y - layout.bubbleOffsetY,
     transform: layout.bubbleTransform,
+  };
+}
+
+// ── Mood Float & Glow Config ──────────────────────────────────────────────
+
+export type MoodFloatConfig = {
+  /** Float amplitude in pixels (Y-axis bobbing) */
+  amplitude: number;
+  /** Float period in ms (full up-down cycle) */
+  periodMs: number;
+  /** Alpha breath range: [min, max] */
+  alphaRange: [number, number];
+};
+
+const FLOAT_AMPLITUDE: Record<AgentState, number> = {
+  idle: 2,
+  walking: 0,
+  thinking: 4,
+  coding: 4,
+  researching: 4,
+  meeting: 4,
+  documenting: 4,
+  reviewing: 4,
+  printing: 4,
+  resting: 1,
+  done: 0,
+  error: 0,
+};
+
+const FLOAT_PERIOD_MS: Record<AgentState, number> = {
+  idle: 3000,
+  walking: 0,
+  thinking: 1500,
+  coding: 1500,
+  researching: 1500,
+  meeting: 1500,
+  documenting: 1500,
+  reviewing: 1500,
+  printing: 1500,
+  resting: 5000,
+  done: 0,
+  error: 0,
+};
+
+const ALPHA_RANGE: Record<AgentState, [number, number]> = {
+  idle: [0.88, 1.0],
+  walking: [1.0, 1.0],
+  thinking: [0.80, 1.0],
+  coding: [0.80, 1.0],
+  researching: [0.80, 1.0],
+  meeting: [0.80, 1.0],
+  documenting: [0.80, 1.0],
+  reviewing: [0.80, 1.0],
+  printing: [0.80, 1.0],
+  resting: [0.92, 1.0],
+  done: [1.0, 1.0],
+  error: [1.0, 1.0],
+};
+
+export function getMoodFloatConfig(state: AgentState): MoodFloatConfig {
+  return {
+    amplitude: FLOAT_AMPLITUDE[state] ?? 0,
+    periodMs: FLOAT_PERIOD_MS[state] ?? 0,
+    alphaRange: ALPHA_RANGE[state] ?? [1.0, 1.0],
   };
 }

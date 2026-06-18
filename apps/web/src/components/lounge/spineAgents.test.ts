@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createInitialSpineLoadStatus,
   getAgentOverlayLayout,
+  getMoodFloatConfig,
   OFFICE_AGENT_SPINE_ASSET_BY_ID,
   OFFICE_AGENT_SPINE_ASSETS,
   resolveAgentBubbleAnchor,
@@ -78,5 +79,55 @@ describe('office agent spine assets', () => {
       top: 228,
       transform: 'translate(-50%, -100%)',
     });
+  });
+});
+
+describe('mood float config', () => {
+  it('returns zero amplitude and period for walking state', () => {
+    const config = getMoodFloatConfig('walking');
+    expect(config.amplitude).toBe(0);
+    expect(config.periodMs).toBe(0);
+    expect(config.alphaRange).toEqual([1.0, 1.0]);
+  });
+
+  it('returns zero amplitude for error and done states', () => {
+    for (const state of ['error', 'done'] as const) {
+      expect(getMoodFloatConfig(state).amplitude).toBe(0);
+    }
+  });
+
+  it('returns idle float: amplitude=2, period=3000ms, alpha=[0.88,1.0]', () => {
+    const config = getMoodFloatConfig('idle');
+    expect(config.amplitude).toBe(2);
+    expect(config.periodMs).toBe(3000);
+    expect(config.alphaRange).toEqual([0.88, 1.0]);
+  });
+
+  it('returns working float: amplitude=4, period=1500ms, alpha=[0.80,1.0]', () => {
+    for (const state of ['coding', 'thinking', 'researching', 'meeting', 'documenting', 'reviewing', 'printing'] as const) {
+      const config = getMoodFloatConfig(state);
+      expect(config.amplitude).toBe(4);
+      expect(config.periodMs).toBe(1500);
+      expect(config.alphaRange).toEqual([0.80, 1.0]);
+    }
+  });
+
+  it('returns resting float: amplitude=1, period=5000ms, alpha=[0.92,1.0]', () => {
+    const config = getMoodFloatConfig('resting');
+    expect(config.amplitude).toBe(1);
+    expect(config.periodMs).toBe(5000);
+    expect(config.alphaRange).toEqual([0.92, 1.0]);
+  });
+
+  it('returns config for all 12 AgentStates', () => {
+    const states = ['idle', 'walking', 'thinking', 'coding', 'researching', 'meeting', 'documenting', 'reviewing', 'printing', 'resting', 'done', 'error'];
+    for (const state of states) {
+      const config = getMoodFloatConfig(state as any);
+      expect(config).toBeDefined();
+      expect(typeof config.amplitude).toBe('number');
+      expect(typeof config.periodMs).toBe('number');
+      expect(Array.isArray(config.alphaRange)).toBe(true);
+      expect(config.alphaRange).toHaveLength(2);
+    }
   });
 });

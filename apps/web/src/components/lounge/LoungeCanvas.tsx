@@ -48,6 +48,7 @@ import { selectPurchasePlacement } from './purchasePlacement';
 import {
   createInitialSpineLoadStatus,
   getAgentOverlayLayout,
+  getMoodFloatConfig,
   hasOfficeAgentSpineAsset,
   OFFICE_AGENT_SPINE_ASSETS,
   OFFICE_AGENT_SPINE_ASSET_BY_ID,
@@ -524,6 +525,10 @@ export function LoungeCanvas() {
   const [spineLoadStatus, setSpineLoadStatus] = useState<Record<OfficeAgentId, SpineLoadStatus>>(
     () => createInitialSpineLoadStatus(),
   );
+  const spinesReady = useMemo(
+    () => Object.values(spineLoadStatus).every((s) => s === 'loaded'),
+    [spineLoadStatus],
+  );
   const roomWRef = useRef(ROOM_TILES_X);
   const roomHRef = useRef(ROOM_TILES_Y);
   const coinsRef = useRef(INITIAL_COINS);
@@ -709,18 +714,22 @@ export function LoungeCanvas() {
 
   // ── Spine animation state mapping ────────────────────────────────────────────
   const SPINE_ANIM_CANDIDATES: Record<AgentState, string[]> = {
-    idle: ['normal', 'stand', 'stand2', 'sit', 'sleep'],
+    // Mood-enhanced: yun=dreamy float, dance=happy energy
+    idle: ['yun', 'dance', 'normal', 'stand', 'stand2', 'sit', 'sleep'],
     walking: ['walk', 'move', 'move_left', 'normal', 'stand'],
-    thinking: ['normal', 'stand', 'stand2'],
-    coding: ['normal', 'stand', 'stand2'],
-    researching: ['normal', 'stand', 'stand2'],
-    meeting: ['normal', 'stand', 'stand2'],
-    documenting: ['normal', 'stand', 'stand2'],
-    reviewing: ['normal', 'stand', 'stand2'],
-    printing: ['normal', 'stand', 'stand2'],
-    resting: ['sit', 'sleep', 'normal', 'stand'],
+    // Working states: skill=action energy, dance=happy focus
+    thinking: ['skill', 'dance', 'normal', 'stand', 'stand2'],
+    coding: ['skill', 'dance', 'normal', 'stand', 'stand2'],
+    researching: ['skill', 'dance', 'normal', 'stand', 'stand2'],
+    meeting: ['skill', 'dance', 'normal', 'stand', 'stand2'],
+    documenting: ['skill', 'dance', 'normal', 'stand', 'stand2'],
+    reviewing: ['skill', 'dance', 'normal', 'stand', 'stand2'],
+    printing: ['skill', 'dance', 'normal', 'stand', 'stand2'],
+    // Resting: sleep priority
+    resting: ['sleep', 'sit', 'normal', 'stand'],
+    // One-shot states
     done: ['victory', 'normal', 'stand'],
-    error: ['break', 'normal', 'stand'],
+    error: ['dead', 'break', 'normal', 'stand'],
   };
 
   const ONE_SHOT_STATES = new Set<AgentState>(['done', 'error']);
@@ -772,6 +781,64 @@ export function LoungeCanvas() {
     applyAnim('agent-4', { agent: yui.agent });
     applyAnim('agent-5', { agent: mika.agent });
   }, [agent.state, agent.arriveAnim, aki.agent.state, aki.agent.arriveAnim, ren.agent.state, ren.agent.arriveAnim, yui.agent.state, yui.agent.arriveAnim, mika.agent.state, mika.agent.arriveAnim]);
+
+  // ── Mood float + glow pulse (Y-axis bob + alpha breath) ──────────────────
+  const spineBaseYRef = useRef<Map<OfficeAgentId, number>>(new Map());
+  useEffect(() => {
+    let rafId = 0;
+    const start = performance.now();
+    const loop = () => {
+      const t = performance.now() - start;
+      const agentStates: { id: OfficeAgentId; state: AgentState }[] = [
+        { id: 'agent-1', state: agent.state },
+        { id: 'agent-2', state: aki.agent.state },
+        { id: 'agent-3', state: ren.agent.state },
+        { id: 'agent-4', state: yui.agent.state },
+        { id: 'agent-5', state: mika.agent.state },
+      ];
+      for (const a of agentStates) {
+        const display = charSpritesRef.current.get(a.id);
+        if (!display) continue;
+        // Skip float until Spine is loaded (avoid capturing stale positions)
+        if (spineLoadStatus[a.id] !== 'loaded') {
+          display.alpha = 1.0;
+          continue;
+        }
+
+        // Store base Y on first frame after load
+        const initialY = spineBaseYRef.current.get(a.id);
+        if (initialY === undefined) {
+          spineBaseYRef.current.set(a.id, display.y);
+        }
+
+        const config = getMoodFloatConfig(a.state);
+
+        // Float: skip for walking/error/done
+        if (config.amplitude > 0 && config.periodMs > 0) {
+          const floatPhase = Math.sin((t / config.periodMs) * Math.PI * 2);
+          const floatOffset = floatPhase * config.amplitude;
+          const baseY = spineBaseYRef.current.get(a.id) ?? display.y;
+          display.y = baseY + floatOffset;
+        }
+
+        // Alpha breath
+        const [alphaMin, alphaMax] = config.alphaRange;
+        if (alphaMin >= alphaMax) {
+          display.alpha = alphaMax;
+        } else {
+          const breathPhase = Math.sin(t / (config.periodMs || 3000)) * 0.5 + 0.5;
+          display.alpha = alphaMin + (alphaMax - alphaMin) * breathPhase;
+        }
+      }
+      rafId = requestAnimationFrame(loop);
+    };
+    rafId = requestAnimationFrame(loop);
+    return () => {
+      cancelAnimationFrame(rafId);
+      spineBaseYRef.current.clear();
+    };
+  }, [agent.state, aki.agent.state, ren.agent.state, yui.agent.state, mika.agent.state, spinesReady]);
+
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 

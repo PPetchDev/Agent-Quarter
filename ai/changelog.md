@@ -12,6 +12,22 @@
 
 ---
 
+## C-MOOD-001 — Character Mood Animation (Float Loop + Enhanced Glow)
+
+**Date:** 2026-06-18
+**Status:** PASS
+
+Added character mood animation to all 5 Spine characters:
+- Y-axis float loop (bobbing) with per-state amplitude and speed: idle=2px/3s, working=4px/1.5s, resting=1px/5s, walking/error/done=0px
+- Enhanced alpha breath: working 0.80–1.0 (was 0.88–1.0), resting 0.92–1.0 (subtle)
+- `getMoodFloatConfig()` in spineAgents.ts with 12-state lookup tables
+- Spine-loaded guard prevents stale Y position capture
+- `spinesReady` useMemo for stable dependency array
+
+Web TypeScript, 290 tests (6 new), and lint all PASS. Browser QA: all characters at correct positions, zero JS errors.
+
+---
+
 ## C-LOUNGE-003 — Time Theme: Split Day → Morning + Afternoon
 
 **Date:** 2026-06-18
