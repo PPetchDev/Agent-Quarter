@@ -12,6 +12,22 @@
 
 ---
 
+## C-RUN-001 — Interactive Run/Task Lifecycle on Projects Page
+
+**Date:** 2026-06-18
+**Status:** PASS
+
+Made the Projects page interactive with lifecycle buttons:
+- "▶ Start" button on todo tasks → POST /tasks/:id/start → creates new run
+- "✅/❌/⏹" buttons on pending/running runs → PATCH /runs/:id/complete|fail|cancel
+- Loading states (···) during mutations
+- New `ProjectLifecycleActions` client component
+- 4 new API mutation functions in `apps/web/src/lib/api.ts`
+
+Web TypeScript, 295 tests (6 new), and lint all PASS. Browser QA: start task → complete run lifecycle verified.
+
+---
+
 ## C-MOOD-001 — Character Mood Animation (Float Loop + Enhanced Glow)
 
 **Date:** 2026-06-18

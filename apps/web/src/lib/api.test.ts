@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { executeRunDev } from './api';
+import type { Run } from '@squad/core';
+import { executeRunDev, startTask, completeRun, failRun, cancelRun } from './api';
 
 const successResponse = {
   runId: 'r-002',
@@ -111,5 +112,46 @@ describe('executeRunDev', () => {
 
     expect(result).toEqual({ ok: false, message: 'prompt is required' });
     expect(vi.mocked(fetch)).not.toHaveBeenCalled();
+  });
+});
+
+describe('task lifecycle mutations', () => {
+  const mockRun: Run = { id: 'r-new', projectId: 'p-001', taskId: 't-001', status: 'running' };
+
+  it('startTask POSTs to /api/tasks/:id/start', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => mockRun }));
+    await startTask('t-001');
+    const [url, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit];
+    expect(url).toContain('/api/tasks/t-001/start');
+    expect(init?.method).toBe('POST');
+  });
+
+  it('completeRun PATCHes to /api/runs/:id/complete', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ...mockRun, status: 'success' }) }));
+    await completeRun('r-001');
+    const [url, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit];
+    expect(url).toContain('/api/runs/r-001/complete');
+    expect(init?.method).toBe('PATCH');
+  });
+
+  it('failRun PATCHes to /api/runs/:id/fail', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ...mockRun, status: 'failed' }) }));
+    await failRun('r-001');
+    const [url, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit];
+    expect(url).toContain('/api/runs/r-001/fail');
+    expect(init?.method).toBe('PATCH');
+  });
+
+  it('cancelRun PATCHes to /api/runs/:id/cancel', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ...mockRun, status: 'cancelled' }) }));
+    await cancelRun('r-001');
+    const [url, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit];
+    expect(url).toContain('/api/runs/r-001/cancel');
+    expect(init?.method).toBe('PATCH');
+  });
+
+  it('throws on non-ok response', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 400, json: async () => ({ message: 'Bad request' }) }));
+    await expect(startTask('t-001')).rejects.toThrow('Bad request');
   });
 });

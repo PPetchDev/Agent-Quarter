@@ -87,3 +87,49 @@ export async function executeRunDev(runId: string, prompt: string): Promise<Exec
     };
   }
 }
+
+// ─── Task / Run lifecycle mutations ───────────────────────────────────────
+
+export async function startTask(taskId: string): Promise<Run> {
+  const res = await fetch(`${BASE}/api/tasks/${encodeURIComponent(taskId)}/start`, {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    const msg = await readApiErrorMessage(res);
+    throw new Error(msg || `Failed to start task (${res.status})`);
+  }
+  return res.json() as Promise<Run>;
+}
+
+export async function completeRun(runId: string): Promise<Run> {
+  const res = await fetch(`${BASE}/api/runs/${encodeURIComponent(runId)}/complete`, {
+    method: 'PATCH',
+  });
+  if (!res.ok) {
+    const msg = await readApiErrorMessage(res);
+    throw new Error(msg || `Failed to complete run (${res.status})`);
+  }
+  return res.json() as Promise<Run>;
+}
+
+export async function failRun(runId: string): Promise<Run> {
+  const res = await fetch(`${BASE}/api/runs/${encodeURIComponent(runId)}/fail`, {
+    method: 'PATCH',
+  });
+  if (!res.ok) {
+    const msg = await readApiErrorMessage(res);
+    throw new Error(msg || `Failed to fail run (${res.status})`);
+  }
+  return res.json() as Promise<Run>;
+}
+
+export async function cancelRun(runId: string): Promise<Run> {
+  const res = await fetch(`${BASE}/api/runs/${encodeURIComponent(runId)}/cancel`, {
+    method: 'PATCH',
+  });
+  if (!res.ok) {
+    const msg = await readApiErrorMessage(res);
+    throw new Error(msg || `Failed to cancel run (${res.status})`);
+  }
+  return res.json() as Promise<Run>;
+}

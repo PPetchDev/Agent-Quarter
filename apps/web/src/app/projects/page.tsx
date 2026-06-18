@@ -10,6 +10,7 @@ import {
 import { fetchProjects, fetchProjectTasks, fetchTaskRuns } from '@/lib/api';
 import { RunExecutionButton } from './RunExecutionButton';
 import { RunExecutionEventsPanel } from './RunExecutionEventsPanel';
+import { ProjectLifecycleActions } from './ProjectLifecycleActions';
 
 export const dynamic = 'force-dynamic';
 
@@ -155,6 +156,7 @@ export default async function ProjectsPage() {
                           {taskSummary.done}/{taskSummary.total} tasks done
                         </p>
                       )}
+                      <ProjectLifecycleActions task={activeTask} latestRun={latestRun} />
                       {activeTask && (
                         <div className="flex items-start gap-1.5 min-w-0">
                           <div className="min-w-0 flex-1">
