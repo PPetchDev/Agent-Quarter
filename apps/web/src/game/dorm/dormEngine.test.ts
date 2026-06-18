@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   AFFECTION_MAX,
   AFFECTION_START,
+  COMFORT_BONUS_CAP,
   FOOD_CAP,
   FOOD_DRAIN_PER_CHAR_PER_MIN,
   FOOD_ITEMS,
@@ -9,8 +10,10 @@ import {
   HEADPAT_COOLDOWN_MS,
   MORALE_MAX,
   MORALE_START,
+  MORALE_RECOVERY_PER_MIN,
   OFFLINE_CAP_MS,
   XP_PER_MIN_BASE,
+  AFFECTION_PER_MIN,
   affectionBand,
   applyHeadpat,
   applyTaskMorale,
@@ -36,11 +39,12 @@ describe('comfort', () => {
     expect(computeComfort([])).toBe(0);
   });
 
-  it('comfort bonus has diminishing returns and stays below 1', () => {
+  it('comfort bonus has diminishing returns and stays below COMFORT_BONUS_CAP', () => {
     expect(comfortXpBonus(0)).toBe(0);
     expect(comfortXpBonus(100)).toBeCloseTo(0.5);
-    expect(comfortXpBonus(300)).toBeCloseTo(0.75);
-    expect(comfortXpBonus(10_000)).toBeLessThan(1);
+    expect(comfortXpBonus(100)).toBeLessThanOrEqual(COMFORT_BONUS_CAP);
+    expect(comfortXpBonus(300)).toBeCloseTo(COMFORT_BONUS_CAP);
+    expect(comfortXpBonus(10_000)).toBe(COMFORT_BONUS_CAP);
     expect(comfortXpBonus(-50)).toBe(0);
   });
 });
@@ -107,7 +111,8 @@ describe('tickDorm', () => {
   it('comfort boosts XP rate', () => {
     const state = createDormState(IDS, T0);
     const result = tickDorm(state, T0 + 60_000, { comfort: 100 });
-    expect(result.xpPerCharacter).toBe(Math.round(XP_PER_MIN_BASE * 1.5));
+    const bonus = 100 / (100 + 100); // 0.5
+    expect(result.xpPerCharacter).toBe(Math.round(XP_PER_MIN_BASE * (1 + bonus)));
   });
 
   it('stops XP accrual when food runs out mid-tick', () => {
@@ -123,11 +128,14 @@ describe('tickDorm', () => {
     base.characters['agent-1']!.morale = 50;
     base.characters['agent-2']!.morale = 50;
     const result = tickDorm(base, T0 + 10 * 60_000, { comfort: 0, restingIds: ['agent-2'] });
+    // MORALE_RECOVERY_PER_MIN = 2, 10 min = 20 base + 30 resting = 50 for agent-2
+    // Agent-1: 50 + 20 = 70, Agent-2: 50 + 20 + 30 = 100
     const m1 = result.state.characters['agent-1']!.morale;
     const m2 = result.state.characters['agent-2']!.morale;
-    expect(m1).toBeCloseTo(60);
-    expect(m2).toBeCloseTo(90);
-    expect(result.state.characters['agent-1']!.affection).toBeCloseTo(AFFECTION_START + 0.6);
+    expect(m1).toBeCloseTo(70);
+    expect(m2).toBeCloseTo(100);
+    // AFFECTION_PER_MIN = 0.1, 10 min = 1.0
+    expect(result.state.characters['agent-1']!.affection).toBeCloseTo(AFFECTION_START + 1.0);
   });
 
   it('caps morale and affection at maxima', () => {

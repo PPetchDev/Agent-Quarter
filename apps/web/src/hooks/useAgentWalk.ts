@@ -13,7 +13,7 @@ import {
   dequeueTask,
   MAX_TASK_QUEUE_LENGTH,
 } from '@/game/agents/taskQueue';
-import { resolveLoungeStation, type LoungeStationId } from '@/game/scene/loungeStations';
+import { resolveLoungeStation, type LoungeStationId, getInteractionSlotForFurniture, findFurnitureAt } from '@/game/scene/loungeStations';
 import type { RoomObject } from '@/components/lounge/roomDefs';
 import {
   computeRoomProjection,
@@ -171,6 +171,7 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
         targetStationId: params.targetStationId ?? prev.targetStationId,
         arriveState: undefined,
         arriveBubbleText: undefined,
+        arriveAnim: undefined,
         bubbleText: 'Path is blocked.',
         animation: resolveStateAnimation('error'),
         workDurationMs: undefined,
@@ -225,7 +226,7 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
     [failBlockedRoute, roomHeight, roomObjects, roomWidth, routeGrid, updateAgent, updateRouteDebug],
   );
 
-  /**
+  /** 
    * Walks the agent to an arbitrary iso point (dorm wandering). Only starts
    * from idle, arrives back into idle, and never enters the error state —
    * a blocked stroll is silently skipped. Returns whether a route started.
@@ -252,6 +253,14 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
       segmentStartPositionRef.current = agentRef.current.position;
       updateRouteDebug(waypoints, 0);
 
+      // Detect furniture at target position for interaction slot animation
+      const targetObj = findFurnitureAt(roomObjects, target.wx, target.wy);
+      let arriveAnim: string | undefined;
+      if (targetObj) {
+        const slot = getInteractionSlotForFurniture(targetObj.furnitureType);
+        if (slot?.anim) arriveAnim = slot.anim;
+      }
+
       updateAgent((prev) => ({
         ...prev,
         state: 'walking',
@@ -260,6 +269,7 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
         targetStationId: undefined,
         arriveState: 'idle',
         arriveBubbleText: undefined,
+        arriveAnim,
         bubbleText: undefined,
         animation: resolveWalkingAnimation(prev.direction),
         workDurationMs: undefined,
@@ -285,6 +295,7 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
         targetPosition: undefined,
         arriveState: undefined,
         arriveBubbleText: undefined,
+        arriveAnim: undefined,
       }));
       return;
     }
@@ -379,7 +390,8 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
 
         const arrivedState = current.arriveState ?? 'idle';
         const arrivedBubble = current.arriveBubbleText;
-        const arrivedAnim = resolveStateAnimation(arrivedState);
+        // Use arriveAnim from furniture interaction slot if available, otherwise resolve from state
+        const arrivedAnim = current.arriveAnim ?? resolveStateAnimation(arrivedState);
         const startsWork = (current.workDurationMs ?? 0) > 0;
 
         // Face the station body. Project station iso → screen, snap to dominant axis.
@@ -420,6 +432,7 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
           targetStationId: prev.targetStationId,
           arriveState: undefined,
           arriveBubbleText: undefined,
+          arriveAnim: undefined,
           workDurationMs: startsWork ? prev.workDurationMs : undefined,
           workElapsedMs: startsWork ? 0 : undefined,
         }));

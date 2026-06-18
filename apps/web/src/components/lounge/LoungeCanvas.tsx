@@ -727,9 +727,24 @@ export function LoungeCanvas() {
   const CALM_ANIMS = ['normal', 'stand', 'stand2', 'sit', 'sleep'];
 
   useEffect(() => {
-    const applyAnim = (id: OfficeAgentId, state: AgentState) => {
+    const applyAnim = (id: OfficeAgentId, walker: { agent: { state: AgentState; arriveAnim?: string } }) => {
       const spine = charSpritesRef.current.get(id)?.spine as any;
       if (!spine?.state) return;
+      
+      // Use arriveAnim from furniture interaction slot if available
+      if (walker.agent.arriveAnim) {
+        const available = (spine.spineData.animations as any[]).map((a: any) => a.name) as string[];
+        if (available.includes(walker.agent.arriveAnim)) {
+          const current = spine.state.getCurrent(0);
+          const isPlaying = (name: string) => current?.animation?.name === name;
+          if (!isPlaying(walker.agent.arriveAnim)) {
+            spine.state.setAnimation(0, walker.agent.arriveAnim, true);
+          }
+          return;
+        }
+      }
+      
+      const state = walker.agent.state;
       const candidates = SPINE_ANIM_CANDIDATES[state];
       if (!candidates) return;
       const available = (spine.spineData.animations as any[]).map((a: any) => a.name) as string[];
@@ -751,12 +766,12 @@ export function LoungeCanvas() {
         }
       }
     };
-    applyAnim('agent-1', agent.state);
-    applyAnim('agent-2', aki.agent.state);
-    applyAnim('agent-3', ren.agent.state);
-    applyAnim('agent-4', yui.agent.state);
-    applyAnim('agent-5', mika.agent.state);
-  }, [agent.state, aki.agent.state, ren.agent.state, yui.agent.state, mika.agent.state]);
+    applyAnim('agent-1', { agent });
+    applyAnim('agent-2', { agent: aki.agent });
+    applyAnim('agent-3', { agent: ren.agent });
+    applyAnim('agent-4', { agent: yui.agent });
+    applyAnim('agent-5', { agent: mika.agent });
+  }, [agent.state, agent.arriveAnim, aki.agent.state, aki.agent.arriveAnim, ren.agent.state, ren.agent.arriveAnim, yui.agent.state, yui.agent.arriveAnim, mika.agent.state, mika.agent.arriveAnim]);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 

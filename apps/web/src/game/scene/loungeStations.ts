@@ -38,6 +38,12 @@ export type LoungeStation = {
    * Convert to screen via proj() at task-assignment time.
    */
   interactionIsoPoint: IsoPoint;
+  /** Interaction slot metadata for dorm wandering animations. */
+  interactionSlot?: {
+    fuzzy: boolean;
+    anim: string;
+    slotCount: number;
+  };
 };
 
 export type LoungeStationFurniture = {
@@ -45,11 +51,25 @@ export type LoungeStationFurniture = {
   wx: number;
   wy: number;
   wz: number;
+  interactionSlot?: {
+    fuzzy: boolean;
+    anim: string;
+    slotCount: number;
+  };
 };
 
 type LoungeStationDef = LoungeStation & {
   furnitureType: string;
   interactionOffset: IsoPoint;
+  /** Interaction slot metadata for dorm wandering animations. */
+  interactionSlot?: {
+    /** If true, multiple agents can occupy this furniture simultaneously (fuzzy overlap). */
+    fuzzy: boolean;
+    /** Spine animation to play when agent arrives via walkToIso (idle wandering). */
+    anim: string;
+    /** Maximum agents that can occupy this furniture at once. */
+    slotCount: number;
+  };
 };
 
 // ─── Station definitions ──────────────────────────────────────────────────────
@@ -63,6 +83,7 @@ const stationDefs = {
     interactionIsoPoint: { x: 7.45, y: 5.35, z: 0.2 },
     furnitureType: 'computer_desk',
     interactionOffset: { x: 1.45, y: -0.65, z: 0.2 },
+    interactionSlot: { fuzzy: false, anim: 'normal', slotCount: 1 },
   },
   bookshelf: {
     id: 'bookshelf',
@@ -72,6 +93,7 @@ const stationDefs = {
     interactionIsoPoint: { x: 3.45, y: 6.25, z: 0.2 },
     furnitureType: 'bookcase',
     interactionOffset: { x: 2.45, y: -0.75, z: 0.2 },
+    interactionSlot: { fuzzy: false, anim: 'normal', slotCount: 1 },
   },
   meetingTable: {
     id: 'meetingTable',
@@ -81,6 +103,7 @@ const stationDefs = {
     interactionIsoPoint: { x: 5.45, y: 4.2, z: 0.2 },
     furnitureType: 'low_table',
     interactionOffset: { x: 3.45, y: 1.2, z: 0.2 },
+    interactionSlot: { fuzzy: true, anim: 'sit', slotCount: 2 },
   },
   documentDesk: {
     id: 'documentDesk',
@@ -90,6 +113,7 @@ const stationDefs = {
     interactionIsoPoint: { x: 4.6, y: 6.45, z: 0.2 },
     furnitureType: 'document_board',
     interactionOffset: { x: 0.6, y: -1.55, z: -2.05 },
+    interactionSlot: { fuzzy: false, anim: 'normal', slotCount: 1 },
   },
   printer: {
     id: 'printer',
@@ -99,6 +123,7 @@ const stationDefs = {
     interactionIsoPoint: { x: 8.45, y: 5.35, z: 0.2 },
     furnitureType: 'printer',
     interactionOffset: { x: -0.55, y: 0.35, z: 0.2 },
+    interactionSlot: { fuzzy: false, anim: 'normal', slotCount: 1 },
   },
   sofa: {
     id: 'sofa',
@@ -108,6 +133,7 @@ const stationDefs = {
     interactionIsoPoint: { x: 5.45, y: 2.0, z: 0.2 },
     furnitureType: 'bed',
     interactionOffset: { x: -0.55, y: 2.0, z: 0.2 },
+    interactionSlot: { fuzzy: true, anim: 'sleep', slotCount: 2 },
   },
 } satisfies Record<string, LoungeStationDef>;
 
@@ -143,6 +169,7 @@ export function resolveLoungeStation(
       y: stationObject.wy + offset.y,
       z: stationObject.wz + (offset.z ?? 0),
     },
+    interactionSlot: stationObject.interactionSlot ?? station.interactionSlot,
   };
 }
 
@@ -156,4 +183,35 @@ export function getLoungeStationIsoPoint(
   roomObjects: LoungeStationFurniture[] = [],
 ): IsoPoint {
   return resolveLoungeStation(stationId, roomObjects).interactionIsoPoint;
+}
+
+/**
+ * Find the interaction slot metadata for a furniture type at the given world position.
+ * Returns the slot metadata from the station definition, or undefined if no station uses that furniture type.
+ */
+export function getInteractionSlotForFurniture(
+  furnitureType: string,
+): LoungeStationDef['interactionSlot'] | undefined {
+  for (const station of Object.values(stationDefs)) {
+    if (station.furnitureType === furnitureType) {
+      return station.interactionSlot;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Find the furniture object at the given world tile coordinates (wx, wy).
+ * Returns the RoomObject if found, or undefined.
+ */
+export function findFurnitureAt(
+  objects: LoungeStationFurniture[],
+  wx: number,
+  wy: number,
+): LoungeStationFurniture | undefined {
+  return objects.find(
+    (obj) =>
+      obj.wx === Math.floor(wx) &&
+      obj.wy === Math.floor(wy),
+  );
 }

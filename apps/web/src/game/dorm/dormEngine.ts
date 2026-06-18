@@ -7,23 +7,36 @@ import type { RoomObject } from '@/components/lounge/roomDefs';
 
 export const FOOD_CAP = 40000;
 /** Food units consumed per character per minute while any food remains. */
-export const FOOD_DRAIN_PER_CHAR_PER_MIN = 60;
+export const FOOD_DRAIN_PER_CHAR_PER_MIN = 45;
 /** Base XP gained per character per minute while food remains. */
-export const XP_PER_MIN_BASE = 30;
+export const XP_PER_MIN_BASE = 40;
 /** Offline catch-up is capped at this many milliseconds (8 hours). */
 export const OFFLINE_CAP_MS = 8 * 60 * 60 * 1000;
 
 export const MORALE_MAX = 150;
 export const MORALE_START = 120;
 /** Morale recovered per minute in the dorm before comfort scaling. */
-export const MORALE_RECOVERY_PER_MIN = 1;
+export const MORALE_RECOVERY_PER_MIN = 2;
 
 export const AFFECTION_MAX = 100;
 export const AFFECTION_START = 50;
 /** Passive affection gained per minute in the dorm. */
-export const AFFECTION_PER_MIN = 0.06;
-export const HEADPAT_AFFECTION = 0.6;
+export const AFFECTION_PER_MIN = 0.1;
+export const HEADPAT_AFFECTION = 0.5;
 export const HEADPAT_COOLDOWN_MS = 30_000;
+
+/** Comfort bonus cap (c/(c+100) limited to this value). */
+export const COMFORT_BONUS_CAP = 0.5;
+
+/** Playtest preset export for A/B comparison (opt-in via env or dev panel). */
+export const PLAYTEST_PRESET = {
+  FOOD_DRAIN_PER_CHAR_PER_MIN: 45,
+  XP_PER_MIN_BASE: 40,
+  MORALE_RECOVERY_PER_MIN: 2,
+  AFFECTION_PER_MIN: 0.1,
+  HEADPAT_AFFECTION: 0.5,
+  COMFORT_BONUS_CAP: 0.5,
+} as const;
 
 // ─── Food items (Azur Lane style supply catalog) ─────────────────────────────
 
@@ -124,10 +137,10 @@ export function computeComfort(objects: Pick<RoomObject, 'happiness'>[]): number
   return objects.reduce((sum, o) => sum + Math.max(0, o.happiness), 0);
 }
 
-/** Diminishing-returns comfort bonus in [0, 1): comfort/(comfort+100). */
+/** Diminishing-returns comfort bonus in [0, COMFORT_BONUS_CAP): comfort/(comfort+100). */
 export function comfortXpBonus(comfort: number): number {
   const c = Math.max(0, comfort);
-  return c / (c + 100);
+  return Math.min(COMFORT_BONUS_CAP, c / (c + 100));
 }
 
 // ─── Levels ──────────────────────────────────────────────────────────────────
