@@ -12,6 +12,21 @@
 
 ---
 
+## C-LOUNGE-003 — Time Theme: Split Day → Morning + Afternoon
+
+**Date:** 2026-06-18
+**Status:** PASS
+
+Split the existing 4-period time theme into 5 periods matching design spec §2.1:
+- Replaced `'day'` (08:00–18:00) with `'morning'` (07:30–12:00, blue sky) and `'afternoon'` (12:00–17:00, bright warm daylight)
+- Adjusted all time boundaries: dusk 17:00–20:00 (was 18:00–21:00), night 20:00–05:00 (was 21:00–05:00), dawn 05:00–07:30 (was 05:00–08:00)
+- Added `'day'` → `'morning'` migration for legacy localStorage keys
+- Room settings picker auto-updated via dynamic `ROOM_THEME_KEYS`
+
+Web TypeScript, 284 tests, and lint all PASS.
+
+---
+
 ## C-DORM-AZUR-002 — Dorm Follow-up: Furniture Interaction Slots + Rate Tuning
 
 **Date:** 2026-06-12

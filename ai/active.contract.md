@@ -1,95 +1,60 @@
-# C-DORM-AZUR-002 - Dorm Follow-up: Furniture Interaction Slots + Rate Tuning
+# C-LOUNGE-003 — Time Theme: Split Day → Morning + Afternoon
 
 ## Type
-IMPLEMENT / VERIFY
+IMPLEMENT
 
 ## Mode
 Full Contract
 
 ## Goal
-Deepen Azur Lane dorm parity with two focused enhancements:
-1. **Furniture Interaction Slots** — Agents sit/sleep on beds, chairs, cushions with matching Spine animations (deeper AL dorm parity).
-2. **Rate Tuning** — Adjust dorm simulation constants (food drain, XP, morale/affection rates) based on playtesting feedback.
+Refine the existing 4-period time theme system (dawn/day/dusk/night) into 5 periods matching the design spec §2.1 by splitting "day" into "morning" (เช้า) and "afternoon" (บ่าย).
 
 ## User Evidence
-- From C-DORM-AZUR-001 closeout: "Remaining: furniture interaction slots; rate tuning after playtesting (backlog)."
-- Azur Lane dorm: characters occupy specific furniture (beds, sofas, chairs) with bespoke idle/sleep/sit animations.
-- Playtest feedback: food drains too fast / morale recovery feels slow / XP curve too flat.
+- Design spec §2.1 defines 5 time periods: กลางคืน/เช้าตรู่/เช้า/บ่าย/พระอาทิตย์ตก
+- C-LOUNGE-002 audit found `getTimeTheme()` already exists with 4 periods; `day` (08:00–18:00) covers both "เช้า" and "บ่าย"
+- User requested split to match spec exactly
 
-## Scope (slices)
+## Scope (1 slice)
 
-### Slice A — Furniture Interaction Slots
-- Extend `loungeStations.ts` with `interactionSlot` metadata per furniture type:
-  - `bed` → `{ fuzzy: true, anim: 'sleep', slotCount: 2 }` (head/foot)
-  - `low_table` + `zabuton` → `{ fuzzy: true, anim: 'sit', slotCount: 2 }`
-  - `computer_desk` → `{ fuzzy: false, anim: 'normal', slotCount: 1 }` (only during `code`/`review`)
-- `useAgentWalk.walkToIso` (dorm wandering): when target is a bed/low_table, agent arrives → plays `sit`/`sleep` animation instead of looping `walk`.
-- `Spine animation mapping` (LoungeCanvas.tsx): add `resting` → `sit`/`sleep` priority; ensure one-shot `touch`/`motou`(headpat) still queues correctly.
-- Do **not** add new station types — reuse existing `sofa`/`rest` mapping but allow multiple agents on one furniture if `slotCount > 1`.
-- Persist no new data — purely visual/animation behavior.
-
-### Slice B — Rate Tuning
-- Adjust constants in `dormEngine.ts` based on playtest targets:
-  - **Food drain**: reduce from `60` → `45` per char/min (slower depletion, ~15h full gauge vs 11h).
-  - **XP base**: increase from `30` → `40` per char/min (faster leveling, ~25min Lv1→2 at comfort 0).
-  - **Morale recovery**: increase from `1` → `2` per min (visible recovery during rest).
-  - **Affection passive**: increase from `0.06` → `0.1` per min (harder to cap without headpats).
-  - **Headpat affection**: reduce from `0.6` → `0.5` (balance with higher passive).
-  - **Comfort bonus scaling**: keep `c/(c+100)` but cap effective bonus at `0.5` (comfort 100).
-- Add `PLAYTEST_PRESET` export for easy A/B comparison (opt-in via env or dev panel).
+### Slice A — Split day → morning + afternoon
+- **`pixiRoom.ts`**:
+  - Change `RoomThemeKey` type: `'dawn' | 'day' | 'dusk' | 'night'` → `'dawn' | 'morning' | 'afternoon' | 'dusk' | 'night'`
+  - Replace `day` theme with `morning` (blue sky, bright room) + `afternoon` (bright blue, full daylight)
+  - Update `getTimeTheme()` time ranges:
+    - `night`: 20:00–05:00 (was 21:00–05:00)
+    - `dawn`: 05:00–07:30 (was 05:00–08:00)
+    - `morning`: 07:30–12:00 (NEW)
+    - `afternoon`: 12:00–17:00 (NEW)
+    - `dusk`: 17:00–20:00 (was 18:00–21:00)
+  - Update `ROOM_THEME_KEYS` array
+- **`LoungeCanvas.tsx`**: No changes needed — `RoomThemeKey` type flows through `useState<'auto' | RoomThemeKey>` and picker renders `ROOM_THEME_KEYS` dynamically
+- **Persistence**: Existing `themeKey` values — `'day'` won't exist anymore. Add migration: if stored key is `'day'`, resolve to `'morning'` (safe default)
 
 ## Files In Scope
-- `apps/web/src/game/dorm/dormEngine.ts` (+ `dormEngine.test.ts`)
-- `apps/web/src/game/scene/loungeStations.ts`
-- `apps/web/src/hooks/useAgentWalk.ts` (+ `useAgentWalk.test.ts`)
-- `apps/web/src/components/lounge/LoungeCanvas.tsx` (Spine anim mapping only)
-- `ai/maps/*.md`, `ai/active.*`, `ai/context-packet.md`, `ai/patches/latest.md`, `ai/changelog.md`
+- `apps/web/src/components/lounge/pixiRoom.ts`
+- `ai/active.contract.md`, `ai/context-packet.md`, `ai/patches/latest.md`, `ai/handoff.md`, `ai/changelog.md`
 
 ## Out Of Scope
-- New furniture types or Spine assets.
-- Backend/API/Prisma changes. `packages/core` changes.
-- Pathfinding rewrite. Multi-agent collision on same slot (fuzzy = allow overlap).
-- Office workflow planner changes.
+- Backend/API/Prisma changes
+- `packages/core` changes
+- New visual assets or Spine changes
+- UI redesign
 
 ## Acceptance Criteria
-### Furniture Interaction Slots
-- [ ] Agents wandering to a `bed` arrive and play `sleep` animation (loop) until next task/wander.
-- [ ] Agents wandering to `low_table`+`zabuton` arrive and play `sit` animation (loop).
-- [ ] Multiple agents can simultaneously occupy the same `bed` (slotCount=2, fuzzy overlap).
-- [ ] Headpat one-shot animation (`touch`/`motou`) still plays and queues calm correctly.
-- [ ] No regression: task-driven agents (code/research/meeting/document/print/rest) work as before.
-
-### Rate Tuning
-- [ ] Food gauge 12000 → 0 takes ~15h for 1 character (was ~11h).
-- [ ] Lv1→2 at comfort 0 takes ~25min (was ~33min).
-- [ ] Morale 0 → 150 passive takes ~75min (was ~150min).
-- [ ] Affection 50 → 100 passive takes ~8.3h (was ~13.9h).
-- [ ] All existing dorm engine unit tests pass with updated expected values.
-- [ ] `PLAYTEST_PRESET` exported and documented in code.
+- [ ] 5 themes: dawn, morning, afternoon, dusk, night
+- [ ] Time boundaries match spec: night(20-5), dawn(5-7:30), morning(7:30-12), afternoon(12-17), dusk(17-20)
+- [ ] `'day'` key in localStorage gracefully falls back to `'morning'`
+- [ ] Room settings picker shows 5 options + auto
+- [ ] All existing tests pass
+- [ ] TypeScript clean
 
 ## Verification Commands
 ```bash
-# Focused dorm engine tests (updated constants)
-pnpm --filter @squad/web exec vitest run src/game/dorm/dormEngine.test.ts src/hooks/useAgentWalk.test.ts --passWithNoTests; echo "EXIT:$?"
-
-# Full web test suite
 pnpm --filter @squad/web test -- --run; echo "EXIT:$?"
-
-# TypeScript
 pnpm exec tsc -p apps/web/tsconfig.json --noEmit; echo "EXIT:$?"
-
-# Root gates
-pnpm test; echo "EXIT:$?"
-pnpm typecheck; echo "EXIT:$?"
 pnpm lint; echo "EXIT:$?"
-pnpm build; echo "EXIT:$?"
 ```
 
 ## Stop Conditions
-- Stop if Spine animation glitches (agent stuck in wrong anim, flickering).
-- Stop if pathfinding/station semantics regress.
-- Stop if changes leak into `apps/api` or `packages/core`.
-- Stop if new dependencies introduced.
-
-## Closeout
-PASS (2026-06-12). Slice A: furniture interaction slots implemented — agents now play `sleep` on beds and `sit` on low_table+zabuton during idle wander, with fuzzy multi-slot support. Slice B: rate tuning applied — food drain 45/min, XP base 40/min, morale recovery 2/min, affection passive 0.1/min, headpat 0.5. COMFORT_BONUS_CAP=0.5 and PLAYTEST_PRESET exported. All 29 focused tests, 284 web tests, 440 root tests, tsc, lint, build PASS. Browser QA: zero console errors, smooth anim transitions, no occupation conflicts on 20min soak.
+- Stop if tests regress
+- Stop if TypeScript errors

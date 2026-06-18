@@ -163,7 +163,7 @@ export type RoomTheme = {
   floorTintAlpha: number;
 };
 
-export type RoomThemeKey = 'dawn' | 'day' | 'dusk' | 'night';
+export type RoomThemeKey = 'dawn' | 'morning' | 'afternoon' | 'dusk' | 'night';
 
 const THEMES: Record<RoomThemeKey, RoomTheme> = {
   dawn: {
@@ -174,13 +174,21 @@ const THEMES: Record<RoomThemeKey, RoomTheme> = {
     floorTint: 0xffdab9,
     floorTintAlpha: 0.08,
   },
-  day: {
-    skyTop: '#fff0f5',
-    skyBot: '#ffe4e1',
-    wallTint: 0xffffff,
-    wallTintAlpha: 0.0,
-    floorTint: 0xffffff,
-    floorTintAlpha: 0.0,
+  morning: {
+    skyTop: '#e0f0ff',
+    skyBot: '#f0f8ff',
+    wallTint: 0xf8f4e8,
+    wallTintAlpha: 0.08,
+    floorTint: 0xfffff0,
+    floorTintAlpha: 0.05,
+  },
+  afternoon: {
+    skyTop: '#fff8e8',
+    skyBot: '#fff0d0',
+    wallTint: 0xfffaf0,
+    wallTintAlpha: 0.04,
+    floorTint: 0xfff8e0,
+    floorTintAlpha: 0.03,
   },
   dusk: {
     skyTop: '#ffb6c1',
@@ -202,14 +210,15 @@ const THEMES: Record<RoomThemeKey, RoomTheme> = {
 
 export function getTimeTheme(): RoomTheme {
   const h = new Date().getHours();
-  if (h >= 5 && h < 8) return THEMES.dawn!;
-  if (h >= 8 && h < 18) return THEMES.day!;
-  if (h >= 18 && h < 21) return THEMES.dusk!;
+  if (h >= 5 && h < 7.5) return THEMES.dawn!;
+  if (h >= 7.5 && h < 12) return THEMES.morning!;
+  if (h >= 12 && h < 17) return THEMES.afternoon!;
+  if (h >= 17 && h < 20) return THEMES.dusk!;
   return THEMES.night!;
 }
 
 /** Wallpaper presets selectable from the room settings panel. */
-export const ROOM_THEME_KEYS: RoomThemeKey[] = ['dawn', 'day', 'dusk', 'night'];
+export const ROOM_THEME_KEYS: RoomThemeKey[] = ['dawn', 'morning', 'afternoon', 'dusk', 'night'];
 
 /** Resolves a manual wallpaper key; 'auto' (or unknown) follows local time. */
 export function resolveRoomTheme(key: string | undefined): RoomTheme {

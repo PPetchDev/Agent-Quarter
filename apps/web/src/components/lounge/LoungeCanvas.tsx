@@ -972,6 +972,9 @@ export function LoungeCanvas() {
             (ROOM_THEME_KEYS as string[]).includes(parsed.themeKey ?? '')
           ) {
             setThemeKey(parsed.themeKey as 'auto' | RoomThemeKey);
+          } else if (parsed.themeKey === 'day') {
+            // migrate legacy 'day' → 'morning'
+            setThemeKey('morning');
           }
           loadedDormRaw = parsed.dorm ?? null;
           if (typeof parsed.nextId === 'number') nextIdRef.current = parsed.nextId;
