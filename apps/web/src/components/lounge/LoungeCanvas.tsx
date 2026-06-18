@@ -714,22 +714,18 @@ export function LoungeCanvas() {
 
   // ── Spine animation state mapping ────────────────────────────────────────────
   const SPINE_ANIM_CANDIDATES: Record<AgentState, string[]> = {
-    // Mood-enhanced: yun=dreamy float, dance=happy energy
-    idle: ['yun', 'dance', 'normal', 'stand', 'stand2', 'sit', 'sleep'],
+    idle: ['normal', 'stand', 'stand2', 'sit', 'sleep'],
     walking: ['walk', 'move', 'move_left', 'normal', 'stand'],
-    // Working states: skill=action energy, dance=happy focus
-    thinking: ['skill', 'dance', 'normal', 'stand', 'stand2'],
-    coding: ['skill', 'dance', 'normal', 'stand', 'stand2'],
-    researching: ['skill', 'dance', 'normal', 'stand', 'stand2'],
-    meeting: ['skill', 'dance', 'normal', 'stand', 'stand2'],
-    documenting: ['skill', 'dance', 'normal', 'stand', 'stand2'],
-    reviewing: ['skill', 'dance', 'normal', 'stand', 'stand2'],
-    printing: ['skill', 'dance', 'normal', 'stand', 'stand2'],
-    // Resting: sleep priority
-    resting: ['sleep', 'sit', 'normal', 'stand'],
-    // One-shot states
+    thinking: ['normal', 'stand', 'stand2'],
+    coding: ['normal', 'stand', 'stand2'],
+    researching: ['normal', 'stand', 'stand2'],
+    meeting: ['normal', 'stand', 'stand2'],
+    documenting: ['normal', 'stand', 'stand2'],
+    reviewing: ['normal', 'stand', 'stand2'],
+    printing: ['normal', 'stand', 'stand2'],
+    resting: ['sit', 'sleep', 'normal', 'stand'],
     done: ['victory', 'normal', 'stand'],
-    error: ['dead', 'break', 'normal', 'stand'],
+    error: ['break', 'normal', 'stand'],
   };
 
   const ONE_SHOT_STATES = new Set<AgentState>(['done', 'error']);
