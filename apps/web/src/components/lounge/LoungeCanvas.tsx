@@ -2772,6 +2772,20 @@ export function LoungeCanvas() {
               </svg>
             )}
 
+            {/* ── Ambient chatter bubble near agent-1 ──────────────────── */}
+            {agentBubble && visibleOfficeAgents.length > 0 && (
+              <div
+                className="absolute pointer-events-none z-50 whitespace-nowrap rounded-full border border-[#ffb6c1] bg-white/90 px-3 py-1 text-[10px] font-bold text-[#8b4c6e] shadow-md animate-bounce"
+                style={{
+                  left: visibleOfficeAgents[0]!.agent.position.x + 40,
+                  top: visibleOfficeAgents[0]!.agent.position.y - 85,
+                  transform: 'translate(-50%, -100%)',
+                }}
+              >
+                {agentBubble}
+              </div>
+            )}
+
             {/* ── Lounge agents walking overlay ─────────────────────── */}
             {visibleOfficeAgents.map(({ spec, agent: a }) => {
               const ANIM_FILE: Record<string, string> = {
@@ -3066,12 +3080,7 @@ export function LoungeCanvas() {
           </div>
         </button>
 
-        {/* Speech bubble */}
-        {agentBubble && (
-          <div className="absolute bottom-28 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-[#ffb6c1] bg-white/90 px-3 py-1 text-[10px] font-bold text-[#8b4c6e] shadow-md animate-bounce pointer-events-none z-50">
-            {agentBubble}
-          </div>
-        )}
+        {/* Speech bubble — moved to overlay near agent-1 (Mai) */}
         {/* Floating hearts */}
         {floatingHearts.map((h) => (
           <div

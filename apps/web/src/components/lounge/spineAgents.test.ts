@@ -58,7 +58,7 @@ describe('office agent spine assets', () => {
   it('moves bubbles beside Spine bodies instead of over the character art', () => {
     expect(getAgentOverlayLayout(true)).toMatchObject({
       bubbleOffsetX: 46,
-      bubbleOffsetY: 112,
+      bubbleOffsetY: 75,
       bubbleTransform: 'translate(0, -100%)',
     });
     expect(getAgentOverlayLayout(false)).toMatchObject({
@@ -71,7 +71,7 @@ describe('office agent spine assets', () => {
   it('resolves bubble position from the same agent anchor used for the Spine body', () => {
     expect(resolveAgentBubbleAnchor({ x: 200, y: 300 }, true)).toEqual({
       left: 246,
-      top: 188,
+      top: 225,
       transform: 'translate(0, -100%)',
     });
     expect(resolveAgentBubbleAnchor({ x: 200, y: 300 }, false)).toEqual({
