@@ -59,6 +59,8 @@ import {
   type SpineLoadStatus,
 } from './spineAgents';
 import { useAgentWalk } from '@/hooks/useAgentWalk';
+import { useAgentSocket } from '@/hooks/useAgentSocket';
+import type { AgentLoungeState, AgentLoungeTaskType } from '@squad/core';
 import type { Agent, AgentState, AgentTaskType } from '@/game/agents/agentTypes';
 import {
   createOfficeToolEvent,
@@ -593,6 +595,78 @@ export function LoungeCanvas() {
     characterId: 'mika',
     startIso: OFFICE_AGENT_SPINE_ASSET_BY_ID['agent-5'].fallbackIso,
   });
+  // ── Agent event socket — emit state/task events to /lounge namespace ──────
+  const agentSocket = useAgentSocket({ enabled: true });
+  const agentPrevStatesRef = useRef<Record<string, AgentState>>({});
+
+  useEffect(() => {
+    const walkers = [
+      { id: 'agent-1', characterId: 'mai', agent },
+      { id: 'agent-2', characterId: 'aki', agent: aki.agent },
+      { id: 'agent-3', characterId: 'ren', agent: ren.agent },
+      { id: 'agent-4', characterId: 'yui', agent: yui.agent },
+      { id: 'agent-5', characterId: 'mika', agent: mika.agent },
+    ];
+
+    const workingStates: AgentState[] = [
+      'walking', 'thinking', 'coding', 'researching',
+      'meeting', 'documenting', 'reviewing', 'printing',
+    ];
+
+    for (const w of walkers) {
+      const prev = agentPrevStatesRef.current[w.id];
+      const cur = w.agent.state;
+      if (!prev || prev === cur) {
+        agentPrevStatesRef.current[w.id] = cur;
+        continue;
+      }
+
+      // ── State changed ────────────────────────────────────────────────
+      agentSocket.emitStateChanged({
+        agentId: w.id,
+        characterId: w.characterId,
+        event: 'agent.state.changed',
+        state: cur as AgentLoungeState,
+        previousState: prev as AgentLoungeState,
+      });
+
+      // ── Task assigned: idle → working ────────────────────────────────
+      if (prev === 'idle' && workingStates.includes(cur) && w.agent.taskType) {
+        agentSocket.emitTaskAssigned({
+          agentId: w.id,
+          characterId: w.characterId,
+          event: 'agent.task.assigned',
+          taskType: w.agent.taskType as AgentLoungeTaskType,
+          targetStationId: w.agent.targetStationId,
+        });
+      }
+
+      // ── Task completed: working → idle/done ───────────────────────────
+      if (workingStates.includes(prev) && (cur === 'idle' || cur === 'done')) {
+        agentSocket.emitTaskCompleted({
+          agentId: w.id,
+          characterId: w.characterId,
+          event: 'agent.task.completed',
+          taskType: (w.agent.taskType || 'idle') as AgentLoungeTaskType,
+          durationMs: w.agent.workDurationMs,
+        });
+      }
+
+      // ── Error ─────────────────────────────────────────────────────────
+      if (cur === 'error') {
+        agentSocket.emitError({
+          agentId: w.id,
+          characterId: w.characterId,
+          event: 'agent.error',
+          error: `Agent entered error state from ${prev}`,
+          taskType: w.agent.taskType as AgentLoungeTaskType | undefined,
+        });
+      }
+
+      agentPrevStatesRef.current[w.id] = cur;
+    }
+  }, [agent.state, aki.agent.state, ren.agent.state, yui.agent.state, mika.agent.state, agentSocket]);
+
   const [officeCommand, setOfficeCommand] = useState('Build a verified lounge workflow slice');
   const [activeOfficeCommand, setActiveOfficeCommand] = useState(
     'Build a verified lounge workflow slice',
