@@ -1848,12 +1848,27 @@ export function LoungeCanvas() {
 
       // ── Team gathering: idle agents join the meeting ────────────────────
       if (step.taskType === 'meeting') {
-        const meetingStation = resolveLoungeStation('meetingTable', objects);
+        const currentObjects = objectsRef.current;
+        const meetingStation = resolveLoungeStation('meetingTable', currentObjects);
         const meetingIso = meetingStation.interactionIsoPoint;
-        const meetingPoint = { wx: meetingIso.x, wy: meetingIso.y, wz: meetingIso.z ?? 0.2 };
+        // Spread agents around the meeting table so they don't cluster
+        const offsets = [
+          { dx: 0, dy: 0 },
+          { dx: 0.8, dy: -0.4 },
+          { dx: -0.8, dy: 0.4 },
+          { dx: 0.4, dy: 0.8 },
+          { dx: -0.4, dy: -0.8 },
+        ];
+        let offsetIdx = 0;
         for (const [id, w] of Object.entries(officeWalkers)) {
           if (id === step.agentId) continue; // skip the meeting lead
           if (w.agent.state === 'idle') {
+            const off = offsets[offsetIdx++ % offsets.length]!;
+            const meetingPoint = {
+              wx: meetingIso.x + off.dx,
+              wy: meetingIso.y + off.dy,
+              wz: (meetingIso.z ?? 0) + 0.2,
+            };
             w.walkToIso(meetingPoint);
             appendOfficeChat({
               agentId: id as OfficeAgentId,
@@ -1948,7 +1963,6 @@ export function LoungeCanvas() {
     activeOfficeCommand,
     appendOfficeChat,
     appendOfficeToolEvent,
-    objects,
     officeStatus,
     officeStepIndex,
     officeSteps,
