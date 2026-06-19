@@ -1,0 +1,26 @@
+{
+  "pkg": "@squad/web",
+  "globalName": "SquadWeb",
+  "shape": "package",
+  "tsconfig": "tsconfig.json",
+  "cssEntry": ".ds-compiled.css",
+  "readmeHeader": ".design-sync/conventions.md",
+  "componentSrcMap": {
+    "MessageBubble": "src/components/stages/MessageBubble.tsx",
+    "ShopModal": "src/components/lounge/ShopModal.tsx",
+    "SupplyPanel": "src/components/lounge/SupplyPanel.tsx",
+    "FurnitureInspector": "src/components/lounge/FurnitureInspector.tsx"
+  },
+  "dtsPropsFor": {
+    "MessageBubble": "/** Sender — controls bubble alignment and palette. */\n  role: 'user' | 'assistant';\n  /** Message text; supports multiline and streaming partials. */\n  content: string;\n  /** Assistant name shown above an assistant bubble. */\n  characterName?: string;\n  /** Show the blinking cursor while a reply streams in. */\n  isStreaming?: boolean;",
+    "ShopModal": "/** Controls visibility; renders nothing when false. */\n  open: boolean;\n  /** Player coin balance (gates affordability). */\n  coins: number;\n  /** Player decor-token balance (second currency). */\n  tokens: number;\n  onClose: () => void;\n  /** Fires with the purchased catalog item. */\n  onPurchase: (item: { type: string; label: string; description: string; icon: string; happiness: number; cost: number; tokenCost: number; draggable: boolean; category: 'essential' | 'decor' | 'entertainment' | 'wall' }) => void;",
+    "SupplyPanel": "/** Controls visibility; renders nothing when false. */\n  open: boolean;\n  coins: number;\n  /** Current food gauge value (0–40000). */\n  food: number;\n  /** Formatted countdown until the food gauge empties. */\n  depletionLabel: string;\n  onClose: () => void;\n  /** Fires with the fed food item. */\n  onFeed: (item: { id: string; label: string; icon: string; food: number; cost: number }) => void;",
+    "FurnitureInspector": "/** Selected room object; renders nothing when null. */\n  object: { id: number; furnitureType: string; label: string; description: string; wx: number; wy: number; wz: number; happiness: number; draggable: boolean } | null;\n  onClose: () => void;\n  /** Enter drag-to-move mode for the selected object. */\n  onMoveMode: () => void;\n  /** Delete the object by id. */\n  onDelete: (id: number) => void;"
+  },
+  "overrides": {
+    "MessageBubble": { "cardMode": "column" },
+    "ShopModal": { "cardMode": "single", "viewport": "740x600" },
+    "SupplyPanel": { "cardMode": "single", "viewport": "600x560" },
+    "FurnitureInspector": { "cardMode": "single", "viewport": "420x470" }
+  }
+}
