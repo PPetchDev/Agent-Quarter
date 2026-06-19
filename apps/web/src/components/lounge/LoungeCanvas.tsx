@@ -53,7 +53,6 @@ import {
   hasOfficeAgentSpineAsset,
   OFFICE_AGENT_SPINE_ASSETS,
   OFFICE_AGENT_SPINE_ASSET_BY_ID,
-  resolveAgentBubbleAnchor,
   shouldShowHtmlAgentAvatar,
   type SpineAgentAsset,
   type SpineLoadStatus,
@@ -2801,11 +2800,12 @@ export function LoungeCanvas() {
                 spineStatus,
               });
               const overlayLayout = getAgentOverlayLayout(hasSpineAsset);
-              const bubbleAnchor = resolveAgentBubbleAnchor(a.position, hasSpineAsset);
               const SZ = overlayLayout.avatarSize;
               return (
                 <div
                   key={a.id}
+                  className="absolute"
+                  style={{ left: x, top: y, transform: 'translate(-50%, -100%)' }}
                   data-agent-id={a.id}
                   data-agent-spine-status={spineStatus ?? 'none'}
                   data-agent-avatar-fallback={showAvatarFallback ? 'true' : 'false'}
@@ -2814,9 +2814,9 @@ export function LoungeCanvas() {
                     <div
                       className="pointer-events-none absolute z-20 max-w-[160px] rounded-2xl bg-white/95 px-3 py-1.5 text-[11px] font-semibold text-gray-800 shadow-lg"
                       style={{
-                        left: bubbleAnchor.left,
-                        top: bubbleAnchor.top,
-                        transform: bubbleAnchor.transform,
+                        left: overlayLayout.bubbleOffsetX,
+                        top: -overlayLayout.bubbleOffsetY,
+                        transform: overlayLayout.bubbleTransform,
                         whiteSpace: 'nowrap',
                       }}
                     >
@@ -2828,9 +2828,9 @@ export function LoungeCanvas() {
                     <div
                       className="pointer-events-none absolute z-20 max-w-[180px] rounded-2xl bg-[#f5f3ff]/95 px-3 py-1.5 text-[11px] font-semibold text-[#5b21b6] shadow-lg border border-[#ddd6fe]/60"
                       style={{
-                        left: bubbleAnchor.left,
-                        top: bubbleAnchor.top,
-                        transform: bubbleAnchor.transform,
+                        left: overlayLayout.bubbleOffsetX,
+                        top: -overlayLayout.bubbleOffsetY,
+                        transform: overlayLayout.bubbleTransform,
                         whiteSpace: 'nowrap',
                       }}
                     >
