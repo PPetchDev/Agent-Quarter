@@ -89,6 +89,23 @@ import Image from 'next/image';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+// ── Autonomous orchestration command pool ────────────────────────────────────
+const AUTONOMOUS_COMMANDS = [
+  'Review the latest lounge rendering performance',
+  'Audit agent pathfinding edge cases near furniture',
+  'Document the Spine animation pipeline',
+  'Optimize dialogue scheduler memory usage',
+  'Refactor dorm engine food drain constants',
+  'Add TypeScript strict checks to core package',
+  'Plan mobile-responsive lounge layout',
+  'Verify theme particle system across all time periods',
+  'Patch the office workflow step handoff logic',
+  'Audit token economy balance across dorm actions',
+] as const;
+
+const AUTONOMOUS_COOLDOWN_MS = 8_000;
+const AUTONOMOUS_LEAD_ID = 'agent-1'; // Mai
+
 function snapObj(o: RoomObject, maxX = ROOM_TILES_X, maxY = ROOM_TILES_Y): RoomObject {
   return {
     ...o,
@@ -668,6 +685,8 @@ export function LoungeCanvas() {
   }, [agent.state, aki.agent.state, ren.agent.state, yui.agent.state, mika.agent.state, agentSocket]);
 
   const [officeCommand, setOfficeCommand] = useState('Build a verified lounge workflow slice');
+  const [autonomousMode, setAutonomousMode] = useState(true);
+  const autonomousTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeOfficeCommand, setActiveOfficeCommand] = useState(
     'Build a verified lounge workflow slice',
   );
@@ -1741,7 +1760,8 @@ export function LoungeCanvas() {
     setOfficeToolEvents((prev) => [...prev, { id, ...event }].slice(-6));
   }, []);
 
-  const handleRunOfficeCommand = useCallback(async () => {
+  const handleRunOfficeCommand = useCallback(async (commandOverride?: string) => {
+    const cmd = commandOverride ?? officeCommand;
     if (!roomReady) {
       showToast('Room is loading');
       return;
@@ -1752,10 +1772,10 @@ export function LoungeCanvas() {
       .map(([id]) => id as OfficeAgentId);
 
     // Try LLM planner first, fall back to rule-based
-    let steps = planWorkflowSteps(officeCommand, { busyAgentIds });
+    let steps = planWorkflowSteps(cmd, { busyAgentIds });
     try {
       const { planWorkflowLLM } = await import('@/game/dialogue/dialogueAdapter');
-      const llmResult = await planWorkflowLLM({ commandText: officeCommand, busyAgentIds });
+      const llmResult = await planWorkflowLLM({ commandText: cmd, busyAgentIds });
       if (llmResult && llmResult.steps.length > 0) {
         const converted = convertLLMSteps(llmResult.steps);
         if (converted.length > 0) {
@@ -1773,7 +1793,7 @@ export function LoungeCanvas() {
     const first = steps[0];
 
     officeStepInFlightRef.current = null;
-    setActiveOfficeCommand(officeCommand);
+    setActiveOfficeCommand(cmd);
     setOfficeSteps(steps);
     setOfficeStepIndex(0);
     setOfficeStatus('running');
@@ -1915,6 +1935,45 @@ export function LoungeCanvas() {
     officeWalkers,
     showToast,
   ]);
+
+  // ── Autonomous orchestration: Lead auto-restarts on workflow completion ──
+  useEffect(() => {
+    if (!autonomousMode) return;
+    if (officeStatus !== 'done') return;
+
+    const lead = officeWalkers[AUTONOMOUS_LEAD_ID];
+    if (lead?.agent.state !== 'idle') return;
+
+    autonomousTimerRef.current = setTimeout(() => {
+      const cmd =
+        AUTONOMOUS_COMMANDS[
+          Math.floor(Math.random() * AUTONOMOUS_COMMANDS.length)
+        ]!;
+
+      appendOfficeChat({
+        agentId: AUTONOMOUS_LEAD_ID,
+        kind: 'status',
+        text: `🤖 Mai (Lead): Orchestrating next mission — "${cmd}"`,
+      });
+
+      // Reset and start with auto-selected command
+      officeStepInFlightRef.current = null;
+      setOfficeSteps([]);
+      setOfficeStepIndex(0);
+      setOfficeStatus('idle');
+
+      // Brief tick for React state, then fire
+      setTimeout(() => {
+        void handleRunOfficeCommand(cmd);
+      }, 400);
+    }, AUTONOMOUS_COOLDOWN_MS);
+
+    return () => {
+      if (autonomousTimerRef.current) {
+        clearTimeout(autonomousTimerRef.current);
+      }
+    };
+  }, [autonomousMode, officeStatus, officeWalkers, appendOfficeChat, handleRunOfficeCommand, showToast]);
 
   // ── Happiness with cap ───────────────────────────────────────────────────────
   // Functional update so rapid same-frame calls never read a stale snapshot.
@@ -2359,7 +2418,7 @@ export function LoungeCanvas() {
           />
           <button
             type="button"
-            onClick={handleRunOfficeCommand}
+            onClick={() => void handleRunOfficeCommand()}
             disabled={officeStatus === 'running' || !roomReady}
             title="Run office workflow"
             className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[12px] font-black shadow active:scale-95 transition ${

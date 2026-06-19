@@ -1,9 +1,10 @@
 # Active Task
 
-C-EVENT-INTEGRATION-001 — Wire useAgentSocket into LoungeCanvas. Status: PASS (2026-06-19).
+C-ORCHESTRATE-MULTI-001 — Multi-Agent Orchestration (Lead→Member Relay). Status: PASS (2026-06-19).
 
-- [x] Import useAgentSocket + AgentLoungeState/AgentLoungeTaskType
-- [x] Call useAgentSocket({ enabled: true }) in LoungeCanvas
-- [x] useEffect monitors all 5 agent states via refs
-- [x] Emit agent.state.changed, agent.task.assigned, agent.task.completed, agent.error
+- [x] Autonomous command pool (10 diverse workflow prompts)
+- [x] handleRunOfficeCommand accepts commandOverride for programmatic start
+- [x] Auto-restart useEffect: Lead (Mai) auto-initiates new workflow on completion
+- [x] Lead dialogue: Mai announces orchestration in AGENT CHAT
+- [x] 8s cooldown between autonomous workflows
 - [x] 313 tests PASS, tsc EXIT:0, lint EXIT:0
