@@ -111,7 +111,7 @@ export function getAgentOverlayLayout(hasSpineAsset: boolean): AgentOverlayLayou
   return {
     avatarSize: 64,
     bubbleOffsetX: 46,
-    bubbleOffsetY: 112,
+    bubbleOffsetY: 75,
     bubbleTransform: 'translate(0, -100%)',
   };
 }

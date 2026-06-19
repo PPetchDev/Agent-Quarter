@@ -2778,7 +2778,7 @@ export function LoungeCanvas() {
                 className="absolute pointer-events-none z-50 whitespace-nowrap rounded-full border border-[#ffb6c1] bg-white/90 px-3 py-1 text-[10px] font-bold text-[#8b4c6e] shadow-md animate-bounce"
                 style={{
                   left: visibleOfficeAgents[0]!.agent.position.x + 40,
-                  top: visibleOfficeAgents[0]!.agent.position.y - 120,
+                  top: visibleOfficeAgents[0]!.agent.position.y - 85,
                   transform: 'translate(-50%, -100%)',
                 }}
               >
