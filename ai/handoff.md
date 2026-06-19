@@ -1,4 +1,4 @@
-# Handoff — C-ORCHESTRATE-LLM-002 → C-OFFICE-MOVEMENT-001
+# Handoff — C-EVENT-001
 
 ## Status
 
@@ -6,32 +6,36 @@ PASS
 
 ## Summary
 
-Phase 2 LLM-powered workflow planner complete. Backend `POST /api/dialogue/plan-workflow` delegates to Claude via DialogueService LLM provider with deterministic fallback. Frontend `planWorkflowStepsLLM()` calls the endpoint and converts LLM task types to AgentTaskType enum. LoungeCanvas integrated — workflow start uses LLM planner first, falls back to rule-based.
+Defined and implemented the lounge agent event model — a Socket.io event layer on `/lounge` namespace bridging agent state to character emotion. Created shared types in `packages/core`, `AgentGateway` in NestJS, and `useAgentSocket` React hook.
 
 ## Changes Applied
 
-- `apps/api/src/dialogue/dialogue.service.ts` — +planOfficeWorkflow, +buildWorkflowPlanPrompt, +parseWorkflowPlanText, +planWorkflowFallback
-- `apps/api/src/dialogue/dialogue.service.test.ts` — +LLM plan tests (26 total)
-- `apps/api/src/dialogue/dialogue.controller.ts` — +POST /plan-workflow
-- `apps/api/src/dialogue/dialogue.controller.test.ts` — +endpoint tests (11 total)
-- `apps/web/src/game/agents/officeWorkflow.ts` — +planWorkflowStepsLLM, +convertLLMSteps
-- `apps/web/src/game/agents/officeWorkflow.test.ts` — +LLM integration tests
-- `apps/web/src/game/dialogue/dialogueAdapter.ts` — +PlanWorkflowLLMResponse types
-- `apps/web/src/components/lounge/LoungeCanvas.tsx` — LLM planner integration
+- `packages/core/src/agent-events.ts` — 4 event payload types + AgentEvent union
+- `packages/core/src/agent-events.test.ts` — 5 type structural tests
+- `packages/core/src/index.ts` — barrel export
+- `apps/api/src/agents/agent.gateway.ts` — AgentGateway on /lounge, 4 emit methods
+- `apps/api/src/agents/agent.gateway.test.ts` — 5 no-server safety tests
+- `apps/api/src/agents/agent.module.ts` — NestJS module
+- `apps/api/src/app.module.ts` — registered AgentModule
+- `apps/web/src/hooks/useAgentSocket.ts` — useAgentSocket hook (SSR-safe, dynamic import)
+- `apps/web/src/hooks/useAgentSocket.test.ts` — 8 jsdom tests
 
 ## Verification Summary
 
-- API dialogue tests (37): PASS
-- Web workflow tests (29): PASS
-- Full web tests (305): PASS
+- core tests (57): PASS (+5 new)
+- API tests (116): PASS (+5 new)
+- web tests (313): PASS (+8 new)
+- Total: 486 tests, all PASS
 - pnpm typecheck: EXIT:0
 - pnpm lint: EXIT:0
-- pnpm build: EXIT:0
 
 ## Active Risks
 
 None.
 
-## Next Contract
+## Optional Future Work
 
-C-OFFICE-MOVEMENT-001 — Agent Movement System (GridMap + A* + MovementSystem). See `ai/contracts/C-OFFICE-MOVEMENT-001.md`.
+- Wire `useAgentSocket` into LoungeCanvas to emit state changes during agent lifecycle
+- Create emotion resolver that maps agent state → character mood
+- Multi-client agent state sync via AgentGateway
+- Agent event history/playback for debugging

@@ -2,7 +2,19 @@
 
 > ⚠️ **Recovery note (2026-06-03):**
 
-## C-ORCHESTRATE-LLM-002 — LLM-Powered Workflow Planner (Phase 2) (Closeout)
+## C-EVENT-001 — Agent Event Model (Socket.io Event Schema)
+
+**Date:** 2026-06-19
+**Status:** PASS
+
+Defined and implemented the lounge agent event layer:
+- **Shared types** (`packages/core/agent-events.ts`): `AgentEventType`, `AgentLoungeState`, `AgentLoungeTaskType`, 4 payload types (`AgentStateChanged`, `AgentTaskAssigned`, `AgentTaskCompleted`, `AgentError`), `AgentEvent` union
+- **AgentGateway** (`apps/api/agents/`): Socket.io gateway on `/lounge` namespace with 4 emit methods, registered in `AgentModule` → `AppModule`
+- **useAgentSocket** (`apps/web/hooks/`): React hook with dynamic socket.io-client import (SSR-safe), `enabled` flag, auto-connect/disconnect, `lastEvent` state, 4 emit helpers
+
+All gates PASS: 57 core + 116 API + 313 web = 486 tests, typecheck, lint.
+
+---
 
 **Date:** 2026-06-19
 **Status:** PASS

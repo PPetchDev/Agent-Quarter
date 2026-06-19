@@ -7,6 +7,13 @@ _Each item has a Contract ID. Items without a contract are not executable._
 
 ## Now
 
+### C-EVENT-001 — Agent Event Model (Socket.io)
+
+**Status:** PASS (2026-06-19)
+**Goal:** Define Socket.io event schema for lounge agent state → character emotion mapping. Create AgentGateway on /lounge namespace + useAgentSocket frontend hook.
+**Scope:** `packages/core/src/agent-events.*`, `apps/api/src/agents/*`, `apps/web/src/hooks/useAgentSocket.*`
+**Result:** STABLE — 486 tests PASS (57 core + 116 API + 313 web), typecheck + lint all PASS. Gateway follows RunsGateway pattern, hook uses SSR-safe dynamic import.
+
 ### C-ORCHESTRATE-LLM-002 — LLM-Powered Workflow Planner (Phase 2)
 
 **Status:** PASS (2026-06-19)
