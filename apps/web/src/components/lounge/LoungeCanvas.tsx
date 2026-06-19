@@ -1851,13 +1851,14 @@ export function LoungeCanvas() {
         const currentObjects = objectsRef.current;
         const meetingStation = resolveLoungeStation('meetingTable', currentObjects);
         const meetingIso = meetingStation.interactionIsoPoint;
-        // Spread agents around the meeting table so they don't cluster
+        // Spread agents around the meeting table so they don't cluster.
+        // Offsets in iso grid units — large enough to be visible (1 grid ≈ 60px).
         const offsets = [
           { dx: 0, dy: 0 },
-          { dx: 0.8, dy: -0.4 },
-          { dx: -0.8, dy: 0.4 },
-          { dx: 0.4, dy: 0.8 },
-          { dx: -0.4, dy: -0.8 },
+          { dx: 2.0, dy: 1.0 },
+          { dx: -2.0, dy: -1.0 },
+          { dx: 1.5, dy: -2.0 },
+          { dx: -1.5, dy: 2.0 },
         ];
         let offsetIdx = 0;
         for (const [id, w] of Object.entries(officeWalkers)) {
