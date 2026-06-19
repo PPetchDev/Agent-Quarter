@@ -113,7 +113,7 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
     direction: 'down',
     animation: 'idle',
     bubbleText: undefined,
-    speed: 110,
+    speed: 60,
     taskQueue: [],
   }));
   const [routeDebug, setRouteDebug] = useState<AgentRouteDebug>({
