@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
+  getProjectById,
+  getTaskById,
+  getRunById,
   getNextTaskForProject,
   canStartTask,
   canStartRun,
@@ -30,32 +33,73 @@ const makeRun = (overrides: Partial<Run> = {}): Run => ({
   ...overrides,
 });
 
+// ─── Lookup helpers ──────────────────────────────────────────────────────────
+
+describe('lookup helpers', () => {
+  it('returns a project by id', () => {
+    const projects = [
+      {
+        id: 'p-1',
+        characterId: 'mai',
+        title: 'One',
+        status: 'active',
+        summary: '',
+        nextAction: '',
+        updatedLabel: '',
+      },
+      {
+        id: 'p-2',
+        characterId: 'ren',
+        title: 'Two',
+        status: 'paused',
+        summary: '',
+        nextAction: '',
+        updatedLabel: '',
+      },
+    ] as const;
+    expect(getProjectById([...projects], 'p-2')?.title).toBe('Two');
+  });
+
+  it('returns undefined for a missing project id', () => {
+    expect(getProjectById([], 'missing')).toBeUndefined();
+  });
+
+  it('returns a task by id', () => {
+    const tasks = makeTasks({ id: 't-1' }, { id: 't-2', title: 'Target' });
+    expect(getTaskById(tasks, 't-2')?.title).toBe('Target');
+  });
+
+  it('returns undefined for a missing task id', () => {
+    expect(getTaskById(makeTasks({ id: 't-1' }), 'missing')).toBeUndefined();
+  });
+
+  it('returns a run by id', () => {
+    const runs = [makeRun({ id: 'r-1' }), makeRun({ id: 'r-2', status: 'pending' })];
+    expect(getRunById(runs, 'r-2')?.status).toBe('pending');
+  });
+
+  it('returns undefined for a missing run id', () => {
+    expect(getRunById([makeRun({ id: 'r-1' })], 'missing')).toBeUndefined();
+  });
+});
+
 // ─── getNextTaskForProject ────────────────────────────────────────────────────
 
 describe('getNextTaskForProject', () => {
   it('returns in_progress task before todo task', () => {
-    const tasks = makeTasks(
-      { id: 't-1', status: 'todo' },
-      { id: 't-2', status: 'in_progress' },
-    );
+    const tasks = makeTasks({ id: 't-1', status: 'todo' }, { id: 't-2', status: 'in_progress' });
     const result = getNextTaskForProject(tasks, 'p-1');
     expect(result?.id).toBe('t-2');
   });
 
   it('returns todo when no in_progress exists', () => {
-    const tasks = makeTasks(
-      { id: 't-1', status: 'done' },
-      { id: 't-2', status: 'todo' },
-    );
+    const tasks = makeTasks({ id: 't-1', status: 'done' }, { id: 't-2', status: 'todo' });
     const result = getNextTaskForProject(tasks, 'p-1');
     expect(result?.id).toBe('t-2');
   });
 
   it('returns undefined when all tasks are done/blocked', () => {
-    const tasks = makeTasks(
-      { id: 't-1', status: 'done' },
-      { id: 't-2', status: 'blocked' },
-    );
+    const tasks = makeTasks({ id: 't-1', status: 'done' }, { id: 't-2', status: 'blocked' });
     expect(getNextTaskForProject(tasks, 'p-1')).toBeUndefined();
   });
 
@@ -148,7 +192,12 @@ describe('buildRunStartPatch', () => {
   });
 
   it('does not set completedAt', () => {
-    const patch = buildRunStartPatch({ id: 'r-x', projectId: 'p-1', taskId: 't-1', startedAt: '2026-05-26T10:00:00Z' });
+    const patch = buildRunStartPatch({
+      id: 'r-x',
+      projectId: 'p-1',
+      taskId: 't-1',
+      startedAt: '2026-05-26T10:00:00Z',
+    });
     expect(patch.completedAt).toBeUndefined();
   });
 });
@@ -171,7 +220,12 @@ describe('completeRun', () => {
   });
 
   it('preserves all other fields', () => {
-    const run = makeRun({ id: 'r-42', projectId: 'p-5', taskId: 't-9', startedAt: '2026-05-26T08:00:00Z' });
+    const run = makeRun({
+      id: 'r-42',
+      projectId: 'p-5',
+      taskId: 't-9',
+      startedAt: '2026-05-26T08:00:00Z',
+    });
     const result = completeRun(run, '2026-05-26T09:00:00Z');
     expect(result.id).toBe('r-42');
     expect(result.projectId).toBe('p-5');

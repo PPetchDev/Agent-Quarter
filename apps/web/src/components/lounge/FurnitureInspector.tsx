@@ -1,5 +1,5 @@
-"use client";
-import type { RoomObject } from "./roomDefs";
+'use client';
+import type { RoomObject } from './roomDefs';
 
 interface Props {
   object: RoomObject | null;
@@ -9,29 +9,29 @@ interface Props {
 }
 
 const FURNITURE_ICONS: Record<string, string> = {
-  bed:            "🛏",
-  nightstand:     "🪔",
-  tv_stand:       "📺",
-  tv:             "📺",
-  bookcase:       "📚",
-  pool_table:     "🎱",
-  low_table:      "🍵",
-  zabuton:        "🪑",
-  plant:          "🪴",
-  hanging_scroll: "🖼",
-  wall_shelf:     "📦",
+  bed: '🛏',
+  nightstand: '🪔',
+  tv_stand: '📺',
+  tv: '📺',
+  bookcase: '📚',
+  pool_table: '🎱',
+  low_table: '🍵',
+  zabuton: '🪑',
+  plant: '🪴',
+  hanging_scroll: '🖼',
+  wall_shelf: '📦',
 };
 
 export function FurnitureInspector({ object, onClose, onMoveMode, onDelete }: Props) {
   if (!object) return null;
 
-  const icon = FURNITURE_ICONS[object.furnitureType] ?? "🪑";
+  const icon = FURNITURE_ICONS[object.furnitureType] ?? '🪑';
   const posLabel = `(${object.wx.toFixed(1)}, ${object.wy.toFixed(1)})`;
 
   return (
     <div
       className="absolute left-1/2 bottom-[6.5rem] z-40 w-64 -translate-x-1/2 rounded-2xl border border-[#c8a870] bg-[#fdf6e8]/95 shadow-xl backdrop-blur-sm"
-      style={{ pointerEvents: "auto" }}
+      style={{ pointerEvents: 'auto' }}
     >
       {/* Header */}
       <div className="flex items-center gap-2 rounded-t-2xl border-b border-[#e8d4a8] bg-[#f5e4c0] px-3 py-2">
@@ -77,7 +77,10 @@ export function FurnitureInspector({ object, onClose, onMoveMode, onDelete }: Pr
         {object.draggable && (
           <button
             type="button"
-            onClick={() => { onMoveMode(); onClose(); }}
+            onClick={() => {
+              onMoveMode();
+              onClose();
+            }}
             className="flex-1 rounded-xl bg-[#f5c518] py-1.5 text-[10px] font-black text-[#5a3c00] hover:bg-[#e8b800] active:scale-95 transition"
           >
             Move
@@ -85,7 +88,10 @@ export function FurnitureInspector({ object, onClose, onMoveMode, onDelete }: Pr
         )}
         <button
           type="button"
-          onClick={() => { onDelete(object.id); onClose(); }}
+          onClick={() => {
+            onDelete(object.id);
+            onClose();
+          }}
           className="flex-1 rounded-xl border border-[#e84040] bg-[#fcd5d5] py-1.5 text-[10px] font-black text-[#9b1c1c] hover:bg-[#fab8b8] active:scale-95 transition"
         >
           🗑 Delete

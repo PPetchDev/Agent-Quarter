@@ -1,6 +1,6 @@
-import * as PIXI from "pixi.js";
-import type { RoomObject, TiledMap } from "./roomDefs";
-import { parseTiledMap, FURNITURE_TILES } from "./roomDefs";
+import * as PIXI from 'pixi.js';
+import type { RoomObject, TiledMap } from './roomDefs';
+import { parseTiledMap, FURNITURE_TILES } from './roomDefs';
 import {
   proj,
   drawFurnitureByType,
@@ -11,7 +11,7 @@ import {
   furnitureHitPolygon,
   CANVAS_W,
   CANVAS_H,
-} from "./pixiRoom";
+} from './pixiRoom';
 
 export interface FurnitureHandlers {
   onSelect: (id: number) => void;
@@ -32,6 +32,7 @@ export interface RoomScene {
   furnitureLayer: PIXI.Container;
   activeStationGraphics: PIXI.Graphics;
   highlightGraphics: PIXI.Graphics;
+  particleGraphics: PIXI.Graphics;
   items: Map<number, FurnitureItem>;
   /** Redraw a single furniture item at its current position */
   updateItem: (id: number, wx: number, wy: number, wz: number) => void;
@@ -62,10 +63,7 @@ export async function loadRoomJSON(url: string): Promise<RoomObject[]> {
 
 // ─── Build interactive PixiJS scene ──────────────────────────────────────────
 
-function createFurnitureItem(
-  obj: RoomObject,
-  handlers: FurnitureHandlers,
-): FurnitureItem {
+function createFurnitureItem(obj: RoomObject, handlers: FurnitureHandlers): FurnitureItem {
   const container = new PIXI.Container();
   const graphics = new PIXI.Graphics();
   container.addChild(graphics);
@@ -80,22 +78,22 @@ function createFurnitureItem(
 
   // Hit area: floor footprint
   container.hitArea = furnitureHitPolygon(obj.furnitureType, obj.wx, obj.wy, obj.wz);
-  container.eventMode = "static";
-  container.cursor = obj.draggable ? "pointer" : "default";
+  container.eventMode = 'static';
+  container.cursor = obj.draggable ? 'pointer' : 'default';
 
-  container.on("pointertap", (e: PIXI.FederatedPointerEvent) => {
+  container.on('pointertap', (e: PIXI.FederatedPointerEvent) => {
     e.stopPropagation();
     handlers.onSelect(obj.id);
   });
 
   if (obj.draggable) {
-    container.on("pointerover", () => {
+    container.on('pointerover', () => {
       container.alpha = 0.85;
     });
-    container.on("pointerout", () => {
+    container.on('pointerout', () => {
       container.alpha = 1.0;
     });
-    container.on("pointerdown", (e: PIXI.FederatedPointerEvent) => {
+    container.on('pointerdown', (e: PIXI.FederatedPointerEvent) => {
       e.stopPropagation();
       handlers.onDragStart(obj.id, e.global.x, e.global.y);
     });
@@ -118,6 +116,7 @@ export function buildRoomScene(
   const furnitureLayer = new PIXI.Container();
   const activeStationGraphics = new PIXI.Graphics();
   const highlightGraphics = new PIXI.Graphics();
+  const particleGraphics = new PIXI.Graphics();
 
   tileGridGraphics.visible = false;
   furnitureLayer.sortableChildren = true;
@@ -127,27 +126,36 @@ export function buildRoomScene(
   stage.addChild(furnitureLayer);
   stage.addChild(activeStationGraphics);
   stage.addChild(highlightGraphics);
+  stage.addChild(particleGraphics);
 
   // Load Azur Lane room background if URL provided
   if (roomBgUrl) {
-    PIXI.Assets.load(roomBgUrl).then((texture) => {
-      roomBgSprite.texture = texture;
-      roomBgSprite.width = CANVAS_W;
-      roomBgSprite.height = CANVAS_H;
-      roomBgSprite.visible = true;
-    }).catch(() => {
-      // Fallback: keep PixiJS-drawn room
-    });
+    PIXI.Assets.load(roomBgUrl)
+      .then((texture) => {
+        roomBgSprite.texture = texture;
+        roomBgSprite.width = CANVAS_W;
+        roomBgSprite.height = CANVAS_H;
+        roomBgSprite.visible = true;
+      })
+      .catch(() => {
+        // Fallback: keep PixiJS-drawn room
+      });
   }
 
   // Make stage interactive so drag events propagate
-  stage.eventMode = "static";
+  stage.eventMode = 'static';
   stage.hitArea = new PIXI.Rectangle(0, 0, CANVAS_W, CANVAS_H);
 
   const items = new Map<number, FurnitureItem>();
 
   function populateFurniture(objs: RoomObject[]) {
-    furnitureLayer.removeChildren();
+    // Remove only tracked furniture containers — the layer also hosts
+    // non-furniture children (e.g. Spine agent displays) that must survive
+    // rebuilds triggered by floor switches, room resizes, and layout resets.
+    for (const item of items.values()) {
+      furnitureLayer.removeChild(item.container);
+      item.container.destroy({ children: true });
+    }
     items.clear();
     for (const obj of objs) {
       const item = createFurnitureItem(obj, handlers);
@@ -247,6 +255,7 @@ export function buildRoomScene(
     furnitureLayer,
     activeStationGraphics,
     highlightGraphics,
+    particleGraphics,
     items,
     updateItem,
     setSelected,

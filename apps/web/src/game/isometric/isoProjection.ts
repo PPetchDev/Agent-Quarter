@@ -41,10 +41,7 @@ export type IsoProjectionConfig = {
  * y increases → moves left and down
  * z increases → moves up (lifts off floor)
  */
-export function isoToScreen(
-  point: IsoPoint,
-  config: IsoProjectionConfig,
-): ScreenPoint {
+export function isoToScreen(point: IsoPoint, config: IsoProjectionConfig): ScreenPoint {
   const z = point.z ?? 0;
   return {
     x: config.originX + (point.x - point.y) * (config.tileWidth / 2),
@@ -56,10 +53,7 @@ export function isoToScreen(
  * Inverse: convert screen coordinates back to iso world (x, y) at z=0.
  * Useful for click-to-tile mapping.
  */
-export function screenToIso(
-  screen: ScreenPoint,
-  config: IsoProjectionConfig,
-): IsoPoint {
+export function screenToIso(screen: ScreenPoint, config: IsoProjectionConfig): IsoPoint {
   const relX = screen.x - config.originX;
   const relY = screen.y - config.originY;
   const halfW = config.tileWidth / 2;

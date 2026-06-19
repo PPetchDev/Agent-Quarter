@@ -5,7 +5,7 @@ import { CHARACTER_TEMPLATES, CHARACTER_MOOD_REGISTRY, getCharacterTemplate } fr
 export class CharactersController {
   @Get()
   findAll() {
-    return CHARACTER_TEMPLATES.map(t => ({
+    return CHARACTER_TEMPLATES.map((t) => ({
       ...t,
       moodEntry: CHARACTER_MOOD_REGISTRY[t.characterId],
     }));

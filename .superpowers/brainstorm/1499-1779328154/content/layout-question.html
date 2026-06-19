@@ -2,136 +2,424 @@
 <p class="subtitle">ระบบ Multi-agent Anime Squad — เลือก layout หลักของแอป</p>
 
 <div class="cards">
-
   <div class="card" data-choice="chat-companion" onclick="toggleSelect(this)">
     <div class="card-image">
-      <div style="background:#0f172a;border-radius:8px;padding:12px;font-family:monospace;font-size:11px;color:#94a3b8;min-height:160px;display:flex;gap:8px;">
+      <div
+        style="
+          background: #0f172a;
+          border-radius: 8px;
+          padding: 12px;
+          font-family: monospace;
+          font-size: 11px;
+          color: #94a3b8;
+          min-height: 160px;
+          display: flex;
+          gap: 8px;
+        "
+      >
         <!-- Character sidebar -->
-        <div style="width:80px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:6px;border-right:1px solid #1e293b;padding-right:8px;">
-          <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#ffd8ec,#c8a8e8);display:flex;align-items:center;justify-content:center;font-size:22px;">🐱</div>
-          <div style="font-size:9px;color:#f0abfc;font-weight:700;">MAI</div>
-          <div style="font-size:8px;color:#64748b;text-align:center;">Frontend</div>
-          <div style="width:40px;height:3px;background:#1e293b;border-radius:2px;margin-top:4px;"><div style="width:70%;height:100%;background:#a78bfa;border-radius:2px;"></div></div>
-          <div style="font-size:7px;color:#64748b;">SYNC 70%</div>
+        <div
+          style="
+            width: 80px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            border-right: 1px solid #1e293b;
+            padding-right: 8px;
+          "
+        >
+          <div
+            style="
+              width: 56px;
+              height: 56px;
+              border-radius: 50%;
+              background: linear-gradient(135deg, #ffd8ec, #c8a8e8);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 22px;
+            "
+          >
+            🐱
+          </div>
+          <div style="font-size: 9px; color: #f0abfc; font-weight: 700">MAI</div>
+          <div style="font-size: 8px; color: #64748b; text-align: center">Frontend</div>
+          <div
+            style="
+              width: 40px;
+              height: 3px;
+              background: #1e293b;
+              border-radius: 2px;
+              margin-top: 4px;
+            "
+          >
+            <div style="width: 70%; height: 100%; background: #a78bfa; border-radius: 2px"></div>
+          </div>
+          <div style="font-size: 7px; color: #64748b">SYNC 70%</div>
 
-          <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#a8f0c8,#60a5fa);display:flex;align-items:center;justify-content:center;font-size:22px;margin-top:6px;">⚔️</div>
-          <div style="font-size:9px;color:#a8f0c8;font-weight:700;">REN</div>
-          <div style="font-size:8px;color:#64748b;text-align:center;">Backend</div>
+          <div
+            style="
+              width: 56px;
+              height: 56px;
+              border-radius: 50%;
+              background: linear-gradient(135deg, #a8f0c8, #60a5fa);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 22px;
+              margin-top: 6px;
+            "
+          >
+            ⚔️
+          </div>
+          <div style="font-size: 9px; color: #a8f0c8; font-weight: 700">REN</div>
+          <div style="font-size: 8px; color: #64748b; text-align: center">Backend</div>
         </div>
         <!-- Chat area -->
-        <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
-          <div style="background:#1e293b;border-radius:6px;padding:6px;font-size:9px;">
-            <span style="color:#f0abfc;">MAI:</span> ฉันกำลัง build component อยู่นะ~
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 6px">
+          <div style="background: #1e293b; border-radius: 6px; padding: 6px; font-size: 9px">
+            <span style="color: #f0abfc">MAI:</span> ฉันกำลัง build component อยู่นะ~
           </div>
-          <div style="background:#1e293b;border-radius:6px;padding:6px;font-size:9px;">
-            <span style="color:#a8f0c8;">REN:</span> API endpoint พร้อมแล้ว
+          <div style="background: #1e293b; border-radius: 6px; padding: 6px; font-size: 9px">
+            <span style="color: #a8f0c8">REN:</span> API endpoint พร้อมแล้ว
           </div>
-          <div style="background:#1e293b;border-radius:6px;padding:6px;font-size:9px;">
-            <span style="color:#ffd8ec;">USER:</span> ช่วย review PR ด้วยนะ
+          <div style="background: #1e293b; border-radius: 6px; padding: 6px; font-size: 9px">
+            <span style="color: #ffd8ec">USER:</span> ช่วย review PR ด้วยนะ
           </div>
-          <div style="margin-top:auto;background:#0f172a;border:1px solid #334155;border-radius:4px;padding:4px;font-size:9px;color:#475569;">พิมพ์ข้อความ...</div>
+          <div
+            style="
+              margin-top: auto;
+              background: #0f172a;
+              border: 1px solid #334155;
+              border-radius: 4px;
+              padding: 4px;
+              font-size: 9px;
+              color: #475569;
+            "
+          >
+            พิมพ์ข้อความ...
+          </div>
         </div>
       </div>
     </div>
     <div class="card-body">
       <h3>A — Chat + Character Sidebar</h3>
-      <p>Character เล็กๆ อยู่ sidebar ซ้าย, chat หลักอยู่ขวา คล้าย Discord/Slack แต่มี anime avatar</p>
+      <p>
+        Character เล็กๆ อยู่ sidebar ซ้าย, chat หลักอยู่ขวา คล้าย Discord/Slack แต่มี anime avatar
+      </p>
     </div>
   </div>
 
   <div class="card" data-choice="dashboard-grid" onclick="toggleSelect(this)">
     <div class="card-image">
-      <div style="background:#0f172a;border-radius:8px;padding:12px;font-family:monospace;font-size:11px;color:#94a3b8;min-height:160px;">
+      <div
+        style="
+          background: #0f172a;
+          border-radius: 8px;
+          padding: 12px;
+          font-family: monospace;
+          font-size: 11px;
+          color: #94a3b8;
+          min-height: 160px;
+        "
+      >
         <!-- Top bar -->
-        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1e293b;padding-bottom:6px;margin-bottom:8px;">
-          <span style="color:#ffd8ec;font-weight:700;font-size:10px;">✦ ANIME AGENT SQUAD ✧</span>
-          <span style="font-size:8px;color:#64748b;">4 agents active</span>
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #1e293b;
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+          "
+        >
+          <span style="color: #ffd8ec; font-weight: 700; font-size: 10px"
+            >✦ ANIME AGENT SQUAD ✧</span
+          >
+          <span style="font-size: 8px; color: #64748b">4 agents active</span>
         </div>
         <!-- Agent grid -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-          <div style="background:#1e293b;border-radius:6px;padding:6px;border:1px solid #7c3aed40;">
-            <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
-              <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#ffd8ec,#c8a8e8);display:flex;align-items:center;justify-content:center;font-size:12px;">🐱</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px">
+          <div
+            style="
+              background: #1e293b;
+              border-radius: 6px;
+              padding: 6px;
+              border: 1px solid #7c3aed40;
+            "
+          >
+            <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px">
+              <div
+                style="
+                  width: 28px;
+                  height: 28px;
+                  border-radius: 50%;
+                  background: linear-gradient(135deg, #ffd8ec, #c8a8e8);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 12px;
+                "
+              >
+                🐱
+              </div>
               <div>
-                <div style="font-size:9px;color:#f0abfc;font-weight:700;">MAI</div>
-                <div style="font-size:7px;color:#22c55e;">● LIVE</div>
+                <div style="font-size: 9px; color: #f0abfc; font-weight: 700">MAI</div>
+                <div style="font-size: 7px; color: #22c55e">● LIVE</div>
               </div>
             </div>
-            <div style="font-size:8px;color:#64748b;">building Button.tsx...</div>
+            <div style="font-size: 8px; color: #64748b">building Button.tsx...</div>
           </div>
-          <div style="background:#1e293b;border-radius:6px;padding:6px;border:1px solid #0ea5e940;">
-            <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
-              <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#a8f0c8,#60a5fa);display:flex;align-items:center;justify-content:center;font-size:12px;">⚔️</div>
+          <div
+            style="
+              background: #1e293b;
+              border-radius: 6px;
+              padding: 6px;
+              border: 1px solid #0ea5e940;
+            "
+          >
+            <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px">
+              <div
+                style="
+                  width: 28px;
+                  height: 28px;
+                  border-radius: 50%;
+                  background: linear-gradient(135deg, #a8f0c8, #60a5fa);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 12px;
+                "
+              >
+                ⚔️
+              </div>
               <div>
-                <div style="font-size:9px;color:#a8f0c8;font-weight:700;">REN</div>
-                <div style="font-size:7px;color:#f59e0b;">● WAITING</div>
+                <div style="font-size: 9px; color: #a8f0c8; font-weight: 700">REN</div>
+                <div style="font-size: 7px; color: #f59e0b">● WAITING</div>
               </div>
             </div>
-            <div style="font-size:8px;color:#64748b;">รอ permission...</div>
+            <div style="font-size: 8px; color: #64748b">รอ permission...</div>
           </div>
-          <div style="background:#1e293b;border-radius:6px;padding:6px;border:1px solid #10b98140;">
-            <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
-              <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#fef9c3,#fde68a);display:flex;align-items:center;justify-content:center;font-size:12px;">📖</div>
+          <div
+            style="
+              background: #1e293b;
+              border-radius: 6px;
+              padding: 6px;
+              border: 1px solid #10b98140;
+            "
+          >
+            <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px">
+              <div
+                style="
+                  width: 28px;
+                  height: 28px;
+                  border-radius: 50%;
+                  background: linear-gradient(135deg, #fef9c3, #fde68a);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 12px;
+                "
+              >
+                📖
+              </div>
               <div>
-                <div style="font-size:9px;color:#fde68a;font-weight:700;">YUI</div>
-                <div style="font-size:7px;color:#22c55e;">● LIVE</div>
+                <div style="font-size: 9px; color: #fde68a; font-weight: 700">YUI</div>
+                <div style="font-size: 7px; color: #22c55e">● LIVE</div>
               </div>
             </div>
-            <div style="font-size:8px;color:#64748b;">reviewing PR #42...</div>
+            <div style="font-size: 8px; color: #64748b">reviewing PR #42...</div>
           </div>
-          <div style="background:#1e293b;border-radius:6px;padding:6px;border:1px solid #64748b40;">
-            <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
-              <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#fed7aa,#fb923c);display:flex;align-items:center;justify-content:center;font-size:12px;">🔧</div>
+          <div
+            style="
+              background: #1e293b;
+              border-radius: 6px;
+              padding: 6px;
+              border: 1px solid #64748b40;
+            "
+          >
+            <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px">
+              <div
+                style="
+                  width: 28px;
+                  height: 28px;
+                  border-radius: 50%;
+                  background: linear-gradient(135deg, #fed7aa, #fb923c);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 12px;
+                "
+              >
+                🔧
+              </div>
               <div>
-                <div style="font-size:9px;color:#fb923c;font-weight:700;">AKI</div>
-                <div style="font-size:7px;color:#64748b;">● IDLE</div>
+                <div style="font-size: 9px; color: #fb923c; font-weight: 700">AKI</div>
+                <div style="font-size: 7px; color: #64748b">● IDLE</div>
               </div>
             </div>
-            <div style="font-size:8px;color:#64748b;">ไม่มีงาน...</div>
+            <div style="font-size: 8px; color: #64748b">ไม่มีงาน...</div>
           </div>
         </div>
       </div>
     </div>
     <div class="card-body">
       <h3>B — Multi-agent Dashboard Grid</h3>
-      <p>แสดง agent ทุกตัวพร้อมกันเป็น grid คล้าย reference repo สามารถดูสถานะทุก agent ได้ทีเดียว</p>
+      <p>
+        แสดง agent ทุกตัวพร้อมกันเป็น grid คล้าย reference repo สามารถดูสถานะทุก agent ได้ทีเดียว
+      </p>
     </div>
   </div>
 
   <div class="card" data-choice="character-focus" onclick="toggleSelect(this)">
     <div class="card-image">
-      <div style="background:#0f172a;border-radius:8px;padding:12px;font-family:monospace;font-size:11px;color:#94a3b8;min-height:160px;display:flex;flex-direction:column;align-items:center;gap:8px;">
+      <div
+        style="
+          background: #0f172a;
+          border-radius: 8px;
+          padding: 12px;
+          font-family: monospace;
+          font-size: 11px;
+          color: #94a3b8;
+          min-height: 160px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+        "
+      >
         <!-- Big character -->
-        <div style="width:90px;height:90px;border-radius:16px;background:linear-gradient(135deg,#ffd8ec,#c8a8e8,#a5f3fc);display:flex;align-items:center;justify-content:center;font-size:40px;box-shadow:0 0 20px #f0abfc50;position:relative;">
+        <div
+          style="
+            width: 90px;
+            height: 90px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #ffd8ec, #c8a8e8, #a5f3fc);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            box-shadow: 0 0 20px #f0abfc50;
+            position: relative;
+          "
+        >
           🐱
-          <div style="position:absolute;bottom:-4px;right:-4px;background:#22c55e;border-radius:50%;width:14px;height:14px;border:2px solid #0f172a;display:flex;align-items:center;justify-content:center;font-size:7px;">✓</div>
+          <div
+            style="
+              position: absolute;
+              bottom: -4px;
+              right: -4px;
+              background: #22c55e;
+              border-radius: 50%;
+              width: 14px;
+              height: 14px;
+              border: 2px solid #0f172a;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 7px;
+            "
+          >
+            ✓
+          </div>
         </div>
-        <div style="text-align:center;">
-          <div style="font-size:12px;color:#f0abfc;font-weight:700;font-style:italic;">MAI</div>
-          <div style="font-size:8px;color:#64748b;">Frontend Sorcerer</div>
+        <div style="text-align: center">
+          <div style="font-size: 12px; color: #f0abfc; font-weight: 700; font-style: italic">
+            MAI
+          </div>
+          <div style="font-size: 8px; color: #64748b">Frontend Sorcerer</div>
         </div>
         <!-- Emotion indicator -->
-        <div style="display:flex;gap:4px;">
-          <div style="background:#7c3aed;border-radius:4px;padding:2px 6px;font-size:7px;color:white;">😊 happy</div>
-          <div style="background:#1e293b;border-radius:4px;padding:2px 6px;font-size:7px;color:#64748b;">SYNC 85%</div>
+        <div style="display: flex; gap: 4px">
+          <div
+            style="
+              background: #7c3aed;
+              border-radius: 4px;
+              padding: 2px 6px;
+              font-size: 7px;
+              color: white;
+            "
+          >
+            😊 happy
+          </div>
+          <div
+            style="
+              background: #1e293b;
+              border-radius: 4px;
+              padding: 2px 6px;
+              font-size: 7px;
+              color: #64748b;
+            "
+          >
+            SYNC 85%
+          </div>
         </div>
         <!-- Compact agent list below -->
-        <div style="display:flex;gap:6px;margin-top:4px;">
-          <div style="background:#1e293b;border-radius:4px;padding:3px 6px;display:flex;align-items:center;gap:3px;">
-            <div style="width:16px;height:16px;border-radius:50%;background:#a8f0c8;display:flex;align-items:center;justify-content:center;font-size:8px;">⚔</div>
-            <span style="font-size:8px;color:#a8f0c8;">REN</span>
+        <div style="display: flex; gap: 6px; margin-top: 4px">
+          <div
+            style="
+              background: #1e293b;
+              border-radius: 4px;
+              padding: 3px 6px;
+              display: flex;
+              align-items: center;
+              gap: 3px;
+            "
+          >
+            <div
+              style="
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                background: #a8f0c8;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 8px;
+              "
+            >
+              ⚔
+            </div>
+            <span style="font-size: 8px; color: #a8f0c8">REN</span>
           </div>
-          <div style="background:#1e293b;border-radius:4px;padding:3px 6px;display:flex;align-items:center;gap:3px;">
-            <div style="width:16px;height:16px;border-radius:50%;background:#fde68a;display:flex;align-items:center;justify-content:center;font-size:8px;">📖</div>
-            <span style="font-size:8px;color:#fde68a;">YUI</span>
+          <div
+            style="
+              background: #1e293b;
+              border-radius: 4px;
+              padding: 3px 6px;
+              display: flex;
+              align-items: center;
+              gap: 3px;
+            "
+          >
+            <div
+              style="
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                background: #fde68a;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 8px;
+              "
+            >
+              📖
+            </div>
+            <span style="font-size: 8px; color: #fde68a">YUI</span>
           </div>
         </div>
       </div>
     </div>
     <div class="card-body">
       <h3>C — Character Focus (VTuber-style)</h3>
-      <p>Active agent แสดงใหญ่ตรงกลาง เน้น character animation เต็มที่ agent อื่นเป็น mini list ด้านล่าง</p>
+      <p>
+        Active agent แสดงใหญ่ตรงกลาง เน้น character animation เต็มที่ agent อื่นเป็น mini list
+        ด้านล่าง
+      </p>
     </div>
   </div>
-
 </div>

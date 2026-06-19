@@ -47,6 +47,8 @@ export type Agent = {
   targetStationId?: string;
   arriveState?: AgentState;
   arriveBubbleText?: string;
+  /** Spine animation to play on arrival (for furniture interaction slots). */
+  arriveAnim?: string;
   direction: Direction;
   animation: string;
   bubbleText?: string;

@@ -1,6 +1,10 @@
 import {
-  WebSocketGateway, SubscribeMessage, MessageBody,
-  ConnectedSocket, WebSocketServer, OnGatewayInit,
+  WebSocketGateway,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
+  WebSocketServer,
+  OnGatewayInit,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { ClaudeService } from './claude.service';
@@ -62,27 +66,27 @@ export class ClaudeGateway implements OnGatewayInit {
 
   private emitStageState(characterId: string, state: 'processing' | 'idle', idleTier?: IdleTier) {
     const mood = readCharacterMood(characterId, { stageState: state, idleTier });
-    this.server.to(`stage:${characterId}`).emit('stage_state', { characterId, state, idleTier, mood });
+    this.server
+      .to(`stage:${characterId}`)
+      .emit('stage_state', { characterId, state, idleTier, mood });
   }
 
   @SubscribeMessage('join_stage')
-  handleJoinStage(
-    @MessageBody() data: { characterId: string },
-    @ConnectedSocket() client: Socket,
-  ) {
+  handleJoinStage(@MessageBody() data: { characterId: string }, @ConnectedSocket() client: Socket) {
     client.join(`stage:${data.characterId}`);
     const tracker = this.getTracker(data.characterId);
     const mood = readCharacterMood(data.characterId, {
       stageState: tracker.currentState,
     });
-    client.emit('stage_state', { characterId: data.characterId, state: tracker.currentState, mood });
+    client.emit('stage_state', {
+      characterId: data.characterId,
+      state: tracker.currentState,
+      mood,
+    });
   }
 
   @SubscribeMessage('send_message')
-  async handleSendMessage(
-    @MessageBody() payload: SendMessagePayload,
-    @ConnectedSocket() client: Socket,
-  ) {
+  async handleSendMessage(@MessageBody() payload: SendMessagePayload) {
     const { characterId, content } = payload;
     const tracker = this.getTracker(characterId);
 
@@ -102,7 +106,12 @@ export class ClaudeGateway implements OnGatewayInit {
     try {
       const stream = this.claudeSvc.streamResponse(
         characterId,
-        history.slice(0, -1).map((m: { role: string; content: string }) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+        history
+          .slice(0, -1)
+          .map((m: { role: string; content: string }) => ({
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+          })),
         content,
       );
 
@@ -119,7 +128,9 @@ export class ClaudeGateway implements OnGatewayInit {
       }
 
       await this.convSvc.addMessage(conv.id, 'assistant', fullContent, detectedMood);
-      this.server.to(room).emit('message_done', { characterId, messageId, fullContent, mood: detectedMood });
+      this.server
+        .to(room)
+        .emit('message_done', { characterId, messageId, fullContent, mood: detectedMood });
     } catch (err) {
       this.server.to(room).emit('message_error', { characterId, messageId, error: String(err) });
     } finally {

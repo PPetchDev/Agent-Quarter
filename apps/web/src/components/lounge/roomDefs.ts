@@ -2,7 +2,7 @@
 
 export interface TiledProperty {
   name: string;
-  type: "float" | "int" | "string" | "bool";
+  type: 'float' | 'int' | 'string' | 'bool';
   value: number | string | boolean;
 }
 
@@ -17,7 +17,7 @@ export interface TiledObject {
 export interface TiledLayer {
   id: number;
   name: string;
-  type: "objectgroup" | "tilelayer";
+  type: 'objectgroup' | 'tilelayer';
   visible: boolean;
   objects?: TiledObject[];
 }
@@ -46,38 +46,38 @@ export interface RoomObject {
 
 // Approximate bounding box per furniture type (w, d, h in world units)
 export const FURNITURE_DIMS: Record<string, { w: number; d: number; h: number }> = {
-  bed:            { w: 4.0, d: 5.0, h: 1.55 },
-  nightstand:     { w: 1.0, d: 1.0, h: 0.85 },
-  computer_desk:  { w: 3.0, d: 2.0, h: 2.35 },
-  printer:        { w: 1.0, d: 1.0, h: 1.25 },
+  bed: { w: 4.0, d: 5.0, h: 1.55 },
+  nightstand: { w: 1.0, d: 1.0, h: 0.85 },
+  computer_desk: { w: 3.0, d: 2.0, h: 2.35 },
+  printer: { w: 1.0, d: 1.0, h: 1.25 },
   document_board: { w: 3.0, d: 0.05, h: 1.6 },
-  tv_stand:       { w: 4.0, d: 1.0, h: 2.95 },
-  tv:             { w: 4.0, d: 0.12, h: 2.1 },
-  bookcase:       { w: 3.0, d: 1.0, h: 3.6 },
-  pool_table:     { w: 4.0, d: 3.0, h: 0.9 },
-  low_table:      { w: 3.0, d: 2.0, h: 0.35 },
-  zabuton:        { w: 3.0, d: 1.0, h: 0.2 },
-  plant:          { w: 1.0, d: 1.0, h: 1.8 },
+  tv_stand: { w: 4.0, d: 1.0, h: 2.95 },
+  tv: { w: 4.0, d: 0.12, h: 2.1 },
+  bookcase: { w: 3.0, d: 1.0, h: 3.6 },
+  pool_table: { w: 4.0, d: 3.0, h: 0.9 },
+  low_table: { w: 3.0, d: 2.0, h: 0.35 },
+  zabuton: { w: 3.0, d: 1.0, h: 0.2 },
+  plant: { w: 1.0, d: 1.0, h: 1.8 },
   hanging_scroll: { w: 2.0, d: 0.05, h: 1.55 },
-  wall_shelf:     { w: 3.0, d: 0.05, h: 0.65 },
+  wall_shelf: { w: 3.0, d: 0.05, h: 0.65 },
 };
 
 // Tile footprint per furniture type (integer grid cells occupied)
 export const FURNITURE_TILES: Record<string, { w: number; d: number }> = {
-  bed:            { w: 4, d: 5 },
-  nightstand:     { w: 1, d: 1 },
-  computer_desk:  { w: 3, d: 2 },
-  printer:        { w: 1, d: 1 },
+  bed: { w: 4, d: 5 },
+  nightstand: { w: 1, d: 1 },
+  computer_desk: { w: 3, d: 2 },
+  printer: { w: 1, d: 1 },
   document_board: { w: 3, d: 1 },
-  tv_stand:       { w: 4, d: 1 },
-  tv:             { w: 4, d: 1 },
-  bookcase:       { w: 3, d: 1 },
-  pool_table:     { w: 4, d: 3 },
-  low_table:      { w: 3, d: 2 },
-  zabuton:        { w: 3, d: 1 },
-  plant:          { w: 1, d: 1 },
+  tv_stand: { w: 4, d: 1 },
+  tv: { w: 4, d: 1 },
+  bookcase: { w: 3, d: 1 },
+  pool_table: { w: 4, d: 3 },
+  low_table: { w: 3, d: 2 },
+  zabuton: { w: 3, d: 1 },
+  plant: { w: 1, d: 1 },
   hanging_scroll: { w: 2, d: 1 },
-  wall_shelf:     { w: 3, d: 1 },
+  wall_shelf: { w: 3, d: 1 },
 };
 
 /** Returns the set of tile coordinates occupied by an object */
@@ -93,14 +93,20 @@ export function getOccupiedTiles(obj: RoomObject): Array<[number, number]> {
 }
 
 /** Check if placing dragId at (nx, ny) would collide with any other object */
-export function checkCollision(objects: RoomObject[], dragId: number, nx: number, ny: number): boolean {
-  const dragged = objects.find(o => o.id === dragId);
+export function checkCollision(
+  objects: RoomObject[],
+  dragId: number,
+  nx: number,
+  ny: number,
+): boolean {
+  const dragged = objects.find((o) => o.id === dragId);
   if (!dragged) return false;
   const fp = FURNITURE_TILES[dragged.furnitureType] ?? { w: 1, d: 1 };
-  const others = objects.filter(o => o.id !== dragId && !(o.wz >= 1.5 && dragged.wz < 1.0));
+  const others = objects.filter((o) => o.id !== dragId && !(o.wz >= 1.5 && dragged.wz < 1.0));
   for (let dx = 0; dx < fp.w; dx++) {
     for (let dy = 0; dy < fp.d; dy++) {
-      const tx = nx + dx, ty = ny + dy;
+      const tx = nx + dx,
+        ty = ny + dy;
       for (const other of others) {
         for (const [ox, oy] of getOccupiedTiles(other)) {
           if (ox === tx && oy === ty) return true;
@@ -119,19 +125,19 @@ function getProp<T>(props: TiledProperty[], name: string, fallback: T): T {
 export function parseTiledMap(json: TiledMap): RoomObject[] {
   const result: RoomObject[] = [];
   for (const layer of json.layers) {
-    if (layer.type !== "objectgroup" || !layer.objects) continue;
+    if (layer.type !== 'objectgroup' || !layer.objects) continue;
     for (const obj of layer.objects) {
       if (!obj.visible) continue;
       result.push({
         id: obj.id,
         furnitureType: obj.name,
-        label:       getProp<string>(obj.properties, "label",       obj.name),
-        description: getProp<string>(obj.properties, "description", ""),
-        wx:          getProp<number>(obj.properties, "wx",          0),
-        wy:          getProp<number>(obj.properties, "wy",          0),
-        wz:          getProp<number>(obj.properties, "wz",          0),
-        happiness:   getProp<number>(obj.properties, "happiness",   0),
-        draggable:   getProp<boolean>(obj.properties,"draggable",  false),
+        label: getProp<string>(obj.properties, 'label', obj.name),
+        description: getProp<string>(obj.properties, 'description', ''),
+        wx: getProp<number>(obj.properties, 'wx', 0),
+        wy: getProp<number>(obj.properties, 'wy', 0),
+        wz: getProp<number>(obj.properties, 'wz', 0),
+        happiness: getProp<number>(obj.properties, 'happiness', 0),
+        draggable: getProp<boolean>(obj.properties, 'draggable', false),
       });
     }
   }

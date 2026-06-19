@@ -1,11 +1,15 @@
 # Repo Map
 
-_Updated: C-FURNITURE-GRID-001_
+_Updated: C-DORM-AZUR-001_
 
 ## Monorepo Layout
 
 ```txt
 AnimeAgentSquad/
+├── package.json                 # Root pnpm scripts
+├── pnpm-workspace.yaml          # apps/* and packages/* workspace layout
+├── tsconfig.json                # Root TypeScript solution config
+├── tsconfig.base.json           # Shared TypeScript compiler defaults
 ├── apps/
 │   ├── api/                      # NestJS backend
 │   └── web/                      # Next.js frontend
@@ -23,6 +27,7 @@ AnimeAgentSquad/
 │       ├── src/game/
 │       │   ├── agents/
 │       │   ├── animation/
+│       │   ├── dorm/              # Azur Lane style dorm engine (comfort/food/XP/morale/affection)
 │       │   ├── isometric/
 │       │   ├── movement/          # Direction, linear segment movement, grid pathfinding
 │       │   └── scene/             # Lounge stations and furniture-blocked path grid
@@ -45,6 +50,7 @@ AnimeAgentSquad/
 - Station registry: `apps/web/src/game/scene/loungeStations.ts`
 - Static furniture collision grid: `apps/web/src/game/scene/loungePathGrid.ts`
 - Task resolver: `apps/web/src/game/agents/taskResolver.ts`
+- Office workflow planner, agent chat handoffs, and tool boundary data: `apps/web/src/game/agents/officeWorkflow.ts`
 - Pure grid planner: `apps/web/src/game/movement/gridPath.ts`
 - Segment movement helper: `apps/web/src/game/movement/moveToTarget.ts`
 - Movement hook, route waypoint runner, route debug data, and active route refresh: `apps/web/src/hooks/useAgentWalk.ts`

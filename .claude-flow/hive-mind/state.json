@@ -1,0 +1,25 @@
+{
+  "initialized": true,
+  "topology": "hierarchical",
+  "workers": [
+    "refactor-project-1780279463134-467a",
+    "refactor-project-1780279463134-wvgi",
+    "refactor-project-1780279463135-19rr",
+    "refactor-project-1780279463135-a1en",
+    "refactor-project-1780279463135-igpt",
+    "refactor-project-1780279463135-4a61"
+  ],
+  "consensus": {
+    "pending": [],
+    "history": []
+  },
+  "sharedMemory": {},
+  "createdAt": "2026-06-01T02:04:18.668Z",
+  "updatedAt": "2026-06-01T02:04:23.135Z",
+  "consensusStrategy": "raft",
+  "queen": {
+    "agentId": "codex-coordinator-C-REFACTOR-PROJECT-001",
+    "electedAt": "2026-06-01T02:04:18.668Z",
+    "term": 1
+  }
+}

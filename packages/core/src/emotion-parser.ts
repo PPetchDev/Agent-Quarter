@@ -2,8 +2,19 @@ import type { CharacterMood } from './character';
 
 const EMOTION_TAG_RE = /\[emotion:(\w+)\]/g;
 const VALID_MOODS = new Set<string>([
-  'idle','thinking','listening','happy','excited','victory','love',
-  'surprised','angry','crying','sleepy','snack','done',
+  'idle',
+  'thinking',
+  'listening',
+  'happy',
+  'excited',
+  'victory',
+  'love',
+  'surprised',
+  'angry',
+  'crying',
+  'sleepy',
+  'snack',
+  'done',
 ]);
 
 export const parseEmotionOverride = (text: string): CharacterMood | null => {
@@ -17,5 +28,4 @@ export const parseEmotionOverride = (text: string): CharacterMood | null => {
   return last;
 };
 
-export const stripEmotionTags = (text: string): string =>
-  text.replace(EMOTION_TAG_RE, '');
+export const stripEmotionTags = (text: string): string => text.replace(EMOTION_TAG_RE, '');

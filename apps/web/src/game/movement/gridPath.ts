@@ -1,4 +1,4 @@
-import type { IsoWorldPoint } from "../agents/agentTypes";
+import type { IsoWorldPoint } from '../agents/agentTypes';
 
 export type GridCell = {
   x: number;
@@ -22,21 +22,14 @@ export function cellKey(cell: GridCell): string {
   return `${cell.x},${cell.y}`;
 }
 
-export function isoToGridCell(
-  point: IsoWorldPoint,
-  cols: number,
-  rows: number,
-): GridCell {
+export function isoToGridCell(point: IsoWorldPoint, cols: number, rows: number): GridCell {
   return {
     x: Math.max(0, Math.min(cols - 1, Math.floor(point.wx))),
     y: Math.max(0, Math.min(rows - 1, Math.floor(point.wy))),
   };
 }
 
-export function cellCenterToIso(
-  cell: GridCell,
-  wz = 0.2,
-): IsoWorldPoint {
+export function cellCenterToIso(cell: GridCell, wz = 0.2): IsoWorldPoint {
   return {
     wx: cell.x + 0.5,
     wy: cell.y + 0.5,
@@ -44,11 +37,7 @@ export function cellCenterToIso(
   };
 }
 
-export function isCellInBounds(
-  cell: GridCell,
-  cols: number,
-  rows: number,
-): boolean {
+export function isCellInBounds(cell: GridCell, cols: number, rows: number): boolean {
   return cell.x >= 0 && cell.y >= 0 && cell.x < cols && cell.y < rows;
 }
 
@@ -158,22 +147,13 @@ export function planIsoGridPath(options: GridPathOptions): IsoRoutePoint[] | nul
 
   if (!cells) return null;
 
-  const targetWasWalkable = cellKey(rawTarget) === cellKey(targetCell);
-  const routeCells = cells.slice(1);
-  const route = routeCells.map((cell, index): IsoRoutePoint => {
-    const isFinal = index === routeCells.length - 1;
-    const iso = isFinal && targetWasWalkable
-      ? target
-      : cellCenterToIso(cell, waypointZ);
-    return { ...iso, cell };
+  return buildIsoRoutePoints({
+    cells,
+    rawTarget,
+    targetCell,
+    target,
+    waypointZ,
   });
-
-  if (route.length === 0) {
-    const iso = targetWasWalkable ? target : cellCenterToIso(targetCell, waypointZ);
-    return [{ ...iso, cell: targetCell }];
-  }
-
-  return route;
 }
 
 function getNeighbors(cell: GridCell, cols: number, rows: number): GridCell[] {
@@ -201,4 +181,31 @@ function rebuildPath(
   }
 
   return path.reverse();
+}
+
+function buildIsoRoutePoints(params: {
+  cells: GridCell[];
+  rawTarget: GridCell;
+  targetCell: GridCell;
+  target: IsoWorldPoint;
+  waypointZ: number;
+}): IsoRoutePoint[] {
+  const { cells, rawTarget, targetCell, target, waypointZ } = params;
+  const targetWasWalkable = cellKey(rawTarget) === cellKey(targetCell);
+  const routeCells = cells.slice(1);
+
+  if (routeCells.length === 0) {
+    const iso = targetWasWalkable ? target : cellCenterToIso(targetCell, waypointZ);
+    return [buildIsoRoutePoint(targetCell, iso)];
+  }
+
+  return routeCells.map((cell, index) => {
+    const isFinal = index === routeCells.length - 1;
+    const iso = isFinal && targetWasWalkable ? target : cellCenterToIso(cell, waypointZ);
+    return buildIsoRoutePoint(cell, iso);
+  });
+}
+
+function buildIsoRoutePoint(cell: GridCell, iso: IsoWorldPoint): IsoRoutePoint {
+  return { ...iso, cell };
 }

@@ -31,6 +31,14 @@ describe('StageTracker', () => {
     expect(tracker.currentState).toBe('idle');
   });
 
+  it('extends the idle deadline when observing stream chunks', () => {
+    const tracker = new StageTracker({ idleAfterMs: 1000 });
+    tracker.observeSubmit(0);
+    tracker.observeChunk(800);
+    expect(tracker.poll(1200)).toBeNull();
+    expect(tracker.poll(1800)).toBe('idle');
+  });
+
   it('returns null when polled while already idle', () => {
     const tracker = new StageTracker();
     expect(tracker.poll()).toBeNull();

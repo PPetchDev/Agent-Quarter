@@ -82,26 +82,132 @@ export const PROJECTS: Project[] = [
 ];
 
 export const TASKS: Task[] = [
-  { id: 't-001', projectId: 'p-001', title: 'Design token blacklist schema', status: 'done', assignedCharacterId: 'aki' },
-  { id: 't-002', projectId: 'p-001', title: 'Implement token blacklist endpoint', status: 'in_progress', assignedCharacterId: 'aki' },
-  { id: 't-003', projectId: 'p-002', title: 'Audit existing components', status: 'done', assignedCharacterId: 'mai' },
-  { id: 't-004', projectId: 'p-002', title: 'Publish Storybook preview', status: 'in_progress', assignedCharacterId: 'mai' },
-  { id: 't-005', projectId: 'p-003', title: 'Set up GitHub Actions matrix', status: 'done', assignedCharacterId: 'mika' },
-  { id: 't-006', projectId: 'p-003', title: 'Review PR #47', status: 'in_progress', assignedCharacterId: 'mika' },
-  { id: 't-007', projectId: 'p-004', title: 'Run OWASP scanner', status: 'done', assignedCharacterId: 'ren' },
-  { id: 't-008', projectId: 'p-004', title: 'File findings in backlog', status: 'todo', assignedCharacterId: 'ren' },
-  { id: 't-009', projectId: 'p-005', title: 'Export Notion pages', status: 'done', assignedCharacterId: 'senko' },
-  { id: 't-010', projectId: 'p-005', title: 'Await design sign-off', status: 'blocked', assignedCharacterId: 'senko' },
+  {
+    id: 't-001',
+    projectId: 'p-001',
+    title: 'Design token blacklist schema',
+    status: 'done',
+    assignedCharacterId: 'aki',
+  },
+  {
+    id: 't-002',
+    projectId: 'p-001',
+    title: 'Implement token blacklist endpoint',
+    status: 'in_progress',
+    assignedCharacterId: 'aki',
+  },
+  {
+    id: 't-003',
+    projectId: 'p-002',
+    title: 'Audit existing components',
+    status: 'done',
+    assignedCharacterId: 'mai',
+  },
+  {
+    id: 't-004',
+    projectId: 'p-002',
+    title: 'Publish Storybook preview',
+    status: 'in_progress',
+    assignedCharacterId: 'mai',
+  },
+  {
+    id: 't-005',
+    projectId: 'p-003',
+    title: 'Set up GitHub Actions matrix',
+    status: 'done',
+    assignedCharacterId: 'mika',
+  },
+  {
+    id: 't-006',
+    projectId: 'p-003',
+    title: 'Review PR #47',
+    status: 'in_progress',
+    assignedCharacterId: 'mika',
+  },
+  {
+    id: 't-007',
+    projectId: 'p-004',
+    title: 'Run OWASP scanner',
+    status: 'done',
+    assignedCharacterId: 'ren',
+  },
+  {
+    id: 't-008',
+    projectId: 'p-004',
+    title: 'File findings in backlog',
+    status: 'todo',
+    assignedCharacterId: 'ren',
+  },
+  {
+    id: 't-009',
+    projectId: 'p-005',
+    title: 'Export Notion pages',
+    status: 'done',
+    assignedCharacterId: 'senko',
+  },
+  {
+    id: 't-010',
+    projectId: 'p-005',
+    title: 'Await design sign-off',
+    status: 'blocked',
+    assignedCharacterId: 'senko',
+  },
 ];
 
 export const RUNS: Run[] = [
-  { id: 'r-001', projectId: 'p-001', taskId: 't-001', status: 'success', startedAt: '2026-05-26T08:00:00Z', completedAt: '2026-05-26T08:45:00Z' },
-  { id: 'r-002', projectId: 'p-001', taskId: 't-002', status: 'running', startedAt: '2026-05-26T10:00:00Z' },
-  { id: 'r-003', projectId: 'p-002', taskId: 't-003', status: 'success', startedAt: '2026-05-25T14:00:00Z', completedAt: '2026-05-25T15:30:00Z' },
-  { id: 'r-004', projectId: 'p-002', taskId: 't-004', status: 'running', startedAt: '2026-05-26T09:00:00Z' },
-  { id: 'r-005', projectId: 'p-003', taskId: 't-005', status: 'success', startedAt: '2026-05-25T10:00:00Z', completedAt: '2026-05-25T12:00:00Z' },
-  { id: 'r-006', projectId: 'p-003', taskId: 't-006', status: 'pending', startedAt: '2026-05-26T11:00:00Z' },
-  { id: 'r-007', projectId: 'p-004', taskId: 't-007', status: 'success', startedAt: '2026-05-26T07:00:00Z', completedAt: '2026-05-26T09:00:00Z' },
+  {
+    id: 'r-001',
+    projectId: 'p-001',
+    taskId: 't-001',
+    status: 'success',
+    startedAt: '2026-05-26T08:00:00Z',
+    completedAt: '2026-05-26T08:45:00Z',
+  },
+  {
+    id: 'r-002',
+    projectId: 'p-001',
+    taskId: 't-002',
+    status: 'running',
+    startedAt: '2026-05-26T10:00:00Z',
+  },
+  {
+    id: 'r-003',
+    projectId: 'p-002',
+    taskId: 't-003',
+    status: 'success',
+    startedAt: '2026-05-25T14:00:00Z',
+    completedAt: '2026-05-25T15:30:00Z',
+  },
+  {
+    id: 'r-004',
+    projectId: 'p-002',
+    taskId: 't-004',
+    status: 'running',
+    startedAt: '2026-05-26T09:00:00Z',
+  },
+  {
+    id: 'r-005',
+    projectId: 'p-003',
+    taskId: 't-005',
+    status: 'success',
+    startedAt: '2026-05-25T10:00:00Z',
+    completedAt: '2026-05-25T12:00:00Z',
+  },
+  {
+    id: 'r-006',
+    projectId: 'p-003',
+    taskId: 't-006',
+    status: 'pending',
+    startedAt: '2026-05-26T11:00:00Z',
+  },
+  {
+    id: 'r-007',
+    projectId: 'p-004',
+    taskId: 't-007',
+    status: 'success',
+    startedAt: '2026-05-26T07:00:00Z',
+    completedAt: '2026-05-26T09:00:00Z',
+  },
 ];
 
 // ─── Pure helpers ─────────────────────────────────────────────────────────────
@@ -117,6 +223,10 @@ export function getProjectByCharacterId(
   characterId: string,
 ): Project | undefined {
   return projects.find((p) => p.characterId === characterId);
+}
+
+export function getProjectById(projects: Project[], projectId: string): Project | undefined {
+  return projects.find((p) => p.id === projectId);
 }
 
 export function getActiveProjectCount(projects: Project[]): number {
@@ -137,8 +247,16 @@ export function getTasksByProjectId(tasks: Task[], projectId: string): Task[] {
   return tasks.filter((t) => t.projectId === projectId);
 }
 
+export function getTaskById(tasks: Task[], taskId: string): Task | undefined {
+  return tasks.find((t) => t.id === taskId);
+}
+
 export function getRunsByTaskId(runs: Run[], taskId: string): Run[] {
   return runs.filter((r) => r.taskId === taskId);
+}
+
+export function getRunById(runs: Run[], runId: string): Run | undefined {
+  return runs.find((r) => r.id === runId);
 }
 
 export function getLatestRunForTask(runs: Run[], taskId: string): Run | undefined {
@@ -146,10 +264,7 @@ export function getLatestRunForTask(runs: Run[], taskId: string): Run | undefine
   return filtered.length > 0 ? filtered[filtered.length - 1] : undefined;
 }
 
-export function getProjectTaskSummary(
-  tasks: Task[],
-  projectId: string,
-): ProjectTaskSummary {
+export function getProjectTaskSummary(tasks: Task[], projectId: string): ProjectTaskSummary {
   const pts = getTasksByProjectId(tasks, projectId);
   return {
     total: pts.length,
@@ -161,15 +276,9 @@ export function getProjectTaskSummary(
 // ─── Run lifecycle helpers (pure, side-effect free) ───────────────────────────
 
 /** Returns the next actionable task for a project: in_progress first, then todo. */
-export function getNextTaskForProject(
-  tasks: Task[],
-  projectId: string,
-): Task | undefined {
+export function getNextTaskForProject(tasks: Task[], projectId: string): Task | undefined {
   const pts = getTasksByProjectId(tasks, projectId);
-  return (
-    pts.find((t) => t.status === 'in_progress') ??
-    pts.find((t) => t.status === 'todo')
-  );
+  return pts.find((t) => t.status === 'in_progress') ?? pts.find((t) => t.status === 'todo');
 }
 
 /** A task can be started only when it is in todo status. */
@@ -191,6 +300,16 @@ export interface RunStartInput {
   startedAt?: string;
 }
 
+type TerminalRunStatus = Extract<RunStatus, 'success' | 'failed' | 'cancelled'>;
+
+function finishRun(run: Run, status: TerminalRunStatus, completedAt?: string): Run {
+  return {
+    ...run,
+    status,
+    completedAt: completedAt ?? new Date().toISOString(),
+  };
+}
+
 /** Builds a new Run value in running state. Does not mutate any collection. */
 export function buildRunStartPatch(input: RunStartInput): Run {
   return {
@@ -204,15 +323,15 @@ export function buildRunStartPatch(input: RunStartInput): Run {
 
 /** Returns a new Run with status success. */
 export function completeRun(run: Run, completedAt?: string): Run {
-  return { ...run, status: 'success', completedAt: completedAt ?? new Date().toISOString() };
+  return finishRun(run, 'success', completedAt);
 }
 
 /** Returns a new Run with status failed. */
 export function failRun(run: Run, completedAt?: string): Run {
-  return { ...run, status: 'failed', completedAt: completedAt ?? new Date().toISOString() };
+  return finishRun(run, 'failed', completedAt);
 }
 
 /** Returns a new Run with status cancelled. */
 export function cancelRun(run: Run, completedAt?: string): Run {
-  return { ...run, status: 'cancelled', completedAt: completedAt ?? new Date().toISOString() };
+  return finishRun(run, 'cancelled', completedAt);
 }

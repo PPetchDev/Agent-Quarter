@@ -1,476 +1,1069 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th">
-<head>
-<meta charset="UTF-8">
-<title>The Lounge v3</title>
-<style>
-* { margin:0; padding:0; box-sizing:border-box; }
-body { background:#07041a; font-family:'Segoe UI',sans-serif; }
-.app { width:860px; margin:0 auto; }
-.topbar {
-  display:flex; align-items:center; gap:14px; padding:10px 20px;
-  background:rgba(7,4,26,0.9); border-bottom:1px solid rgba(240,171,252,0.1);
-}
-.logo { font-size:12px; font-weight:800; letter-spacing:3px; color:#f0abfc; }
-.logo em { color:#c8a8e8; font-style:normal; }
-.nav { flex:1; display:flex; justify-content:center; gap:3px; }
-.tab { font-size:10px; font-weight:600; padding:4px 13px; border-radius:6px; color:#4a3d62; cursor:pointer; }
-.tab.on { background:rgba(240,171,252,0.12); color:#f0abfc; border:1px solid rgba(240,171,252,0.2); }
-.live-pill { font-size:9px; font-weight:700; padding:3px 9px; border-radius:99px;
-  background:rgba(74,222,128,0.1); color:#4ade80; border:1px solid rgba(74,222,128,0.2);
-  display:flex; align-items:center; gap:4px; }
-.dot { width:6px; height:6px; border-radius:50%; background:#4ade80; animation:pulse 2s ease-in-out infinite; }
-.scene-wrap { position:relative; width:860px; height:500px; overflow:hidden; }
-canvas { position:absolute; top:0; left:0; }
-.chars { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
-.char {
-  position:absolute; display:flex; flex-direction:column; align-items:center; gap:4px;
-  pointer-events:all; cursor:pointer; transform:translateX(-50%) translateY(-100%);
-  transition:filter 0.2s;
-}
-.char:hover { filter:brightness(1.2); }
-.char:hover .ctag { opacity:1; transform:translateY(0) scale(1); }
-.cavatar {
-  border-radius:50%; border:3px solid var(--b,rgba(240,171,252,0.5));
-  display:flex; align-items:center; justify-content:center;
-  font-size:var(--fs,22px); background:var(--bg,linear-gradient(135deg,#ffd8ec,#c8a8e8));
-  box-shadow: 0 4px 16px rgba(0,0,0,0.6), 0 0 var(--gs,14px) var(--gc,rgba(240,171,252,0.3));
-  position:relative; overflow:hidden;
-}
-.cavatar::after {
-  content:''; position:absolute; top:-20%; left:-20%; width:50%; height:50%;
-  background:radial-gradient(ellipse,rgba(255,255,255,0.2),transparent 70%);
-  border-radius:50%;
-}
-.cdot {
-  position:absolute; bottom:1px; right:1px; width:13px; height:13px;
-  border-radius:50%; border:2px solid #07041a;
-  display:flex; align-items:center; justify-content:center; font-size:6px; font-weight:900;
-}
-.ctag {
-  background:rgba(7,4,26,0.92); border:1px solid rgba(240,171,252,0.2);
-  border-radius:7px; padding:3px 9px; font-size:9px; font-weight:700; color:#f0abfc;
-  white-space:nowrap; opacity:0; transform:translateY(5px) scale(0.9);
-  transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1); text-align:center; line-height:1.5;
-}
-.ctag small { color:#7c6b99; font-size:8px; font-weight:400; display:block; }
-.statusbar {
-  display:flex; align-items:center; justify-content:space-between; padding:8px 20px;
-  background:rgba(7,4,26,0.9); border-top:1px solid rgba(240,171,252,0.07);
-}
-.pills { display:flex; gap:5px; }
-.pill { font-size:9px; font-weight:700; padding:2px 8px; border-radius:99px; }
-.pg { background:rgba(74,222,128,0.1); color:#4ade80; border:1px solid rgba(74,222,128,0.2); }
-.pp { background:rgba(240,171,252,0.1); color:#f0abfc; border:1px solid rgba(240,171,252,0.2); }
-.py { background:rgba(148,163,184,0.1); color:#94a3b8; border:1px solid rgba(148,163,184,0.2); }
-.hint { font-size:9px; color:#2d1f4a; }
-@keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 5px #4ade80} 50%{opacity:0.5;box-shadow:0 0 10px #4ade80} }
-.anim-w { animation:fw 2.5s ease-in-out infinite; }
-.anim-i { animation:fi 3.5s ease-in-out infinite; }
-.anim-l { animation:fl 3s ease-in-out infinite; }
-.anim-s { animation:fs 6s ease-in-out infinite; filter:brightness(0.55) saturate(0.4); }
-@keyframes fw { 0%,100%{transform:translateX(-50%) translateY(-100%)} 50%{transform:translateX(-50%) translateY(calc(-100% - 9px))} }
-@keyframes fi { 0%,100%{transform:translateX(-50%) translateY(-100%)} 50%{transform:translateX(-50%) translateY(calc(-100% - 6px))} }
-@keyframes fl { 0%,100%{transform:translateX(-50%) translateY(-100%)} 50%{transform:translateX(-50%) translateY(calc(-100% - 11px))} }
-@keyframes fs { 0%,100%{transform:translateX(-50%) translateY(-100%) rotate(-3deg)} 50%{transform:translateX(-50%) translateY(-100%) rotate(3deg)} }
-</style>
-</head>
-<body>
-<div class="app">
-  <div class="topbar">
-    <div class="logo">✦ <em>SQUAD</em> ✧</div>
-    <div class="nav">
-      <div class="tab on">🏠 Lounge</div>
-      <div class="tab">💬 Stages</div>
-      <div class="tab">📋 Projects</div>
-      <div class="tab">⚙️ Settings</div>
+  <head>
+    <meta charset="UTF-8" />
+    <title>The Lounge v3</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: #07041a;
+        font-family: 'Segoe UI', sans-serif;
+      }
+      .app {
+        width: 860px;
+        margin: 0 auto;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 10px 20px;
+        background: rgba(7, 4, 26, 0.9);
+        border-bottom: 1px solid rgba(240, 171, 252, 0.1);
+      }
+      .logo {
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 3px;
+        color: #f0abfc;
+      }
+      .logo em {
+        color: #c8a8e8;
+        font-style: normal;
+      }
+      .nav {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        gap: 3px;
+      }
+      .tab {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 4px 13px;
+        border-radius: 6px;
+        color: #4a3d62;
+        cursor: pointer;
+      }
+      .tab.on {
+        background: rgba(240, 171, 252, 0.12);
+        color: #f0abfc;
+        border: 1px solid rgba(240, 171, 252, 0.2);
+      }
+      .live-pill {
+        font-size: 9px;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 99px;
+        background: rgba(74, 222, 128, 0.1);
+        color: #4ade80;
+        border: 1px solid rgba(74, 222, 128, 0.2);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #4ade80;
+        animation: pulse 2s ease-in-out infinite;
+      }
+      .scene-wrap {
+        position: relative;
+        width: 860px;
+        height: 500px;
+        overflow: hidden;
+      }
+      canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+      .chars {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+      .char {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        pointer-events: all;
+        cursor: pointer;
+        transform: translateX(-50%) translateY(-100%);
+        transition: filter 0.2s;
+      }
+      .char:hover {
+        filter: brightness(1.2);
+      }
+      .char:hover .ctag {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      .cavatar {
+        border-radius: 50%;
+        border: 3px solid var(--b, rgba(240, 171, 252, 0.5));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--fs, 22px);
+        background: var(--bg, linear-gradient(135deg, #ffd8ec, #c8a8e8));
+        box-shadow:
+          0 4px 16px rgba(0, 0, 0, 0.6),
+          0 0 var(--gs, 14px) var(--gc, rgba(240, 171, 252, 0.3));
+        position: relative;
+        overflow: hidden;
+      }
+      .cavatar::after {
+        content: '';
+        position: absolute;
+        top: -20%;
+        left: -20%;
+        width: 50%;
+        height: 50%;
+        background: radial-gradient(ellipse, rgba(255, 255, 255, 0.2), transparent 70%);
+        border-radius: 50%;
+      }
+      .cdot {
+        position: absolute;
+        bottom: 1px;
+        right: 1px;
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        border: 2px solid #07041a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 6px;
+        font-weight: 900;
+      }
+      .ctag {
+        background: rgba(7, 4, 26, 0.92);
+        border: 1px solid rgba(240, 171, 252, 0.2);
+        border-radius: 7px;
+        padding: 3px 9px;
+        font-size: 9px;
+        font-weight: 700;
+        color: #f0abfc;
+        white-space: nowrap;
+        opacity: 0;
+        transform: translateY(5px) scale(0.9);
+        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        text-align: center;
+        line-height: 1.5;
+      }
+      .ctag small {
+        color: #7c6b99;
+        font-size: 8px;
+        font-weight: 400;
+        display: block;
+      }
+      .statusbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 20px;
+        background: rgba(7, 4, 26, 0.9);
+        border-top: 1px solid rgba(240, 171, 252, 0.07);
+      }
+      .pills {
+        display: flex;
+        gap: 5px;
+      }
+      .pill {
+        font-size: 9px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 99px;
+      }
+      .pg {
+        background: rgba(74, 222, 128, 0.1);
+        color: #4ade80;
+        border: 1px solid rgba(74, 222, 128, 0.2);
+      }
+      .pp {
+        background: rgba(240, 171, 252, 0.1);
+        color: #f0abfc;
+        border: 1px solid rgba(240, 171, 252, 0.2);
+      }
+      .py {
+        background: rgba(148, 163, 184, 0.1);
+        color: #94a3b8;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+      }
+      .hint {
+        font-size: 9px;
+        color: #2d1f4a;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+          box-shadow: 0 0 5px #4ade80;
+        }
+        50% {
+          opacity: 0.5;
+          box-shadow: 0 0 10px #4ade80;
+        }
+      }
+      .anim-w {
+        animation: fw 2.5s ease-in-out infinite;
+      }
+      .anim-i {
+        animation: fi 3.5s ease-in-out infinite;
+      }
+      .anim-l {
+        animation: fl 3s ease-in-out infinite;
+      }
+      .anim-s {
+        animation: fs 6s ease-in-out infinite;
+        filter: brightness(0.55) saturate(0.4);
+      }
+      @keyframes fw {
+        0%,
+        100% {
+          transform: translateX(-50%) translateY(-100%);
+        }
+        50% {
+          transform: translateX(-50%) translateY(calc(-100% - 9px));
+        }
+      }
+      @keyframes fi {
+        0%,
+        100% {
+          transform: translateX(-50%) translateY(-100%);
+        }
+        50% {
+          transform: translateX(-50%) translateY(calc(-100% - 6px));
+        }
+      }
+      @keyframes fl {
+        0%,
+        100% {
+          transform: translateX(-50%) translateY(-100%);
+        }
+        50% {
+          transform: translateX(-50%) translateY(calc(-100% - 11px));
+        }
+      }
+      @keyframes fs {
+        0%,
+        100% {
+          transform: translateX(-50%) translateY(-100%) rotate(-3deg);
+        }
+        50% {
+          transform: translateX(-50%) translateY(-100%) rotate(3deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <div class="topbar">
+        <div class="logo">✦ <em>SQUAD</em> ✧</div>
+        <div class="nav">
+          <div class="tab on">🏠 Lounge</div>
+          <div class="tab">💬 Stages</div>
+          <div class="tab">📋 Projects</div>
+          <div class="tab">⚙️ Settings</div>
+        </div>
+        <div class="live-pill">
+          <div class="dot"></div>
+          3 active
+        </div>
+      </div>
+
+      <div class="scene-wrap">
+        <canvas id="c" width="860" height="500"></canvas>
+        <div class="chars" id="chars"></div>
+      </div>
+
+      <div class="statusbar">
+        <div class="pills">
+          <span class="pill pg">● 3 active</span>
+          <span class="pill pp">★ 1 leading</span>
+          <span class="pill py">○ 2 idle 💤 2 sleeping</span>
+        </div>
+        <span class="hint">hover ตัวละคร · คลิกเพื่อเปิด Stage</span>
+      </div>
     </div>
-    <div class="live-pill"><div class="dot"></div>3 active</div>
-  </div>
 
-  <div class="scene-wrap">
-    <canvas id="c" width="860" height="500"></canvas>
-    <div class="chars" id="chars"></div>
-  </div>
+    <script>
+      const cv = document.getElementById('c');
+      const cx = cv.getContext('2d');
 
-  <div class="statusbar">
-    <div class="pills">
-      <span class="pill pg">● 3 active</span>
-      <span class="pill pp">★ 1 leading</span>
-      <span class="pill py">○ 2 idle  💤 2 sleeping</span>
-    </div>
-    <span class="hint">hover ตัวละคร · คลิกเพื่อเปิด Stage</span>
-  </div>
-</div>
+      // ── Projection ──────────────────────────────
+      // Room: 9 wide (X), 7 deep (Y), 4.5 high (Z)
+      // Origin: front-left-bottom
+      const OX = 180,
+        OY = 445,
+        S = 40;
+      function p(x, y, z) {
+        return [OX + x * S + y * S * 0.5, OY - y * S * 0.5 - z * S];
+      }
 
-<script>
-const cv = document.getElementById('c');
-const cx = cv.getContext('2d');
+      // ── Draw helpers ────────────────────────────
+      function poly(pts, fill, stroke, lw = 0.5) {
+        cx.beginPath();
+        cx.moveTo(pts[0][0], pts[0][1]);
+        for (let i = 1; i < pts.length; i++) cx.lineTo(pts[i][0], pts[i][1]);
+        cx.closePath();
+        if (fill) {
+          cx.fillStyle = fill;
+          cx.fill();
+        }
+        if (stroke) {
+          cx.strokeStyle = stroke;
+          cx.lineWidth = lw;
+          cx.stroke();
+        }
+      }
+      function rect4(a, b, c, d, f, s) {
+        poly([a, b, c, d], f, s);
+      }
 
-// ── Projection ──────────────────────────────
-// Room: 9 wide (X), 7 deep (Y), 4.5 high (Z)
-// Origin: front-left-bottom
-const OX=180, OY=445, S=40;
-function p(x,y,z){ return [OX+x*S+y*S*0.5, OY-y*S*0.5-z*S]; }
+      // Box: draw 3 faces of a box at (x,y,z) size (w,d,h)
+      // top face, left face, right face
+      function box(x, y, z, w, d, h, ct, cl, cr, stroke = 'rgba(0,0,0,0.15)') {
+        // top (z+h)
+        if (ct)
+          rect4(
+            p(x, y, z + h),
+            p(x + w, y, z + h),
+            p(x + w, y + d, z + h),
+            p(x, y + d, z + h),
+            ct,
+            stroke,
+          );
+        // front face (y=y, varying x,z) — left face from viewer perspective
+        if (cl) rect4(p(x, y, z), p(x + w, y, z), p(x + w, y, z + h), p(x, y, z + h), cl, stroke);
+        // right face (x=x+w, varying y,z)
+        if (cr)
+          rect4(
+            p(x + w, y, z),
+            p(x + w, y + d, z),
+            p(x + w, y + d, z + h),
+            p(x + w, y, z + h),
+            cr,
+            stroke,
+          );
+      }
 
-// ── Draw helpers ────────────────────────────
-function poly(pts, fill, stroke, lw=0.5){
-  cx.beginPath();
-  cx.moveTo(pts[0][0],pts[0][1]);
-  for(let i=1;i<pts.length;i++) cx.lineTo(pts[i][0],pts[i][1]);
-  cx.closePath();
-  if(fill){cx.fillStyle=fill;cx.fill();}
-  if(stroke){cx.strokeStyle=stroke;cx.lineWidth=lw;cx.stroke();}
-}
-function rect4(a,b,c,d,f,s){poly([a,b,c,d],f,s);}
+      // ── SCENE ───────────────────────────────────
+      function draw() {
+        cx.clearRect(0, 0, 860, 500);
 
-// Box: draw 3 faces of a box at (x,y,z) size (w,d,h)
-// top face, left face, right face
-function box(x,y,z,w,d,h, ct,cl,cr, stroke='rgba(0,0,0,0.15)'){
-  // top (z+h)
-  if(ct) rect4(p(x,y,z+h),p(x+w,y,z+h),p(x+w,y+d,z+h),p(x,y+d,z+h),ct,stroke);
-  // front face (y=y, varying x,z) — left face from viewer perspective
-  if(cl) rect4(p(x,y,z),p(x+w,y,z),p(x+w,y,z+h),p(x,y,z+h),cl,stroke);
-  // right face (x=x+w, varying y,z)
-  if(cr) rect4(p(x+w,y,z),p(x+w,y+d,z),p(x+w,y+d,z+h),p(x+w,y,z+h),cr,stroke);
-}
+        // ── Background sky ──
+        const skyG = cx.createLinearGradient(0, 0, 0, 500);
+        skyG.addColorStop(0, '#07041a');
+        skyG.addColorStop(0.4, '#0e0628');
+        skyG.addColorStop(1, '#1a1040');
+        cx.fillStyle = skyG;
+        cx.fillRect(0, 0, 860, 500);
 
-// ── SCENE ───────────────────────────────────
-function draw(){
-  cx.clearRect(0,0,860,500);
+        // Stars
+        const stars = [
+          [60, 30],
+          [120, 15],
+          [200, 40],
+          [310, 20],
+          [680, 25],
+          [740, 40],
+          [800, 15],
+          [820, 55],
+          [400, 10],
+          [500, 35],
+          [150, 60],
+          [560, 18],
+        ];
+        stars.forEach(([sx, sy]) => {
+          cx.beginPath();
+          cx.arc(sx, sy, 1.2, 0, Math.PI * 2);
+          cx.fillStyle = 'rgba(255,255,255,0.7)';
+          cx.fill();
+        });
 
-  // ── Background sky ──
-  const skyG = cx.createLinearGradient(0,0,0,500);
-  skyG.addColorStop(0,'#07041a');
-  skyG.addColorStop(0.4,'#0e0628');
-  skyG.addColorStop(1,'#1a1040');
-  cx.fillStyle=skyG; cx.fillRect(0,0,860,500);
+        // Moon
+        cx.beginPath();
+        cx.arc(720, 38, 18, 0, Math.PI * 2);
+        const mg = cx.createRadialGradient(714, 32, 2, 720, 38, 18);
+        mg.addColorStop(0, '#fef3c7');
+        mg.addColorStop(1, '#f59e0b');
+        cx.fillStyle = mg;
+        cx.fill();
+        cx.beginPath();
+        cx.arc(727, 34, 12, 0, Math.PI * 2);
+        cx.fillStyle = '#0a0420';
+        cx.fill();
 
-  // Stars
-  const stars=[[60,30],[120,15],[200,40],[310,20],[680,25],[740,40],[800,15],[820,55],[400,10],[500,35],[150,60],[560,18]];
-  stars.forEach(([sx,sy])=>{
-    cx.beginPath(); cx.arc(sx,sy,1.2,0,Math.PI*2);
-    cx.fillStyle='rgba(255,255,255,0.7)'; cx.fill();
-  });
+        // ── Back wall ──
+        const bwBL = p(0, 7, 0),
+          bwBR = p(9, 7, 0),
+          bwTR = p(9, 7, 4.5),
+          bwTL = p(0, 7, 4.5);
+        const bwG = cx.createLinearGradient(bwTL[0], bwTL[1], bwBL[0], bwBL[1]);
+        bwG.addColorStop(0, '#e8e0fa');
+        bwG.addColorStop(1, '#d5ccf0');
+        poly([bwBL, bwBR, bwTR, bwTL], bwG, 'rgba(0,0,0,0.1)');
 
-  // Moon
-  cx.beginPath(); cx.arc(720,38,18,0,Math.PI*2);
-  const mg=cx.createRadialGradient(714,32,2,720,38,18);
-  mg.addColorStop(0,'#fef3c7'); mg.addColorStop(1,'#f59e0b');
-  cx.fillStyle=mg; cx.fill();
-  cx.beginPath(); cx.arc(727,34,12,0,Math.PI*2);
-  cx.fillStyle='#0a0420'; cx.fill();
+        // Baseboard back
+        rect4(p(0, 7, 0), p(9, 7, 0), p(9, 7, 0.15), p(0, 7, 0.15), '#c8bcec', null);
 
-  // ── Back wall ──
-  const bwBL=p(0,7,0), bwBR=p(9,7,0), bwTR=p(9,7,4.5), bwTL=p(0,7,4.5);
-  const bwG=cx.createLinearGradient(bwTL[0],bwTL[1],bwBL[0],bwBL[1]);
-  bwG.addColorStop(0,'#e8e0fa'); bwG.addColorStop(1,'#d5ccf0');
-  poly([bwBL,bwBR,bwTR,bwTL],bwG,'rgba(0,0,0,0.1)');
+        // ── Left wall ──
+        const lwFL = p(0, 0, 0),
+          lwBL = p(0, 7, 0),
+          lwBT = p(0, 7, 4.5),
+          lwFT = p(0, 0, 4.5);
+        const lwG = cx.createLinearGradient(lwFT[0], lwFT[1], lwFL[0], lwFL[1]);
+        lwG.addColorStop(0, '#f5f0ff');
+        lwG.addColorStop(1, '#ede6ff');
+        poly([lwFL, lwBL, lwBT, lwFT], lwG, 'rgba(0,0,0,0.08)');
 
-  // Baseboard back
-  rect4(p(0,7,0),p(9,7,0),p(9,7,0.15),p(0,7,0.15),'#c8bcec',null);
+        // Baseboard left
+        rect4(p(0, 0, 0), p(0, 7, 0), p(0, 7, 0.15), p(0, 0, 0.15), '#d8d0f0', null);
 
-  // ── Left wall ──
-  const lwFL=p(0,0,0), lwBL=p(0,7,0), lwBT=p(0,7,4.5), lwFT=p(0,0,4.5);
-  const lwG=cx.createLinearGradient(lwFT[0],lwFT[1],lwFL[0],lwFL[1]);
-  lwG.addColorStop(0,'#f5f0ff'); lwG.addColorStop(1,'#ede6ff');
-  poly([lwFL,lwBL,lwBT,lwFT],lwG,'rgba(0,0,0,0.08)');
+        // ── Floor ──
+        const flFL = p(0, 0, 0),
+          flFR = p(9, 0, 0),
+          flBR = p(9, 7, 0),
+          flBL = p(0, 7, 0);
+        const flG = cx.createLinearGradient(flFL[0], flFL[1], flBL[0], flBL[1]);
+        flG.addColorStop(0, '#c8b8f5');
+        flG.addColorStop(0.5, '#baaff0');
+        flG.addColorStop(1, '#a89de8');
+        poly([flFL, flFR, flBR, flBL], flG, 'rgba(0,0,0,0.06)');
 
-  // Baseboard left
-  rect4(p(0,0,0),p(0,7,0),p(0,7,0.15),p(0,0,0.15),'#d8d0f0',null);
+        // Floor grid lines
+        cx.strokeStyle = 'rgba(255,255,255,0.06)';
+        cx.lineWidth = 0.8;
+        for (let i = 1; i < 9; i++) {
+          const a = p(i, 0, 0),
+            b = p(i, 7, 0);
+          cx.beginPath();
+          cx.moveTo(a[0], a[1]);
+          cx.lineTo(b[0], b[1]);
+          cx.stroke();
+        }
+        for (let j = 1; j < 7; j++) {
+          const a = p(0, j, 0),
+            b = p(9, j, 0);
+          cx.beginPath();
+          cx.moveTo(a[0], a[1]);
+          cx.lineTo(b[0], b[1]);
+          cx.stroke();
+        }
 
-  // ── Floor ──
-  const flFL=p(0,0,0), flFR=p(9,0,0), flBR=p(9,7,0), flBL=p(0,7,0);
-  const flG=cx.createLinearGradient(flFL[0],flFL[1],flBL[0],flBL[1]);
-  flG.addColorStop(0,'#c8b8f5'); flG.addColorStop(0.5,'#baaff0'); flG.addColorStop(1,'#a89de8');
-  poly([flFL,flFR,flBR,flBL],flG,'rgba(0,0,0,0.06)');
+        // Rug (center)
+        const rugPts = [p(2.5, 2, 0), p(6.5, 2, 0), p(6.5, 6, 0), p(2.5, 6, 0)];
+        poly(rugPts, 'rgba(167,139,250,0.18)', null);
+        poly(rugPts, null, 'rgba(167,139,250,0.3)', 1);
 
-  // Floor grid lines
-  cx.strokeStyle='rgba(255,255,255,0.06)'; cx.lineWidth=0.8;
-  for(let i=1;i<9;i++){const a=p(i,0,0),b=p(i,7,0);cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(b[0],b[1]);cx.stroke();}
-  for(let j=1;j<7;j++){const a=p(0,j,0),b=p(9,j,0);cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(b[0],b[1]);cx.stroke();}
+        // ── WINDOW (on left wall) ──
+        // Window opening dark background
+        const winPts = [p(0, 1.2, 0.9), p(0, 5.5, 0.9), p(0, 5.5, 3.8), p(0, 1.2, 3.8)];
+        poly(winPts, '#0a0428', null);
+        // Night sky gradient
+        const wg = cx.createLinearGradient(
+          p(0, 1.2, 3.8)[0],
+          p(0, 1.2, 3.8)[1],
+          p(0, 1.2, 0.9)[0],
+          p(0, 1.2, 0.9)[1],
+        );
+        wg.addColorStop(0, '#0e0628');
+        wg.addColorStop(1, '#1a1040');
+        poly(winPts, wg, null);
 
-  // Rug (center)
-  const rugPts=[p(2.5,2,0),p(6.5,2,0),p(6.5,6,0),p(2.5,6,0)];
-  poly(rugPts,'rgba(167,139,250,0.18)',null);
-  poly(rugPts,null,'rgba(167,139,250,0.3)',1);
+        // City buildings in window
+        const buildings = [
+          [1.5, 3.5, 1.5],
+          [2, 3.8, 2.5],
+          [2.5, 4, 1.8],
+          [3, 4.2, 2.2],
+          [3.5, 3.7, 1.6],
+          [4, 4.3, 2],
+          [4.5, 3.6, 1.4],
+          [5, 4.4, 1.9],
+        ];
+        buildings.forEach(([by, yd, bh]) => {
+          const bx = 0,
+            bz = 0;
+          const bl = p(bx, by, bz),
+            br = p(bx, by + 0.4, bz),
+            tr = p(bx, by + 0.4, bz + bh * 0.6),
+            tl = p(bx, by, bz + bh * 0.6);
+          poly([bl, br, tr, tl], 'rgba(18,10,45,0.9)', null);
+          // window lights
+          cx.fillStyle = 'rgba(253,230,138,0.4)';
+          cx.fillRect(tl[0] + 2, tl[1] + 4, 3, 2);
+          cx.fillRect(tl[0] + 2, tl[1] + 8, 3, 2);
+        });
 
-  // ── WINDOW (on left wall) ──
-  // Window opening dark background
-  const winPts=[p(0,1.2,0.9),p(0,5.5,0.9),p(0,5.5,3.8),p(0,1.2,3.8)];
-  poly(winPts,'#0a0428',null);
-  // Night sky gradient
-  const wg=cx.createLinearGradient(p(0,1.2,3.8)[0],p(0,1.2,3.8)[1],p(0,1.2,0.9)[0],p(0,1.2,0.9)[1]);
-  wg.addColorStop(0,'#0e0628'); wg.addColorStop(1,'#1a1040');
-  poly(winPts,wg,null);
+        // Moon in window
+        cx.beginPath();
+        cx.arc(p(0, 4.2, 3.2)[0] + 2, p(0, 4.2, 3.2)[1], 7, 0, Math.PI * 2);
+        const wmg = cx.createRadialGradient(
+          p(0, 4.2, 3.2)[0],
+          p(0, 4.2, 3.2)[1],
+          1,
+          p(0, 4.2, 3.2)[0] + 2,
+          p(0, 4.2, 3.2)[1],
+          7,
+        );
+        wmg.addColorStop(0, '#fef9c3');
+        wmg.addColorStop(1, '#fde68a');
+        cx.fillStyle = wmg;
+        cx.fill();
 
-  // City buildings in window
-  const buildings=[[1.5,3.5,1.5],[2,3.8,2.5],[2.5,4,1.8],[3,4.2,2.2],[3.5,3.7,1.6],[4,4.3,2],[4.5,3.6,1.4],[5,4.4,1.9]];
-  buildings.forEach(([by,yd,bh])=>{
-    const bx=0, bz=0;
-    const bl=p(bx,by,bz), br=p(bx,by+0.4,bz), tr=p(bx,by+0.4,bz+bh*0.6), tl=p(bx,by,bz+bh*0.6);
-    poly([bl,br,tr,tl],'rgba(18,10,45,0.9)',null);
-    // window lights
-    cx.fillStyle='rgba(253,230,138,0.4)';
-    cx.fillRect(tl[0]+2, tl[1]+4, 3, 2);
-    cx.fillRect(tl[0]+2, tl[1]+8, 3, 2);
-  });
+        // Window frame outer
+        cx.strokeStyle = '#d8cef5';
+        cx.lineWidth = 4;
+        const wf = [p(0, 1.2, 0.9), p(0, 5.5, 0.9), p(0, 5.5, 3.8), p(0, 1.2, 3.8)];
+        cx.beginPath();
+        cx.moveTo(wf[0][0], wf[0][1]);
+        wf.forEach((pt) => cx.lineTo(pt[0], pt[1]));
+        cx.closePath();
+        cx.stroke();
+        // Window dividers
+        cx.lineWidth = 2.5;
+        cx.strokeStyle = '#d8cef5';
+        const wmid = p(0, 3.35, 0.9);
+        const wmidt = p(0, 3.35, 3.8);
+        cx.beginPath();
+        cx.moveTo(wmid[0], wmid[1]);
+        cx.lineTo(wmidt[0], wmidt[1]);
+        cx.stroke();
+        const whm = p(0, 1.2, 2.35);
+        const whm2 = p(0, 5.5, 2.35);
+        cx.beginPath();
+        cx.moveTo(whm[0], whm[1]);
+        cx.lineTo(whm2[0], whm2[1]);
+        cx.stroke();
 
-  // Moon in window
-  cx.beginPath(); cx.arc(p(0,4.2,3.2)[0]+2,p(0,4.2,3.2)[1],7,0,Math.PI*2);
-  const wmg=cx.createRadialGradient(p(0,4.2,3.2)[0],p(0,4.2,3.2)[1],1,p(0,4.2,3.2)[0]+2,p(0,4.2,3.2)[1],7);
-  wmg.addColorStop(0,'#fef9c3'); wmg.addColorStop(1,'#fde68a');
-  cx.fillStyle=wmg; cx.fill();
+        // Curtains
+        const cl1 = [p(0, 0.9, 0.7), p(0, 1.3, 0.7), p(0, 1.3, 3.9), p(0, 0.9, 3.9)];
+        const cr1 = [p(0, 5.4, 0.7), p(0, 5.8, 0.7), p(0, 5.8, 3.9), p(0, 5.4, 3.9)];
+        poly(cl1, 'rgba(255,245,255,0.7)', 'rgba(200,180,240,0.3)', 0.5);
+        poly(cr1, 'rgba(255,245,255,0.7)', 'rgba(200,180,240,0.3)', 0.5);
 
-  // Window frame outer
-  cx.strokeStyle='#d8cef5'; cx.lineWidth=4;
-  const wf=[p(0,1.2,0.9),p(0,5.5,0.9),p(0,5.5,3.8),p(0,1.2,3.8)];
-  cx.beginPath(); cx.moveTo(wf[0][0],wf[0][1]);
-  wf.forEach(pt=>cx.lineTo(pt[0],pt[1])); cx.closePath(); cx.stroke();
-  // Window dividers
-  cx.lineWidth=2.5; cx.strokeStyle='#d8cef5';
-  const wmid=p(0,3.35,0.9); const wmidt=p(0,3.35,3.8);
-  cx.beginPath(); cx.moveTo(wmid[0],wmid[1]); cx.lineTo(wmidt[0],wmidt[1]); cx.stroke();
-  const whm=p(0,1.2,2.35); const whm2=p(0,5.5,2.35);
-  cx.beginPath(); cx.moveTo(whm[0],whm[1]); cx.lineTo(whm2[0],whm2[1]); cx.stroke();
+        // ── BOOKSHELF ──
+        // Main body
+        box(2.8, 6.7, 0, 3.4, 0.3, 3.8, '#8b6030', '#6b4820', '#5a3a14');
+        // Shelves
+        [0.8, 1.6, 2.4, 3.2].forEach((sz) => {
+          rect4(
+            p(2.8, 6.7, sz),
+            p(6.2, 6.7, sz),
+            p(6.2, 7.0, sz),
+            p(2.8, 7.0, sz),
+            '#7a5428',
+            'rgba(0,0,0,0.2)',
+          );
+        });
+        // Books on shelves
+        const bookColors = [
+          '#ef4444',
+          '#3b82f6',
+          '#10b981',
+          '#f59e0b',
+          '#8b5cf6',
+          '#ec4899',
+          '#06b6d4',
+          '#84cc16',
+          '#f97316',
+          '#6366f1',
+        ];
+        [0, 0.8, 1.6, 2.4].forEach((sz, si) => {
+          let bx = 2.85;
+          for (let b = 0; b < 9; b++) {
+            const bw = 0.22 + Math.random() * 0.12;
+            const bh = 0.55 + Math.random() * 0.2;
+            const bc = bookColors[(si * 9 + b) % bookColors.length];
+            // Book front face
+            rect4(
+              p(bx, 6.7, sz + 0.02),
+              p(bx + bw, 6.7, sz + 0.02),
+              p(bx + bw, 6.7, sz + 0.02 + bh),
+              p(bx, 6.7, sz + 0.02 + bh),
+              bc,
+              null,
+            );
+            // Book side (dark)
+            rect4(
+              p(bx + bw, 6.7, sz + 0.02),
+              p(bx + bw, 7.0, sz + 0.02),
+              p(bx + bw, 7.0, sz + 0.02 + bh),
+              p(bx + bw, 6.7, sz + 0.02 + bh),
+              'rgba(0,0,0,0.3)',
+              null,
+            );
+            bx += bw + 0.03;
+            if (bx > 6.1) break;
+          }
+        });
+        // Shelf top deco (small figurines/plants)
+        box(3.0, 6.75, 3.8, 0.3, 0.2, 0.3, '#4ade80', '#22c55e', '#16a34a'); // tiny plant
+        box(5.5, 6.75, 3.8, 0.3, 0.2, 0.4, '#f0abfc', '#d880e8', '#b060c0'); // figurine
 
-  // Curtains
-  const cl1=[p(0,0.9,0.7),p(0,1.3,0.7),p(0,1.3,3.9),p(0,0.9,3.9)];
-  const cr1=[p(0,5.4,0.7),p(0,5.8,0.7),p(0,5.8,3.9),p(0,5.4,3.9)];
-  poly(cl1,'rgba(255,245,255,0.7)','rgba(200,180,240,0.3)',0.5);
-  poly(cr1,'rgba(255,245,255,0.7)','rgba(200,180,240,0.3)',0.5);
+        // ── CLOCK on back wall ──
+        const clkPt = p(7.5, 7, 3);
+        cx.beginPath();
+        cx.arc(clkPt[0], clkPt[1], 16, 0, Math.PI * 2);
+        cx.fillStyle = '#f5f0ff';
+        cx.fill();
+        cx.strokeStyle = '#9880e0';
+        cx.lineWidth = 2;
+        cx.stroke();
+        // Clock face
+        cx.strokeStyle = '#5040a0';
+        cx.lineWidth = 1.5;
+        cx.beginPath();
+        cx.moveTo(clkPt[0], clkPt[1]);
+        cx.lineTo(clkPt[0] + 6, clkPt[1] - 7);
+        cx.stroke(); // hour
+        cx.beginPath();
+        cx.moveTo(clkPt[0], clkPt[1]);
+        cx.lineTo(clkPt[0] + 10, clkPt[1] + 2);
+        cx.stroke(); // minute
 
-  // ── BOOKSHELF ──
-  // Main body
-  box(2.8,6.7,0, 3.4,0.3,3.8, '#8b6030','#6b4820','#5a3a14');
-  // Shelves
-  [0.8,1.6,2.4,3.2].forEach(sz=>{
-    rect4(p(2.8,6.7,sz),p(6.2,6.7,sz),p(6.2,7.0,sz),p(2.8,7.0,sz),'#7a5428','rgba(0,0,0,0.2)');
-  });
-  // Books on shelves
-  const bookColors=['#ef4444','#3b82f6','#10b981','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f97316','#6366f1'];
-  [0,0.8,1.6,2.4].forEach((sz,si)=>{
-    let bx=2.85;
-    for(let b=0;b<9;b++){
-      const bw=0.22+Math.random()*0.12;
-      const bh=0.55+Math.random()*0.2;
-      const bc=bookColors[(si*9+b)%bookColors.length];
-      // Book front face
-      rect4(p(bx,6.7,sz+0.02),p(bx+bw,6.7,sz+0.02),p(bx+bw,6.7,sz+0.02+bh),p(bx,6.7,sz+0.02+bh),bc,null);
-      // Book side (dark)
-      rect4(p(bx+bw,6.7,sz+0.02),p(bx+bw,7.0,sz+0.02),p(bx+bw,7.0,sz+0.02+bh),p(bx+bw,6.7,sz+0.02+bh),'rgba(0,0,0,0.3)',null);
-      bx+=bw+0.03;
-      if(bx>6.1) break;
-    }
-  });
-  // Shelf top deco (small figurines/plants)
-  box(3.0,6.75,3.8, 0.3,0.2,0.3,'#4ade80','#22c55e','#16a34a'); // tiny plant
-  box(5.5,6.75,3.8, 0.3,0.2,0.4,'#f0abfc','#d880e8','#b060c0'); // figurine
+        // Picture frame on back wall
+        const pfPt = [p(1.2, 7, 2.5), p(2.8, 7, 2.5), p(2.8, 7, 3.8), p(1.2, 7, 3.8)];
+        poly(pfPt, '#f0e8ff', '#9880e0', 1.5);
+        // Inner painting (abstract)
+        const pfIn = [p(1.35, 7, 2.65), p(2.65, 7, 2.65), p(2.65, 7, 3.65), p(1.35, 7, 3.65)];
+        poly(pfIn, '#ddd0ff', null);
+        cx.fillStyle = '#f97316';
+        cx.beginPath();
+        cx.arc(p(1.8, 7, 3.1)[0], p(1.8, 7, 3.1)[1], 8, 0, Math.PI * 2);
+        cx.fill();
+        cx.fillStyle = '#3b82f6';
+        cx.fillRect(p(2.1, 7, 3.1)[0] - 5, p(2.1, 7, 3.1)[1] - 10, 12, 14);
 
-  // ── CLOCK on back wall ──
-  const clkPt=p(7.5,7,3);
-  cx.beginPath(); cx.arc(clkPt[0],clkPt[1],16,0,Math.PI*2);
-  cx.fillStyle='#f5f0ff'; cx.fill();
-  cx.strokeStyle='#9880e0'; cx.lineWidth=2; cx.stroke();
-  // Clock face
-  cx.strokeStyle='#5040a0'; cx.lineWidth=1.5;
-  cx.beginPath(); cx.moveTo(clkPt[0],clkPt[1]); cx.lineTo(clkPt[0]+6,clkPt[1]-7); cx.stroke(); // hour
-  cx.beginPath(); cx.moveTo(clkPt[0],clkPt[1]); cx.lineTo(clkPt[0]+10,clkPt[1]+2); cx.stroke(); // minute
+        // ── BED ──
+        // Bed frame (wooden)
+        box(5.8, 0.5, 0, 3.0, 5.0, 0.35, '#9b7030', '#7a5020', '#6a4018', 'rgba(0,0,0,0.2)');
+        // Mattress
+        box(5.85, 0.55, 0.35, 2.9, 4.9, 0.4, '#f0e8ff', '#e0d8f0', '#d0c8e0', 'rgba(0,0,0,0.1)');
+        // Pillow
+        box(5.9, 0.6, 0.75, 1.1, 1.1, 0.25, '#ffffff', '#f0eaff', '#e0d8f5', 'rgba(0,0,0,0.1)');
+        box(7.2, 0.6, 0.75, 1.1, 1.1, 0.25, '#ffffff', '#f0eaff', '#e0d8f5', 'rgba(0,0,0,0.1)');
+        // Blanket
+        box(5.9, 1.9, 0.75, 2.8, 3.4, 0.18, '#c4b5fd', '#b39be8', '#a385d0', 'rgba(0,0,0,0.1)');
+        // Headboard
+        box(5.8, 0.4, 0, 3.0, 0.1, 1.2, '#b08040', '#9b6b30', '#8b5a20');
 
-  // Picture frame on back wall
-  const pfPt=[p(1.2,7,2.5),p(2.8,7,2.5),p(2.8,7,3.8),p(1.2,7,3.8)];
-  poly(pfPt,'#f0e8ff','#9880e0',1.5);
-  // Inner painting (abstract)
-  const pfIn=[p(1.35,7,2.65),p(2.65,7,2.65),p(2.65,7,3.65),p(1.35,7,3.65)];
-  poly(pfIn,'#ddd0ff',null);
-  cx.fillStyle='#f97316'; cx.beginPath(); cx.arc(p(1.8,7,3.1)[0],p(1.8,7,3.1)[1],8,0,Math.PI*2); cx.fill();
-  cx.fillStyle='#3b82f6'; cx.fillRect(p(2.1,7,3.1)[0]-5,p(2.1,7,3.1)[1]-10,12,14);
+        // Bedside table
+        box(5.8, 0.4, 0, 0.9, 0.7, 0.7, '#a07030', '#7a5020', '#6a4018');
+        // Lamp on bedside
+        const lampBase = p(6.0, 0.6, 0.7);
+        cx.strokeStyle = '#a07030';
+        cx.lineWidth = 3;
+        cx.beginPath();
+        cx.moveTo(lampBase[0], lampBase[1]);
+        cx.lineTo(lampBase[0] + 2, lampBase[1] - 20);
+        cx.stroke();
+        cx.fillStyle = '#fde68a';
+        cx.beginPath();
+        cx.moveTo(lampBase[0] - 8, lampBase[1] - 20);
+        cx.lineTo(lampBase[0] + 12, lampBase[1] - 20);
+        cx.lineTo(lampBase[0] + 8, lampBase[1] - 32);
+        cx.lineTo(lampBase[0] - 4, lampBase[1] - 32);
+        cx.closePath();
+        cx.fill();
 
-  // ── BED ──
-  // Bed frame (wooden)
-  box(5.8,0.5,0, 3.0,5.0,0.35, '#9b7030','#7a5020','#6a4018','rgba(0,0,0,0.2)');
-  // Mattress
-  box(5.85,0.55,0.35, 2.9,4.9,0.4, '#f0e8ff','#e0d8f0','#d0c8e0','rgba(0,0,0,0.1)');
-  // Pillow
-  box(5.9,0.6,0.75, 1.1,1.1,0.25, '#ffffff','#f0eaff','#e0d8f5','rgba(0,0,0,0.1)');
-  box(7.2,0.6,0.75, 1.1,1.1,0.25, '#ffffff','#f0eaff','#e0d8f5','rgba(0,0,0,0.1)');
-  // Blanket
-  box(5.9,1.9,0.75, 2.8,3.4,0.18, '#c4b5fd','#b39be8','#a385d0','rgba(0,0,0,0.1)');
-  // Headboard
-  box(5.8,0.4,0, 3.0,0.1,1.2, '#b08040','#9b6b30','#8b5a20');
+        // ── ARMCHAIRS ──
+        // Left armchair
+        box(2.5, 2.0, 0, 1.6, 1.8, 0.45, '#e86c54', '#d05040', '#b83a2e'); // seat box
+        box(2.5, 2.0, 0.45, 1.6, 0.25, 0.9, '#e86c54', '#d05040', '#b83a2e'); // backrest
+        box(2.5, 2.0, 0.45, 0.2, 1.8, 0.45, '#c85040', '#b83830', null); // left arm
+        box(3.9, 2.0, 0.45, 0.2, 1.8, 0.45, '#c85040', '#b83830', null); // right arm
+        // Cushion
+        box(2.55, 2.05, 0.43, 1.5, 1.7, 0.2, '#f08070', '#e87060', null);
 
-  // Bedside table
-  box(5.8,0.4,0, 0.9,0.7,0.7, '#a07030','#7a5020','#6a4018');
-  // Lamp on bedside
-  const lampBase=p(6.0,0.6,0.7);
-  cx.strokeStyle='#a07030'; cx.lineWidth=3;
-  cx.beginPath(); cx.moveTo(lampBase[0],lampBase[1]); cx.lineTo(lampBase[0]+2,lampBase[1]-20); cx.stroke();
-  cx.fillStyle='#fde68a';
-  cx.beginPath(); cx.moveTo(lampBase[0]-8,lampBase[1]-20); cx.lineTo(lampBase[0]+12,lampBase[1]-20); cx.lineTo(lampBase[0]+8,lampBase[1]-32); cx.lineTo(lampBase[0]-4,lampBase[1]-32); cx.closePath(); cx.fill();
+        // Right armchair
+        box(4.8, 3.2, 0, 1.6, 1.8, 0.45, '#e86c54', '#d05040', '#b83a2e');
+        box(4.8, 3.2, 0.45, 1.6, 0.25, 0.9, '#e86c54', '#d05040', '#b83a2e');
+        box(4.8, 3.2, 0.45, 0.2, 1.8, 0.45, '#c85040', '#b83830', null);
+        box(6.2, 3.2, 0.45, 0.2, 1.8, 0.45, '#c85040', '#b83830', null);
+        box(4.85, 3.25, 0.43, 1.5, 1.7, 0.2, '#f08070', '#e87060', null);
 
-  // ── ARMCHAIRS ──
-  // Left armchair
-  box(2.5,2.0,0, 1.6,1.8,0.45, '#e86c54','#d05040','#b83a2e'); // seat box
-  box(2.5,2.0,0.45, 1.6,0.25,0.9, '#e86c54','#d05040','#b83a2e'); // backrest
-  box(2.5,2.0,0.45, 0.2,1.8,0.45, '#c85040','#b83830',null); // left arm
-  box(3.9,2.0,0.45, 0.2,1.8,0.45, '#c85040','#b83830',null); // right arm
-  // Cushion
-  box(2.55,2.05,0.43, 1.5,1.7,0.2, '#f08070','#e87060',null);
+        // Coffee table
+        box(3.6, 2.9, 0, 1.7, 1.2, 0.38, '#c49060', '#a07040', '#8b5a2e');
+        // Mugs on table
+        box(3.9, 3.1, 0.38, 0.22, 0.22, 0.22, '#f0abfc', '#e090e8', null);
+        box(4.4, 3.3, 0.38, 0.22, 0.22, 0.22, '#a5f3fc', '#80d8e8', null);
 
-  // Right armchair
-  box(4.8,3.2,0, 1.6,1.8,0.45, '#e86c54','#d05040','#b83a2e');
-  box(4.8,3.2,0.45, 1.6,0.25,0.9, '#e86c54','#d05040','#b83a2e');
-  box(4.8,3.2,0.45, 0.2,1.8,0.45, '#c85040','#b83830',null);
-  box(6.2,3.2,0.45, 0.2,1.8,0.45, '#c85040','#b83830',null);
-  box(4.85,3.25,0.43, 1.5,1.7,0.2, '#f08070','#e87060',null);
+        // ── DESK ──
+        box(0.3, 0.4, 0, 3.3, 3.0, 1.15, '#c49060', '#a07040', '#8b5a2e', 'rgba(0,0,0,0.15)');
+        // Desk drawer line
+        const dl1 = p(0.3, 0.4, 0.58),
+          dl2 = p(3.6, 0.4, 0.58);
+        cx.strokeStyle = 'rgba(0,0,0,0.2)';
+        cx.lineWidth = 1;
+        cx.beginPath();
+        cx.moveTo(dl1[0], dl1[1]);
+        cx.lineTo(dl2[0], dl2[1]);
+        cx.stroke();
+        // Drawer handle
+        const dh = p(1.6, 0.4, 0.75);
+        cx.fillStyle = 'rgba(0,0,0,0.3)';
+        cx.fillRect(dh[0] - 6, dh[1] - 2, 12, 4);
 
-  // Coffee table
-  box(3.6,2.9,0, 1.7,1.2,0.38, '#c49060','#a07040','#8b5a2e');
-  // Mugs on table
-  box(3.9,3.1,0.38, 0.22,0.22,0.22, '#f0abfc','#e090e8',null);
-  box(4.4,3.3,0.38, 0.22,0.22,0.22, '#a5f3fc','#80d8e8',null);
+        // Monitor
+        box(0.8, 2.0, 1.15, 1.6, 0.1, 1.3, '#0a1830', '#080e20', null); // screen back
+        // Screen face (facing front y)
+        rect4(
+          p(0.8, 1.95, 1.15),
+          p(2.4, 1.95, 1.15),
+          p(2.4, 1.95, 2.45),
+          p(0.8, 1.95, 2.45),
+          '#0d1f3a',
+          'rgba(0,0,0,0.3)',
+        );
+        // Screen glow
+        const sg = cx.createLinearGradient(
+          p(0.8, 1.95, 2.45)[0],
+          p(0.8, 1.95, 2.45)[1],
+          p(0.8, 1.95, 1.15)[0],
+          p(0.8, 1.95, 1.15)[1],
+        );
+        sg.addColorStop(0, 'rgba(96,165,250,0.45)');
+        sg.addColorStop(0.5, 'rgba(139,92,246,0.3)');
+        sg.addColorStop(1, 'rgba(240,171,252,0.2)');
+        rect4(
+          p(0.85, 1.95, 1.2),
+          p(2.35, 1.95, 1.2),
+          p(2.35, 1.95, 2.4),
+          p(0.85, 1.95, 2.4),
+          sg,
+          null,
+        );
+        // Scan lines on screen
+        cx.strokeStyle = 'rgba(0,0,0,0.08)';
+        cx.lineWidth = 1;
+        for (let sl = 0; sl < 8; sl++) {
+          const sy = 1.2 + sl * 0.15;
+          const a = p(0.85, 1.95, sy),
+            b = p(2.35, 1.95, sy);
+          cx.beginPath();
+          cx.moveTo(a[0], a[1]);
+          cx.lineTo(b[0], b[1]);
+          cx.stroke();
+        }
+        // Monitor stand
+        box(1.4, 1.95, 1.1, 0.3, 0.1, 0.1, '#1e293b', '#151f30', null);
+        box(1.2, 1.95, 1.05, 0.7, 0.12, 0.06, '#1e293b', null, null);
 
-  // ── DESK ──
-  box(0.3,0.4,0, 3.3,3.0,1.15, '#c49060','#a07040','#8b5a2e','rgba(0,0,0,0.15)');
-  // Desk drawer line
-  const dl1=p(0.3,0.4,0.58), dl2=p(3.6,0.4,0.58);
-  cx.strokeStyle='rgba(0,0,0,0.2)'; cx.lineWidth=1;
-  cx.beginPath(); cx.moveTo(dl1[0],dl1[1]); cx.lineTo(dl2[0],dl2[1]); cx.stroke();
-  // Drawer handle
-  const dh=p(1.6,0.4,0.75); cx.fillStyle='rgba(0,0,0,0.3)';
-  cx.fillRect(dh[0]-6,dh[1]-2,12,4);
+        // Keyboard
+        box(0.5, 1.1, 1.15, 1.8, 0.55, 0.08, '#1e293b', '#151f30', null);
+        // Key rows on keyboard
+        cx.fillStyle = 'rgba(255,255,255,0.08)';
+        for (let kr = 0; kr < 3; kr++) {
+          for (let kc = 0; kc < 8; kc++) {
+            const kp = p(0.55 + kc * 0.2, 1.15 + kr * 0.15, 1.22);
+            cx.fillRect(kp[0] - 3, kp[1] - 2, 5, 3);
+          }
+        }
 
-  // Monitor
-  box(0.8,2.0,1.15, 1.6,0.1,1.3, '#0a1830','#080e20',null); // screen back
-  // Screen face (facing front y)
-  rect4(p(0.8,1.95,1.15),p(2.4,1.95,1.15),p(2.4,1.95,2.45),p(0.8,1.95,2.45),'#0d1f3a','rgba(0,0,0,0.3)');
-  // Screen glow
-  const sg=cx.createLinearGradient(p(0.8,1.95,2.45)[0],p(0.8,1.95,2.45)[1],p(0.8,1.95,1.15)[0],p(0.8,1.95,1.15)[1]);
-  sg.addColorStop(0,'rgba(96,165,250,0.45)'); sg.addColorStop(0.5,'rgba(139,92,246,0.3)'); sg.addColorStop(1,'rgba(240,171,252,0.2)');
-  rect4(p(0.85,1.95,1.2),p(2.35,1.95,1.2),p(2.35,1.95,2.4),p(0.85,1.95,2.4),sg,null);
-  // Scan lines on screen
-  cx.strokeStyle='rgba(0,0,0,0.08)'; cx.lineWidth=1;
-  for(let sl=0;sl<8;sl++){
-    const sy=1.2+sl*0.15;
-    const a=p(0.85,1.95,sy), b=p(2.35,1.95,sy);
-    cx.beginPath(); cx.moveTo(a[0],a[1]); cx.lineTo(b[0],b[1]); cx.stroke();
-  }
-  // Monitor stand
-  box(1.4,1.95,1.1, 0.3,0.1,0.1,'#1e293b','#151f30',null);
-  box(1.2,1.95,1.05,0.7,0.12,0.06,'#1e293b',null,null);
+        // Desk lamp
+        const dlBase = p(2.8, 0.7, 1.15);
+        cx.strokeStyle = '#8b6914';
+        cx.lineWidth = 2.5;
+        cx.beginPath();
+        cx.moveTo(dlBase[0], dlBase[1]);
+        cx.lineTo(dlBase[0] + 3, dlBase[1] - 18);
+        cx.lineTo(dlBase[0] - 6, dlBase[1] - 28);
+        cx.stroke();
+        cx.fillStyle = '#c8973a';
+        cx.beginPath();
+        cx.moveTo(dlBase[0] - 14, dlBase[1] - 24);
+        cx.lineTo(dlBase[0] + 2, dlBase[1] - 24);
+        cx.lineTo(dlBase[0] - 2, dlBase[1] - 36);
+        cx.lineTo(dlBase[0] - 10, dlBase[1] - 36);
+        cx.closePath();
+        cx.fill();
+        // Lamp glow on desk
+        const dgrd = cx.createRadialGradient(
+          dlBase[0] - 6,
+          dlBase[1] - 10,
+          1,
+          dlBase[0] - 6,
+          dlBase[1] - 10,
+          35,
+        );
+        dgrd.addColorStop(0, 'rgba(255,220,100,0.12)');
+        dgrd.addColorStop(1, 'transparent');
+        cx.fillStyle = dgrd;
+        cx.fillRect(dlBase[0] - 46, dlBase[1] - 46, 80, 50);
 
-  // Keyboard
-  box(0.5,1.1,1.15, 1.8,0.55,0.08,'#1e293b','#151f30',null);
-  // Key rows on keyboard
-  cx.fillStyle='rgba(255,255,255,0.08)';
-  for(let kr=0;kr<3;kr++){
-    for(let kc=0;kc<8;kc++){
-      const kp=p(0.55+kc*0.2,1.15+kr*0.15,1.22);
-      cx.fillRect(kp[0]-3,kp[1]-2,5,3);
-    }
-  }
+        // Coffee cup on desk
+        box(2.4, 0.55, 1.15, 0.28, 0.28, 0.3, '#f0abfc', '#e090d8', null);
 
-  // Desk lamp
-  const dlBase=p(2.8,0.7,1.15);
-  cx.strokeStyle='#8b6914'; cx.lineWidth=2.5;
-  cx.beginPath(); cx.moveTo(dlBase[0],dlBase[1]); cx.lineTo(dlBase[0]+3,dlBase[1]-18); cx.lineTo(dlBase[0]-6,dlBase[1]-28); cx.stroke();
-  cx.fillStyle='#c8973a';
-  cx.beginPath(); cx.moveTo(dlBase[0]-14,dlBase[1]-24); cx.lineTo(dlBase[0]+2,dlBase[1]-24); cx.lineTo(dlBase[0]-2,dlBase[1]-36); cx.lineTo(dlBase[0]-10,dlBase[1]-36); cx.closePath(); cx.fill();
-  // Lamp glow on desk
-  const dgrd=cx.createRadialGradient(dlBase[0]-6,dlBase[1]-10,1,dlBase[0]-6,dlBase[1]-10,35);
-  dgrd.addColorStop(0,'rgba(255,220,100,0.12)'); dgrd.addColorStop(1,'transparent');
-  cx.fillStyle=dgrd; cx.fillRect(dlBase[0]-46,dlBase[1]-46,80,50);
+        // Papers/books on desk
+        box(0.5, 0.5, 1.15, 0.8, 0.55, 0.06, '#ffffff', '#f0f0ff', null);
+        box(0.5, 0.5, 1.21, 0.7, 0.5, 0.04, '#ffe4e1', '#ffd0cc', null);
 
-  // Coffee cup on desk
-  box(2.4,0.55,1.15,0.28,0.28,0.3,'#f0abfc','#e090d8',null);
+        // ── PLANT ──
+        // Pot
+        box(0.15, 0.15, 0, 0.5, 0.5, 0.55, '#a0522d', '#7a3c1c', '#6a2e12');
+        // Soil
+        box(0.17, 0.17, 0.53, 0.46, 0.46, 0.06, '#3d2010', null, null);
+        // Leaves
+        function leaf(wx, wy, wz, r, color) {
+          const c = p(wx, wy, wz);
+          cx.fillStyle = color;
+          cx.beginPath();
+          cx.ellipse(
+            c[0],
+            c[1],
+            r * 1.4,
+            r,
+            Math.atan2(p(wx, wy + 0.5, wz)[1] - c[1], p(wx, wy + 0.5, wz)[0] - c[0]),
+            0,
+            Math.PI * 2,
+          );
+          cx.fill();
+        }
+        leaf(0.2, 0.2, 1.0, 9, '#22c55e');
+        leaf(0.4, 0.15, 1.1, 8, '#16a34a');
+        leaf(0.15, 0.4, 1.15, 7, '#4ade80');
+        leaf(0.5, 0.35, 0.9, 6, '#22c55e');
+        leaf(0.3, 0.25, 1.25, 7, '#15803d');
+        leaf(0.1, 0.3, 1.05, 5, '#4ade80');
 
-  // Papers/books on desk
-  box(0.5,0.5,1.15, 0.8,0.55,0.06,'#ffffff','#f0f0ff',null);
-  box(0.5,0.5,1.21, 0.7,0.5,0.04,'#ffe4e1','#ffd0cc',null);
+        // ── Fairy lights (wall top) ──
+        const flColors = ['#fde68a', '#f9a8d4', '#a5f3fc', '#c4b5fd', '#bbf7d0'];
+        // Along left wall top
+        for (let i = 0; i < 8; i++) {
+          const t = i / 7;
+          const wy = t * 6.5 + 0.2;
+          const fc = p(0, wy, 4.1);
+          cx.beginPath();
+          cx.arc(fc[0], fc[1], 3, 0, Math.PI * 2);
+          cx.fillStyle = flColors[i % flColors.length];
+          cx.fill();
+          cx.beginPath();
+          cx.arc(fc[0], fc[1], 5, 0, Math.PI * 2);
+          cx.fillStyle = flColors[i % flColors.length].replace(')', ',0.2)').replace('rgb', 'rgba');
+          cx.fill();
+        }
+        // Along back wall top
+        for (let i = 0; i < 9; i++) {
+          const t = i / 8;
+          const wx = t * 8.5 + 0.2;
+          const fc = p(wx, 7, 4.1);
+          cx.beginPath();
+          cx.arc(fc[0], fc[1], 3, 0, Math.PI * 2);
+          cx.fillStyle = flColors[(i + 2) % flColors.length];
+          cx.fill();
+        }
 
-  // ── PLANT ──
-  // Pot
-  box(0.15,0.15,0, 0.5,0.5,0.55,'#a0522d','#7a3c1c','#6a2e12');
-  // Soil
-  box(0.17,0.17,0.53, 0.46,0.46,0.06,'#3d2010',null,null);
-  // Leaves
-  function leaf(wx,wy,wz,r,color){
-    const c=p(wx,wy,wz);
-    cx.fillStyle=color;
-    cx.beginPath();
-    cx.ellipse(c[0],c[1],r*1.4,r,Math.atan2(p(wx,wy+0.5,wz)[1]-c[1],p(wx,wy+0.5,wz)[0]-c[0]),0,Math.PI*2);
-    cx.fill();
-  }
-  leaf(0.2,0.2,1.0, 9,'#22c55e');
-  leaf(0.4,0.15,1.1, 8,'#16a34a');
-  leaf(0.15,0.4,1.15, 7,'#4ade80');
-  leaf(0.5,0.35,0.9, 6,'#22c55e');
-  leaf(0.3,0.25,1.25, 7,'#15803d');
-  leaf(0.1,0.3,1.05, 5,'#4ade80');
+        // ── Monitor screen reflection glow ──
+        const monCenter = p(1.6, 1.95, 1.8);
+        const mr = cx.createRadialGradient(
+          monCenter[0],
+          monCenter[1] + 20,
+          5,
+          monCenter[0],
+          monCenter[1] + 20,
+          50,
+        );
+        mr.addColorStop(0, 'rgba(96,165,250,0.08)');
+        mr.addColorStop(1, 'transparent');
+        cx.fillStyle = mr;
+        cx.fillRect(monCenter[0] - 60, monCenter[1], 120, 60);
 
-  // ── Fairy lights (wall top) ──
-  const flColors=['#fde68a','#f9a8d4','#a5f3fc','#c4b5fd','#bbf7d0'];
-  // Along left wall top
-  for(let i=0;i<8;i++){
-    const t=i/7; const wy=t*6.5+0.2;
-    const fc=p(0,wy,4.1);
-    cx.beginPath(); cx.arc(fc[0],fc[1],3,0,Math.PI*2);
-    cx.fillStyle=flColors[i%flColors.length]; cx.fill();
-    cx.beginPath(); cx.arc(fc[0],fc[1],5,0,Math.PI*2);
-    cx.fillStyle=flColors[i%flColors.length].replace(')',',0.2)').replace('rgb','rgba'); cx.fill();
-  }
-  // Along back wall top
-  for(let i=0;i<9;i++){
-    const t=i/8; const wx=t*8.5+0.2;
-    const fc=p(wx,7,4.1);
-    cx.beginPath(); cx.arc(fc[0],fc[1],3,0,Math.PI*2);
-    cx.fillStyle=flColors[(i+2)%flColors.length]; cx.fill();
-  }
+        // ── Ambient room glow (lamp light on floor) ──
+        const ag = cx.createRadialGradient(
+          p(1, 0.8, 0)[0],
+          p(1, 0.8, 0)[1],
+          5,
+          p(1, 0.8, 0)[0],
+          p(1, 0.8, 0)[1],
+          120,
+        );
+        ag.addColorStop(0, 'rgba(255,220,100,0.06)');
+        ag.addColorStop(1, 'transparent');
+        cx.fillStyle = ag;
+        cx.fillRect(0, 300, 400, 200);
+      }
 
-  // ── Monitor screen reflection glow ──
-  const monCenter=p(1.6,1.95,1.8);
-  const mr=cx.createRadialGradient(monCenter[0],monCenter[1]+20,5,monCenter[0],monCenter[1]+20,50);
-  mr.addColorStop(0,'rgba(96,165,250,0.08)'); mr.addColorStop(1,'transparent');
-  cx.fillStyle=mr; cx.fillRect(monCenter[0]-60,monCenter[1],120,60);
+      // ── CHARACTERS ──────────────────────────────
+      const charData = [
+        {
+          id: 'mai',
+          wx: 1.5,
+          wy: 0.3,
+          wz: 1.3,
+          emoji: '🐱',
+          bg: 'linear-gradient(135deg,#ffd8ec,#c8a8e8)',
+          bc: 'rgba(240,171,252,0.8)',
+          gc: 'rgba(240,171,252,0.5)',
+          gs: 20,
+          fs: 22,
+          size: 54,
+          state: 'work',
+          dot: '#4ade80',
+          dotC: '#052e16',
+          dotT: '●',
+          name: 'Mai',
+          role: 'Frontend · 🤔 thinking',
+        },
+        {
+          id: 'ren',
+          wx: 8.0,
+          wy: 0.3,
+          wz: 1.0,
+          emoji: '⚔️',
+          bg: 'linear-gradient(135deg,#a8f0c8,#60a5fa)',
+          bc: 'rgba(74,222,128,0.7)',
+          gc: 'rgba(74,222,128,0.4)',
+          gs: 18,
+          fs: 20,
+          size: 50,
+          state: 'work',
+          dot: '#4ade80',
+          dotC: '#052e16',
+          dotT: '●',
+          name: 'Ren',
+          role: 'Backend · 💪 focused',
+        },
+        {
+          id: 'yui',
+          wx: 4.0,
+          wy: 3.0,
+          wz: 1.2,
+          emoji: '📖',
+          bg: 'linear-gradient(135deg,#fef9c3,#fde68a)',
+          bc: 'rgba(253,224,71,0.8)',
+          gc: 'rgba(253,224,71,0.4)',
+          gs: 22,
+          fs: 26,
+          size: 64,
+          state: 'lead',
+          dot: '#fde047',
+          dotC: '#713f12',
+          dotT: '★',
+          name: 'Yui',
+          role: 'Lead · 👑 coordinating',
+        },
+        {
+          id: 'mika',
+          wx: 2.8,
+          wy: 2.5,
+          wz: 1.1,
+          emoji: '🌸',
+          bg: 'linear-gradient(135deg,#ede9fe,#a78bfa)',
+          bc: 'rgba(167,139,250,0.6)',
+          gc: 'rgba(167,139,250,0.3)',
+          gs: 14,
+          fs: 18,
+          size: 44,
+          state: 'idle',
+          dot: '#94a3b8',
+          dotC: '#0f172a',
+          dotT: '○',
+          name: 'Mika',
+          role: 'UI · 😊 idle',
+        },
+        {
+          id: 'aki',
+          wx: 6.5,
+          wy: 2.0,
+          wz: 1.0,
+          emoji: '🔧',
+          bg: 'linear-gradient(135deg,#fed7aa,#fb923c)',
+          bc: 'rgba(251,146,60,0.6)',
+          gc: 'rgba(251,146,60,0.25)',
+          gs: 14,
+          fs: 18,
+          size: 44,
+          state: 'idle',
+          dot: '#94a3b8',
+          dotC: '#0f172a',
+          dotT: '○',
+          name: 'Aki',
+          role: 'DevOps · 😊 idle',
+        },
+        {
+          id: 'senko',
+          wx: 6.8,
+          wy: 3.5,
+          wz: 1.2,
+          emoji: '🦊',
+          bg: 'linear-gradient(135deg,#fde68a,#fca5a5)',
+          bc: 'rgba(148,163,184,0.2)',
+          gc: 'transparent',
+          gs: 0,
+          fs: 16,
+          size: 40,
+          state: 'sleep',
+          dot: '#334155',
+          dotC: '#94a3b8',
+          dotT: 'z',
+          name: 'Senko',
+          role: 'Support · 😴 sleeping',
+        },
+        {
+          id: 'shin',
+          wx: 8.2,
+          wy: 4.5,
+          wz: 1.2,
+          emoji: '🗡️',
+          bg: 'linear-gradient(135deg,#ddd6fe,#8b5cf6)',
+          bc: 'rgba(148,163,184,0.2)',
+          gc: 'transparent',
+          gs: 0,
+          fs: 16,
+          size: 40,
+          state: 'sleep',
+          dot: '#334155',
+          dotC: '#94a3b8',
+          dotT: 'z',
+          name: 'Shinobu',
+          role: 'Strategist · 😴 sleeping',
+        },
+      ];
 
-  // ── Ambient room glow (lamp light on floor) ──
-  const ag=cx.createRadialGradient(p(1,0.8,0)[0],p(1,0.8,0)[1],5,p(1,0.8,0)[0],p(1,0.8,0)[1],120);
-  ag.addColorStop(0,'rgba(255,220,100,0.06)'); ag.addColorStop(1,'transparent');
-  cx.fillStyle=ag; cx.fillRect(0,300,400,200);
-}
-
-// ── CHARACTERS ──────────────────────────────
-const charData = [
-  { id:'mai',   wx:1.5, wy:0.3, wz:1.3, emoji:'🐱', bg:'linear-gradient(135deg,#ffd8ec,#c8a8e8)', bc:'rgba(240,171,252,0.8)', gc:'rgba(240,171,252,0.5)', gs:20, fs:22, size:54, state:'work', dot:'#4ade80', dotC:'#052e16', dotT:'●', name:'Mai', role:'Frontend · 🤔 thinking' },
-  { id:'ren',   wx:8.0, wy:0.3, wz:1.0, emoji:'⚔️', bg:'linear-gradient(135deg,#a8f0c8,#60a5fa)', bc:'rgba(74,222,128,0.7)', gc:'rgba(74,222,128,0.4)', gs:18, fs:20, size:50, state:'work', dot:'#4ade80', dotC:'#052e16', dotT:'●', name:'Ren', role:'Backend · 💪 focused' },
-  { id:'yui',   wx:4.0, wy:3.0, wz:1.2, emoji:'📖', bg:'linear-gradient(135deg,#fef9c3,#fde68a)', bc:'rgba(253,224,71,0.8)', gc:'rgba(253,224,71,0.4)', gs:22, fs:26, size:64, state:'lead', dot:'#fde047', dotC:'#713f12', dotT:'★', name:'Yui', role:'Lead · 👑 coordinating' },
-  { id:'mika',  wx:2.8, wy:2.5, wz:1.1, emoji:'🌸', bg:'linear-gradient(135deg,#ede9fe,#a78bfa)', bc:'rgba(167,139,250,0.6)', gc:'rgba(167,139,250,0.3)', gs:14, fs:18, size:44, state:'idle', dot:'#94a3b8', dotC:'#0f172a', dotT:'○', name:'Mika', role:'UI · 😊 idle' },
-  { id:'aki',   wx:6.5, wy:2.0, wz:1.0, emoji:'🔧', bg:'linear-gradient(135deg,#fed7aa,#fb923c)', bc:'rgba(251,146,60,0.6)', gc:'rgba(251,146,60,0.25)', gs:14, fs:18, size:44, state:'idle', dot:'#94a3b8', dotC:'#0f172a', dotT:'○', name:'Aki', role:'DevOps · 😊 idle' },
-  { id:'senko', wx:6.8, wy:3.5, wz:1.2, emoji:'🦊', bg:'linear-gradient(135deg,#fde68a,#fca5a5)', bc:'rgba(148,163,184,0.2)', gc:'transparent', gs:0,  fs:16, size:40, state:'sleep', dot:'#334155', dotC:'#94a3b8', dotT:'z', name:'Senko', role:'Support · 😴 sleeping' },
-  { id:'shin',  wx:8.2, wy:4.5, wz:1.2, emoji:'🗡️', bg:'linear-gradient(135deg,#ddd6fe,#8b5cf6)', bc:'rgba(148,163,184,0.2)', gc:'transparent', gs:0,  fs:16, size:40, state:'sleep', dot:'#334155', dotC:'#94a3b8', dotT:'z', name:'Shinobu', role:'Strategist · 😴 sleeping' },
-];
-
-function placeChars(){
-  const container=document.getElementById('chars');
-  charData.forEach(ch=>{
-    const [sx,sy]=p(ch.wx,ch.wy,ch.wz);
-    const el=document.createElement('div');
-    el.className='char anim-'+(ch.state==='work'?'w':ch.state==='lead'?'l':ch.state==='sleep'?'s':'i');
-    el.style.left=sx+'px';
-    el.style.top=sy+'px';
-    el.innerHTML=`
+      function placeChars() {
+        const container = document.getElementById('chars');
+        charData.forEach((ch) => {
+          const [sx, sy] = p(ch.wx, ch.wy, ch.wz);
+          const el = document.createElement('div');
+          el.className =
+            'char anim-' +
+            (ch.state === 'work'
+              ? 'w'
+              : ch.state === 'lead'
+                ? 'l'
+                : ch.state === 'sleep'
+                  ? 's'
+                  : 'i');
+          el.style.left = sx + 'px';
+          el.style.top = sy + 'px';
+          el.innerHTML = `
       <div class="cavatar" style="width:${ch.size}px;height:${ch.size}px;--bg:${ch.bg};--b:${ch.bc};--gc:${ch.gc};--gs:${ch.gs}px;--fs:${ch.fs}px;">
         ${ch.emoji}
         <div class="cdot" style="background:${ch.dot};color:${ch.dotC};">${ch.dotT}</div>
       </div>
       <div class="ctag">${ch.name}<small>${ch.role}</small></div>
     `;
-    container.appendChild(el);
-  });
-}
+          container.appendChild(el);
+        });
+      }
 
-draw();
-placeChars();
-</script>
-</body>
+      draw();
+      placeChars();
+    </script>
+  </body>
 </html>

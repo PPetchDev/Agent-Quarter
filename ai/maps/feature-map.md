@@ -1,9 +1,17 @@
 # Feature Map
 
-_Updated: C-FURNITURE-GRID-001_
+_Updated: C-DORM-AZUR-001_
 
 | Feature | Canonical Files |
 |---|---|
+| Dorm engine (comfort, food, XP/levels, morale, affection, headpat, training, offline catch-up) | `apps/web/src/game/dorm/dormEngine.ts`, `apps/web/src/game/dorm/dormEngine.test.ts` |
+| Dorm supply panel (feed food items) | `apps/web/src/components/lounge/SupplyPanel.tsx` |
+| Dorm HUD (comfort/tokens/food chips, roster Lv/morale/affection, feed button, away toast) | `apps/web/src/components/lounge/LoungeCanvas.tsx` |
+| Dual-currency furniture shop (coins + decor tokens, `tokenCost` per item) | `apps/web/src/components/lounge/furnitureCatalog.ts`, `apps/web/src/components/lounge/ShopModal.tsx`, `apps/web/src/components/lounge/LoungeCanvas.tsx` (`handlePurchase`) |
+| Idle chibi wandering | `apps/web/src/hooks/useAgentWalk.ts` (`walkToIso`), `apps/web/src/components/lounge/LoungeCanvas.tsx` (wander scheduler) |
+| Per-floor layouts (floor 1 work / floor 2 rest) | `apps/web/src/components/lounge/LoungeCanvas.tsx` (`handleFloorToggle`, `inactiveFloorObjects`, `DEFAULT_FLOOR2_TEMPLATE`) |
+| Wallpaper themes (manual override + auto) | `apps/web/src/components/lounge/pixiRoom.ts` (`ROOM_THEME_KEYS`, `resolveRoomTheme`), `apps/web/src/components/lounge/LoungeCanvas.tsx` (picker in room settings) |
+| Lounge persistence v8 (both floors, dorm, tokens, themeKey, savedAt; v7 fallback; roomReady-gated) | `apps/web/src/components/lounge/LoungeCanvas.tsx` |
 | Lounge simulation route | `apps/web/src/app/lounge/page.tsx` |
 | Legacy office route compatibility | `apps/web/src/app/office/page.tsx` (redirect only) |
 | Room footprint, projection, walls, floor, rug, primitive furniture drawings | `apps/web/src/components/lounge/pixiRoom.ts` |
@@ -12,15 +20,17 @@ _Updated: C-FURNITURE-GRID-001_
 | Furniture catalog / shop metadata | `apps/web/src/components/lounge/furnitureCatalog.ts` |
 | PixiJS scene construction, depth sorting, active-station pulse layer | `apps/web/src/components/lounge/roomLoader.ts` |
 | Active station pulse highlight (gold floor ring + per-station body ambient during work) | `apps/web/src/components/lounge/pixiRoom.ts` (`drawActiveStationHighlight`, `drawStationAmbient`), `apps/web/src/components/lounge/stationAmbients.ts` (`STATION_AMBIENTS` data table), `apps/web/src/components/lounge/LoungeCanvas.tsx` (RAF pulse loop) |
-| Lounge canvas, compact HUD, route debug overlay, single walking agent overlay | `apps/web/src/components/lounge/LoungeCanvas.tsx` |
+| Lounge canvas, compact HUD, route debug overlay, Spine agent rendering, and non-occluding status overlay | `apps/web/src/components/lounge/LoungeCanvas.tsx`, `apps/web/src/components/lounge/spineAgents.ts` |
 | Pure layout/share helpers | `apps/web/src/components/lounge/loungeHelpers.ts` |
 | Countdown timer hook (meal/supplies timers) | `apps/web/src/hooks/useCountdown.ts` |
 | Agent task-to-station resolution + per-task work duration | `apps/web/src/game/agents/taskResolver.ts` |
 | Agent work timer lifecycle (walk → work → auto-idle) and progress fields | `apps/web/src/hooks/useAgentWalk.ts`, `apps/web/src/game/agents/agentTypes.ts` |
 | Agent task queue (auto-pop chain after work completion, shift-click enqueue) | `apps/web/src/game/agents/taskQueue.ts`, `apps/web/src/hooks/useAgentWalk.ts`, `apps/web/src/components/lounge/LoungeCanvas.tsx` |
+| Office workflow command board, agent handoff planner, chat bus, and tool boundary log | `apps/web/src/game/agents/officeWorkflow.ts`, `apps/web/src/components/lounge/LoungeCanvas.tsx` |
+| Office agent Spine asset mapping and HTML-avatar fallback rules | `apps/web/src/components/lounge/spineAgents.ts`, `apps/web/src/components/lounge/spineAgents.test.ts` |
 | Agent type contracts | `apps/web/src/game/agents/agentTypes.ts` |
 | Isometric station registry | `apps/web/src/game/scene/loungeStations.ts` |
-| Lounge blocked-cell grid | `apps/web/src/game/scene/loungePathGrid.ts` |
+| Lounge shared blocked-cell route grid | `apps/web/src/game/scene/loungePathGrid.ts`, `apps/web/src/components/lounge/LoungeCanvas.tsx`, `apps/web/src/hooks/useAgentWalk.ts` |
 | Isometric projection helpers | `apps/web/src/game/isometric/isoProjection.ts` |
 | Movement logic | `apps/web/src/game/movement/direction.ts`, `apps/web/src/game/movement/moveToTarget.ts`, `apps/web/src/game/movement/gridPath.ts` |
 | Animation resolver | `apps/web/src/game/animation/animationResolver.ts` |
@@ -49,8 +59,8 @@ _Updated: C-FURNITURE-GRID-001_
 ## Pathfinding Mapping
 
 - Grid planner -> `apps/web/src/game/movement/gridPath.ts`.
-- Furniture blocked cells -> `apps/web/src/game/scene/loungePathGrid.ts`.
-- Active furniture inputs -> `LoungeCanvas` passes current `RoomObject[]`, room width, and room height into `useAgentWalk`.
+- Furniture blocked cells and reusable route grid -> `apps/web/src/game/scene/loungePathGrid.ts`.
+- Active furniture inputs -> `LoungeCanvas` builds one shared `LoungeRouteGrid` from current `RoomObject[]`, room width, and room height, then passes it into all five `useAgentWalk` instances.
 - Waypoint animation -> `useAgentWalk` plans a route at task assignment and advances through projected waypoints with `moveTowardsTarget`.
 - Route debug overlay -> `useAgentWalk` exposes route debug points; `LoungeCanvas` renders them only in move/edit mode.
 - Dynamic static-obstacle refresh -> `useAgentWalk` re-plans while walking after committed room object or room dimension changes.

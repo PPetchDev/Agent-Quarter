@@ -1,0 +1,32 @@
+{
+  "topology": {
+    "type": "hierarchical",
+    "maxNodes": 15,
+    "redundancy": 2,
+    "consensusAlgorithm": "raft"
+  },
+  "loadBalance": {
+    "algorithm": "adaptive",
+    "weights": {},
+    "healthCheck": true
+  },
+  "sync": {
+    "lastSync": "2026-06-01T02:04:00.905Z",
+    "syncCount": 0,
+    "conflicts": 0,
+    "pendingChanges": 0
+  },
+  "nodes": {},
+  "version": "3.0.0",
+  "orchestrations": [
+    {
+      "id": "orch-1780279440906",
+      "task": "C-REFACTOR-PROJECT-001 for /Users/titiwat/Downloads/AnimeAgentSquad. Refactor the whole project with best practices while preserving behavior. Follow the repository workflow exactly: Mode -> Map -> Minimal Context -> Patch. This is project-wide in objective but bounded in execution: read ai/maps/ before any source reads; read ai/context-packet.md and verify Packet ID/freshness against ai/active.contract.md; propose a risk-ranked slice backlog; then implement only one bounded slice at a time, patching at most 3-5 files per slice unless review approves more. Swarm lanes: Coordinator owns scope boundary and merge order; Map Scout reads repo-map, feature-map, symbol-index, api-map, test-map before source; Web Refactor handles Next/Pixi/lounge cleanups; API Refactor handles Nest/API only after map/source discovery; Core Refactor handles packages/core only if contract-safe; Test/Parity runs exact verification and rejects drift; Workflow Recorder updates ai/patches/latest.md and ai/handoff.md with exact commands and results. Preserve routes, APIs, task timing, pathfinding, station targeting, queue behavior, Pixi/lounge rendering semantics, persistence keys, and public contracts. Stop for review if new dependency, ADR/architecture change, behavior drift, or out-of-scope verification is needed. Required first response: selected mode, map files read, context freshness result, proposed slice backlog ordered by risk, first slice files expected to edit, exact verification commands. Verification gate for every web/lounge slice: `pnpm --filter @squad/web test -- --run; echo \"EXIT:$?\"` and `pnpm exec tsc -p apps/web/tsconfig.json --noEmit; echo \"EXIT:$?\"`. If backend/package files change, discover and run the narrow exact package verification command too. Final output per slice must use Status / Changed / Verified / Risks / Next.",
+      "strategy": "pipeline",
+      "agents": [],
+      "status": "scheduled",
+      "scheduledAt": "2026-06-01T02:04:00.906Z",
+      "topology": "hierarchical"
+    }
+  ]
+}

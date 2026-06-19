@@ -4,7 +4,7 @@ import type { Agent, AgentTaskType, AgentState } from '@/game/agents/agentTypes'
 import type { IsoWorldPoint, Position } from '@/game/agents/agentTypes';
 import { resolveAgentTask } from '@/game/agents/taskResolver';
 import { moveTowardsTarget } from '@/game/movement/moveToTarget';
-import { planLoungeGridRoute } from '@/game/scene/loungePathGrid';
+import { planLoungeGridRoute, type LoungeRouteGrid } from '@/game/scene/loungePathGrid';
 import type { GridCell, IsoRoutePoint } from '@/game/movement/gridPath';
 import { resolveWalkingAnimation, resolveStateAnimation } from '@/game/animation/animationResolver';
 import { resolveDirection } from '@/game/movement/direction';
@@ -13,10 +13,7 @@ import {
   dequeueTask,
   MAX_TASK_QUEUE_LENGTH,
 } from '@/game/agents/taskQueue';
-import {
-  resolveLoungeStation,
-  type LoungeStationId,
-} from '@/game/scene/loungeStations';
+import { resolveLoungeStation, type LoungeStationId, getInteractionSlotForFurniture, findFurnitureAt } from '@/game/scene/loungeStations';
 import type { RoomObject } from '@/components/lounge/roomDefs';
 import {
   computeRoomProjection,
@@ -41,6 +38,8 @@ type UseAgentWalkOptions = {
   characterId?: string;
   /** Initial iso world position. Defaults to `DEFAULT_START_ISO`. */
   startIso?: IsoWorldPoint;
+  /** Shared blocked-cell grid for the current room layout. */
+  routeGrid?: LoungeRouteGrid;
 };
 
 export type AgentRouteDebugPoint = {
@@ -56,10 +55,7 @@ export type AgentRouteDebug = {
   activeIndex: number;
 };
 
-function projectIsoToScreen(
-  point: IsoWorldPoint,
-  S: number, OX: number, OY: number,
-): Position {
+function projectIsoToScreen(point: IsoWorldPoint, S: number, OX: number, OY: number): Position {
   const [x, y] = projAt(point.wx, point.wy, point.wz, S, OX, OY);
   return { x, y };
 }
@@ -101,19 +97,24 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
     agentName = 'Mai',
     characterId = 'mai',
     startIso = DEFAULT_START_ISO,
+    routeGrid,
   } = options;
   void _legacyAgentId;
   const [agent, setAgent] = useState<Agent>(() => ({
-    id:          agentId,
-    name:        agentName,
+    id: agentId,
+    name: agentName,
     characterId,
-    state:       'idle',
-    position:    (() => { const { S, OX, OY } = computeRoomProjection(ROOM_TILES_X, ROOM_TILES_Y); const [x, y] = projAt(startIso.wx, startIso.wy, startIso.wz, S, OX, OY); return { x, y }; })(),
-    direction:   'down',
-    animation:   'idle',
-    bubbleText:  undefined,
-    speed:       110,
-    taskQueue:   [],
+    state: 'idle',
+    position: (() => {
+      const { S, OX, OY } = computeRoomProjection(ROOM_TILES_X, ROOM_TILES_Y);
+      const [x, y] = projAt(startIso.wx, startIso.wy, startIso.wz, S, OX, OY);
+      return { x, y };
+    })(),
+    direction: 'down',
+    animation: 'idle',
+    bubbleText: undefined,
+    speed: 60,
+    taskQueue: [],
   }));
   const [routeDebug, setRouteDebug] = useState<AgentRouteDebug>({
     points: [],
@@ -121,8 +122,8 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
   });
 
   // Use refs so RAF callback always sees latest values without stale closures
-  const agentRef    = useRef<Agent>(agent);
-  const rafRef      = useRef<number>(0);
+  const agentRef = useRef<Agent>(agent);
+  const rafRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
   const currentIsoRef = useRef<IsoWorldPoint>(startIso);
   const segmentStartIsoRef = useRef<IsoWorldPoint>(startIso);
@@ -157,76 +158,152 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
     updateRouteDebug([], 0);
   }, [updateRouteDebug]);
 
-  const failBlockedRoute = useCallback((params: {
-    taskType?: AgentTaskType;
-    targetStationId?: string;
-  }) => {
-    clearRoute();
-    workElapsedMsRef.current = 0;
-    lastWorkPublishRef.current = 0;
-    updateAgent((prev) => ({
-      ...prev,
-      state: 'error',
-      taskType: params.taskType ?? prev.taskType,
-      targetPosition: undefined,
-      targetStationId: params.targetStationId ?? prev.targetStationId,
-      arriveState: undefined,
-      arriveBubbleText: undefined,
-      bubbleText: 'Path is blocked.',
-      animation: resolveStateAnimation('error'),
-      workDurationMs: undefined,
-      workElapsedMs: undefined,
-    }));
-  }, [clearRoute, updateAgent]);
+  const failBlockedRoute = useCallback(
+    (params: { taskType?: AgentTaskType; targetStationId?: string }) => {
+      clearRoute();
+      workElapsedMsRef.current = 0;
+      lastWorkPublishRef.current = 0;
+      updateAgent((prev) => ({
+        ...prev,
+        state: 'error',
+        taskType: params.taskType ?? prev.taskType,
+        targetPosition: undefined,
+        targetStationId: params.targetStationId ?? prev.targetStationId,
+        arriveState: undefined,
+        arriveBubbleText: undefined,
+        arriveAnim: undefined,
+        bubbleText: 'Path is blocked.',
+        animation: resolveStateAnimation('error'),
+        workDurationMs: undefined,
+        workElapsedMs: undefined,
+      }));
+    },
+    [clearRoute, updateAgent],
+  );
 
-  const assignTask = useCallback((taskType: AgentTaskType) => {
-    const resolved = resolveAgentTask(taskType, roomObjects);
-    const route = planLoungeGridRoute({
-      objects: roomObjects,
-      roomWidth,
-      roomHeight,
-      start: currentIsoRef.current,
-      target: resolved.targetIsoPoint,
-    });
-
-    if (!route || route.length === 0) {
-      failBlockedRoute({
-        taskType,
-        targetStationId: resolved.targetStationId,
+  const assignTask = useCallback(
+    (taskType: AgentTaskType) => {
+      const resolved = resolveAgentTask(taskType, roomObjects);
+      const route = planLoungeGridRoute({
+        objects: roomObjects,
+        routeGrid,
+        roomWidth,
+        roomHeight,
+        start: currentIsoRef.current,
+        target: resolved.targetIsoPoint,
       });
-      return;
-    }
 
-    const waypoints = buildWaypoints(route, roomWidth, roomHeight);
-    routeRef.current = waypoints;
-    routeIndexRef.current = 0;
-    segmentStartIsoRef.current = currentIsoRef.current;
-    segmentStartPositionRef.current = agentRef.current.position;
-    updateRouteDebug(waypoints, 0);
-    const targetPosition = waypoints[0]!.position;
+      if (!route || route.length === 0) {
+        failBlockedRoute({
+          taskType,
+          targetStationId: resolved.targetStationId,
+        });
+        return;
+      }
 
-    updateAgent((prev) => ({
-      ...prev,
-      state:           'walking',
-      taskType,
-      targetPosition,
-      targetStationId: resolved.targetStationId,
-      arriveState:     resolved.arriveState,
-      arriveBubbleText: resolved.bubbleText,
-      bubbleText:      resolved.walkingBubbleText,
-      animation:       resolveWalkingAnimation(prev.direction),
-      workDurationMs:  resolved.workDurationMs > 0 ? resolved.workDurationMs : undefined,
-      workElapsedMs:   undefined,
-    }));
-  }, [failBlockedRoute, roomHeight, roomObjects, roomWidth, updateAgent, updateRouteDebug]);
+      const waypoints = buildWaypoints(route, roomWidth, roomHeight);
+      routeRef.current = waypoints;
+      routeIndexRef.current = 0;
+      segmentStartIsoRef.current = currentIsoRef.current;
+      segmentStartPositionRef.current = agentRef.current.position;
+      updateRouteDebug(waypoints, 0);
+      const targetPosition = waypoints[0]!.position;
+
+      updateAgent((prev) => ({
+        ...prev,
+        state: 'walking',
+        taskType,
+        targetPosition,
+        targetStationId: resolved.targetStationId,
+        arriveState: resolved.arriveState,
+        arriveBubbleText: resolved.bubbleText,
+        bubbleText: resolved.walkingBubbleText,
+        animation: resolveWalkingAnimation(prev.direction),
+        workDurationMs: resolved.workDurationMs > 0 ? resolved.workDurationMs : undefined,
+        workElapsedMs: undefined,
+      }));
+    },
+    [failBlockedRoute, roomHeight, roomObjects, roomWidth, routeGrid, updateAgent, updateRouteDebug],
+  );
+
+  /** 
+   * Walks the agent to an arbitrary iso point (dorm wandering). Only starts
+   * from idle, arrives back into idle, and never enters the error state —
+   * a blocked stroll is silently skipped. Returns whether a route started.
+   */
+  const walkToIso = useCallback(
+    (target: IsoWorldPoint): boolean => {
+      const current = agentRef.current;
+      if (current.state !== 'idle') return false;
+
+      const route = planLoungeGridRoute({
+        objects: roomObjects,
+        routeGrid,
+        roomWidth,
+        roomHeight,
+        start: currentIsoRef.current,
+        target,
+      });
+      if (!route || route.length === 0) return false;
+
+      const waypoints = buildWaypoints(route, roomWidth, roomHeight);
+      routeRef.current = waypoints;
+      routeIndexRef.current = 0;
+      segmentStartIsoRef.current = currentIsoRef.current;
+      segmentStartPositionRef.current = agentRef.current.position;
+      updateRouteDebug(waypoints, 0);
+
+      // Detect furniture at target position for interaction slot animation
+      const targetObj = findFurnitureAt(roomObjects, target.wx, target.wy);
+      let arriveAnim: string | undefined;
+      if (targetObj) {
+        const slot = getInteractionSlotForFurniture(targetObj.furnitureType);
+        if (slot?.anim) arriveAnim = slot.anim;
+      }
+
+      updateAgent((prev) => ({
+        ...prev,
+        state: 'walking',
+        taskType: 'idle',
+        targetPosition: waypoints[0]!.position,
+        targetStationId: undefined,
+        arriveState: 'idle',
+        arriveBubbleText: undefined,
+        arriveAnim,
+        bubbleText: undefined,
+        animation: resolveWalkingAnimation(prev.direction),
+        workDurationMs: undefined,
+        workElapsedMs: undefined,
+      }));
+      return true;
+    },
+    [roomHeight, roomObjects, roomWidth, routeGrid, updateAgent, updateRouteDebug],
+  );
 
   useEffect(() => {
     const current = agentRef.current;
     if (current.state !== 'walking' || !current.taskType || !current.targetPosition) return;
 
+    // Wander strolls have no target station; cancel them instead of
+    // re-resolving a station route when the layout changes mid-walk.
+    if (!current.targetStationId) {
+      clearRoute();
+      updateAgent((prev) => ({
+        ...prev,
+        state: 'idle',
+        animation: resolveStateAnimation('idle'),
+        targetPosition: undefined,
+        arriveState: undefined,
+        arriveBubbleText: undefined,
+        arriveAnim: undefined,
+      }));
+      return;
+    }
+
     const resolved = resolveAgentTask(current.taskType, roomObjects);
     const route = planLoungeGridRoute({
       objects: roomObjects,
+      routeGrid,
       roomWidth,
       roomHeight,
       start: currentIsoRef.current,
@@ -259,169 +336,190 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
       workElapsedMs: undefined,
     }));
   }, [
+    clearRoute,
     failBlockedRoute,
     roomHeight,
     roomObjects,
     roomWidth,
+    routeGrid,
     updateAgent,
     updateRouteDebug,
   ]);
 
-  const tickAgent = useCallback((deltaTime: number) => {
-    const current = agentRef.current;
-    if (!current.targetPosition) return;
+  const tickAgent = useCallback(
+    (deltaTime: number) => {
+      const current = agentRef.current;
+      if (!current.targetPosition) return;
 
-    const result = moveTowardsTarget({
-      current:  current.position,
-      target:   current.targetPosition,
-      speed:    current.speed,
-      deltaTime,
-    });
+      const result = moveTowardsTarget({
+        current: current.position,
+        target: current.targetPosition,
+        speed: current.speed,
+        deltaTime,
+      });
 
-    if (result.arrived) {
-      const route = routeRef.current;
-      const arrivedIndex = routeIndexRef.current;
-      const arrivedWaypoint = route[arrivedIndex];
+      if (result.arrived) {
+        const route = routeRef.current;
+        const arrivedIndex = routeIndexRef.current;
+        const arrivedWaypoint = route[arrivedIndex];
 
-      if (arrivedWaypoint) {
-        currentIsoRef.current = arrivedWaypoint.iso;
-      }
+        if (arrivedWaypoint) {
+          currentIsoRef.current = arrivedWaypoint.iso;
+        }
 
-      if (arrivedIndex < route.length - 1) {
-        const nextIndex = arrivedIndex + 1;
-        routeIndexRef.current = nextIndex;
-        updateRouteDebug(route, nextIndex);
-        const nextWaypoint = route[nextIndex]!;
+        if (arrivedIndex < route.length - 1) {
+          const nextIndex = arrivedIndex + 1;
+          routeIndexRef.current = nextIndex;
+          updateRouteDebug(route, nextIndex);
+          const nextWaypoint = route[nextIndex]!;
+          const walkAnim = resolveWalkingAnimation(result.direction);
+          segmentStartIsoRef.current = arrivedWaypoint?.iso ?? currentIsoRef.current;
+          segmentStartPositionRef.current = result.position;
+
+          updateAgent((prev) => ({
+            ...prev,
+            position: result.position,
+            direction: result.direction,
+            targetPosition: nextWaypoint.position,
+            animation: walkAnim,
+          }));
+          return;
+        }
+
+        clearRoute();
+
+        const arrivedState = current.arriveState ?? 'idle';
+        const arrivedBubble = current.arriveBubbleText;
+        // Use arriveAnim from furniture interaction slot if available, otherwise resolve from state
+        const arrivedAnim = current.arriveAnim ?? resolveStateAnimation(arrivedState);
+        const startsWork = (current.workDurationMs ?? 0) > 0;
+
+        // Face the station body. Project station iso → screen, snap to dominant axis.
+        let arriveDirection = result.direction;
+        if (current.targetStationId) {
+          const station = resolveLoungeStation(
+            current.targetStationId as LoungeStationId,
+            roomObjects,
+          );
+          const { S, OX, OY } = computeRoomProjection(roomWidth, roomHeight);
+          const stationScreen = projectIsoToScreen(
+            {
+              wx: station.isoPosition.x,
+              wy: station.isoPosition.y,
+              wz: station.isoPosition.z ?? 0,
+            },
+            S,
+            OX,
+            OY,
+          );
+          const dx = stationScreen.x - result.position.x;
+          const dy = stationScreen.y - result.position.y;
+          if (dx !== 0 || dy !== 0) {
+            arriveDirection = resolveDirection(dx, dy);
+          }
+        }
+
+        workElapsedMsRef.current = 0;
+        lastWorkPublishRef.current = performance.now();
+        updateAgent((prev) => ({
+          ...prev,
+          position: result.position,
+          direction: arriveDirection,
+          state: arrivedState,
+          animation: arrivedAnim,
+          bubbleText: arrivedBubble,
+          targetPosition: undefined,
+          targetStationId: prev.targetStationId,
+          arriveState: undefined,
+          arriveBubbleText: undefined,
+          arriveAnim: undefined,
+          workDurationMs: startsWork ? prev.workDurationMs : undefined,
+          workElapsedMs: startsWork ? 0 : undefined,
+        }));
+      } else {
         const walkAnim = resolveWalkingAnimation(result.direction);
-        segmentStartIsoRef.current = arrivedWaypoint?.iso ?? currentIsoRef.current;
-        segmentStartPositionRef.current = result.position;
-
+        const route = routeRef.current;
+        const currentWaypoint = route[routeIndexRef.current];
+        if (currentWaypoint) {
+          const startPosition = segmentStartPositionRef.current;
+          const segmentDistance = distance(startPosition, currentWaypoint.position);
+          const progress =
+            segmentDistance > 0
+              ? Math.max(0, Math.min(1, distance(startPosition, result.position) / segmentDistance))
+              : 1;
+          currentIsoRef.current = interpolateIso(
+            segmentStartIsoRef.current,
+            currentWaypoint.iso,
+            progress,
+          );
+        }
         updateAgent((prev) => ({
           ...prev,
           position: result.position,
           direction: result.direction,
-          targetPosition: nextWaypoint.position,
           animation: walkAnim,
         }));
+      }
+    },
+    [clearRoute, roomHeight, roomObjects, roomWidth, updateAgent, updateRouteDebug],
+  );
+
+  const tickWork = useCallback(
+    (deltaSeconds: number) => {
+      const current = agentRef.current;
+      if (current.workDurationMs === undefined) return;
+
+      workElapsedMsRef.current += deltaSeconds * 1000;
+
+      if (workElapsedMsRef.current >= current.workDurationMs) {
+        workElapsedMsRef.current = 0;
+        lastWorkPublishRef.current = 0;
+        const { next: nextTask, rest } = dequeueTask(current.taskQueue);
+        if (nextTask) {
+          updateAgent((prev) => ({
+            ...prev,
+            taskQueue: rest,
+            workDurationMs: undefined,
+            workElapsedMs: undefined,
+          }));
+          assignTask(nextTask);
+        } else {
+          const doneBubble = current.taskType
+            ? resolveAgentTask(current.taskType, roomObjects).doneBubbleText
+            : 'Idle.';
+          updateAgent((prev) => ({
+            ...prev,
+            state: 'idle',
+            taskType: 'idle',
+            animation: resolveStateAnimation('idle'),
+            bubbleText: doneBubble,
+            targetStationId: undefined,
+            arriveState: undefined,
+            arriveBubbleText: undefined,
+            workDurationMs: undefined,
+            workElapsedMs: undefined,
+          }));
+        }
         return;
       }
 
-      clearRoute();
-
-      const arrivedState   = current.arriveState ?? 'idle';
-      const arrivedBubble  = current.arriveBubbleText;
-      const arrivedAnim    = resolveStateAnimation(arrivedState);
-      const startsWork     = (current.workDurationMs ?? 0) > 0;
-
-      // Face the station body. Project station iso → screen, snap to dominant axis.
-      let arriveDirection = result.direction;
-      if (current.targetStationId) {
-        const station = resolveLoungeStation(
-          current.targetStationId as LoungeStationId,
-          roomObjects,
-        );
-        const { S, OX, OY } = computeRoomProjection(roomWidth, roomHeight);
-        const stationScreen = projectIsoToScreen(
-          { wx: station.isoPosition.x, wy: station.isoPosition.y, wz: station.isoPosition.z ?? 0 },
-          S, OX, OY,
-        );
-        const dx = stationScreen.x - result.position.x;
-        const dy = stationScreen.y - result.position.y;
-        if (dx !== 0 || dy !== 0) {
-          arriveDirection = resolveDirection(dx, dy);
-        }
+      // Throttle React state publishes for the progress bar.
+      const now = performance.now();
+      if (now - lastWorkPublishRef.current >= WORK_PUBLISH_INTERVAL_MS) {
+        lastWorkPublishRef.current = now;
+        const published = workElapsedMsRef.current;
+        updateAgent((prev) => ({ ...prev, workElapsedMs: published }));
       }
+    },
+    [assignTask, roomObjects, updateAgent],
+  );
 
-      workElapsedMsRef.current = 0;
-      lastWorkPublishRef.current = performance.now();
-      updateAgent((prev) => ({
-        ...prev,
-        position:        result.position,
-        direction:       arriveDirection,
-        state:           arrivedState,
-        animation:       arrivedAnim,
-        bubbleText:      arrivedBubble,
-        targetPosition:  undefined,
-        targetStationId: prev.targetStationId,
-        arriveState:     undefined,
-        arriveBubbleText: undefined,
-        workDurationMs:  startsWork ? prev.workDurationMs : undefined,
-        workElapsedMs:   startsWork ? 0 : undefined,
-      }));
-    } else {
-      const walkAnim = resolveWalkingAnimation(result.direction);
-      const route = routeRef.current;
-      const currentWaypoint = route[routeIndexRef.current];
-      if (currentWaypoint) {
-        const startPosition = segmentStartPositionRef.current;
-        const segmentDistance = distance(startPosition, currentWaypoint.position);
-        const progress = segmentDistance > 0
-          ? Math.max(0, Math.min(1, distance(startPosition, result.position) / segmentDistance))
-          : 1;
-        currentIsoRef.current = interpolateIso(
-          segmentStartIsoRef.current,
-          currentWaypoint.iso,
-          progress,
-        );
-      }
-      updateAgent((prev) => ({
-        ...prev,
-        position:  result.position,
-        direction: result.direction,
-        animation: walkAnim,
-      }));
-    }
-  }, [clearRoute, roomHeight, roomObjects, roomWidth, updateAgent, updateRouteDebug]);
+  const agentLoopActive = Boolean(agent.targetPosition) || agent.workDurationMs !== undefined;
 
-  const tickWork = useCallback((deltaSeconds: number) => {
-    const current = agentRef.current;
-    if (current.workDurationMs === undefined) return;
-
-    workElapsedMsRef.current += deltaSeconds * 1000;
-
-    if (workElapsedMsRef.current >= current.workDurationMs) {
-      workElapsedMsRef.current = 0;
-      lastWorkPublishRef.current = 0;
-      const { next: nextTask, rest } = dequeueTask(current.taskQueue);
-      if (nextTask) {
-        updateAgent((prev) => ({
-          ...prev,
-          taskQueue:       rest,
-          workDurationMs:  undefined,
-          workElapsedMs:   undefined,
-        }));
-        assignTask(nextTask);
-      } else {
-        const doneBubble = current.taskType
-          ? resolveAgentTask(current.taskType, roomObjects).doneBubbleText
-          : 'Idle.';
-        updateAgent((prev) => ({
-          ...prev,
-          state:           'idle',
-          taskType:        'idle',
-          animation:       resolveStateAnimation('idle'),
-          bubbleText:      doneBubble,
-          targetStationId: undefined,
-          arriveState:     undefined,
-          arriveBubbleText: undefined,
-          workDurationMs:  undefined,
-          workElapsedMs:   undefined,
-        }));
-      }
-      return;
-    }
-
-    // Throttle React state publishes for the progress bar.
-    const now = performance.now();
-    if (now - lastWorkPublishRef.current >= WORK_PUBLISH_INTERVAL_MS) {
-      lastWorkPublishRef.current = now;
-      const published = workElapsedMsRef.current;
-      updateAgent((prev) => ({ ...prev, workElapsedMs: published }));
-    }
-  }, [assignTask, roomObjects, updateAgent]);
-
-  // RAF game loop
+  // RAF game loop. Keep it asleep while idle; /lounge mounts one hook per visible agent.
   useEffect(() => {
+    if (!agentLoopActive) return;
+
     let animId: number;
 
     const loop = (timestamp: number) => {
@@ -449,15 +547,18 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
       cancelAnimationFrame(animId);
       lastTimeRef.current = 0;
     };
-  }, [tickAgent, tickWork]);
+  }, [agentLoopActive, tickAgent, tickWork]);
 
-  const setAgentState = useCallback((state: AgentState) => {
-    updateAgent((prev) => ({
-      ...prev,
-      state,
-      animation: resolveStateAnimation(state),
-    }));
-  }, [updateAgent]);
+  const setAgentState = useCallback(
+    (state: AgentState) => {
+      updateAgent((prev) => ({
+        ...prev,
+        state,
+        animation: resolveStateAnimation(state),
+      }));
+    },
+    [updateAgent],
+  );
 
   const clearAgentTask = useCallback(() => {
     clearRoute();
@@ -465,30 +566,42 @@ export function useAgentWalk(options: UseAgentWalkOptions = {}, _legacyAgentId =
     lastWorkPublishRef.current = 0;
     updateAgent((prev) => ({
       ...prev,
-      taskType:        undefined,
-      targetPosition:  undefined,
+      taskType: undefined,
+      targetPosition: undefined,
       targetStationId: undefined,
-      arriveState:     undefined,
+      arriveState: undefined,
       arriveBubbleText: undefined,
-      state:           'idle',
-      animation:       'idle',
-      bubbleText:      undefined,
-      workDurationMs:  undefined,
-      workElapsedMs:   undefined,
-      taskQueue:       [],
+      state: 'idle',
+      animation: 'idle',
+      bubbleText: undefined,
+      workDurationMs: undefined,
+      workElapsedMs: undefined,
+      taskQueue: [],
     }));
   }, [clearRoute, updateAgent]);
 
-  const enqueueTask = useCallback((task: AgentTaskType) => {
-    updateAgent((prev) => ({
-      ...prev,
-      taskQueue: enqueueTaskPure(prev.taskQueue, task, maxQueueLength),
-    }));
-  }, [maxQueueLength, updateAgent]);
+  const enqueueTask = useCallback(
+    (task: AgentTaskType) => {
+      updateAgent((prev) => ({
+        ...prev,
+        taskQueue: enqueueTaskPure(prev.taskQueue, task, maxQueueLength),
+      }));
+    },
+    [maxQueueLength, updateAgent],
+  );
 
   const clearQueue = useCallback(() => {
     updateAgent((prev) => ({ ...prev, taskQueue: [] }));
   }, [updateAgent]);
 
-  return { agent, assignTask, setAgentState, clearAgentTask, enqueueTask, clearQueue, routeDebug };
+  return {
+    agent,
+    assignTask,
+    walkToIso,
+    setAgentState,
+    clearAgentTask,
+    enqueueTask,
+    clearQueue,
+    routeDebug,
+  };
 }

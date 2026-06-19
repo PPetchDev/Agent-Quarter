@@ -20,6 +20,20 @@
 
 - Do not rewrite `ai/memory.md` directly — propose via `ai/patches/latest.md`
 
+## Stack
+
+- Frontend: Next.js 15 (App Router), React 19, PixiJS v7, Tailwind — `apps/web/`
+- Backend: NestJS 11, Socket.io 4, Prisma 5, Anthropic SDK — `apps/api/`
+- Shared: TypeScript lib, character/mood types — `packages/core/`
+- See `ai/maps/repo-map.md` for exact file locations before reading source
+
+## Build & Environment
+
+- `DATABASE_URL` required before `pnpm build` — Prisma runs during NestJS compilation
+- Dev SQLite DB lives at `apps/api/prisma/dev.db`
+- ESLint and Prettier are configured at the repo root; TypeScript strict mode remains the primary correctness gate
+- Root `tsconfig.json` uses project references — workspace builds are isolated
+
 ## Audit
 
 - State PASS / PARTIAL / BLOCKED for every task
