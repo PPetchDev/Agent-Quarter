@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { DialogueService } from './dialogue.service';
+import { DialogueService, buildWorkflowPlanPrompt } from './dialogue.service';
 import type { GenerateOfficeDialogueInput, OfficeAgentId } from './dialogue.service';
 import type { LlmTextProvider, LlmTextProviderResult } from '../llm/llm-provider.interface';
 
@@ -184,5 +184,62 @@ describe('sanitizeDialogueText', () => {
     expect(result.text).not.toMatch(/```/);
     expect(result.text).not.toMatch(/\*\*/);
     expect(result.text).not.toMatch(/\n/);
+  });
+});
+
+describe('planOfficeWorkflow', () => {
+  it('returns deterministic fallback when no LLM provider', async () => {
+    const service = new DialogueService();
+    const result = await service.planOfficeWorkflow({ commandText: 'build UI' });
+    expect(result.source).toBe('deterministic');
+    expect(result.fallbackUsed).toBe(true);
+    expect(result.steps).toEqual([]);
+  });
+
+  it('parses valid JSON step array from LLM response', async () => {
+    const jsonResponse = JSON.stringify([
+      { title: 'Plan', taskType: 'meeting', agentName: 'Mika', detail: 'Scope', toolLabel: 'Map', handoffTo: 'Mai' },
+      { title: 'Build', taskType: 'code', agentName: 'Mai', detail: 'Implement', toolLabel: 'Build', handoffTo: 'Yui' },
+      { title: 'Close', taskType: 'print', agentName: 'Aki', detail: 'Package', toolLabel: 'Close' },
+    ]);
+    const service = new DialogueService(mockProvider(jsonResponse));
+    const result = await service.planOfficeWorkflow({ commandText: 'build UI' });
+    expect(result.source).toBe('llm');
+    expect(result.fallbackUsed).toBe(false);
+    expect(result.steps).toHaveLength(3);
+    expect(result.steps[0]!.title).toBe('Plan');
+    expect(result.steps[1]!.agentName).toBe('Mai');
+    expect(result.steps[2]!.toolLabel).toBe('Close');
+  });
+
+  it('sanitizes invalid task types to code', async () => {
+    const jsonResponse = JSON.stringify([
+      { title: 'Hack', taskType: 'hacking', agentName: 'Mai', detail: 'x', toolLabel: 'Build' },
+    ]);
+    const service = new DialogueService(mockProvider(jsonResponse));
+    const result = await service.planOfficeWorkflow({ commandText: 'test' });
+    expect(result.steps[0]!.taskType).toBe('code');
+  });
+
+  it('filters empty steps', async () => {
+    const jsonResponse = JSON.stringify([
+      { title: '', taskType: 'code', agentName: '', detail: '', toolLabel: 'Build' },
+      { title: 'Build', taskType: 'code', agentName: 'Mai', detail: 'x', toolLabel: 'Build' },
+    ]);
+    const service = new DialogueService(mockProvider(jsonResponse));
+    const result = await service.planOfficeWorkflow({ commandText: 'test' });
+    expect(result.steps).toHaveLength(1);
+  });
+
+  it('includes busy agents in prompt', () => {
+    const prompt = buildWorkflowPlanPrompt({ commandText: 'test', busyAgentIds: ['agent-1', 'agent-2'] });
+    expect(prompt).toContain('Mai');
+    expect(prompt).toContain('Aki');
+    expect(prompt).toContain('DO NOT assign');
+  });
+
+  it('includes error note in prompt when previousError', () => {
+    const prompt = buildWorkflowPlanPrompt({ commandText: 'test', previousError: true });
+    expect(prompt).toContain('Retry');
   });
 });

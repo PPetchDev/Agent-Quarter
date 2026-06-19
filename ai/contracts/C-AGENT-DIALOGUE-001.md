@@ -4,7 +4,8 @@
 IMPLEMENTATION PROPOSAL (from C-GAME-RESEARCH-001)
 
 ## Status
-DRAFT — Awaiting review before implementation
+PASS (2026-06-19) — System built during C-GAME-RESEARCH-001, verified and closed out.
+Uses REST API + deterministic pools + LLM fallback (different from original Socket.io proposal).
 
 ## Goal
 Enable office agents to talk to each other autonomously via LLM with visual chat bubbles in LoungeCanvas.

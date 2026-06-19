@@ -46,3 +46,48 @@ export async function generateOfficeDialogue(
     return null;
   }
 }
+
+// ─── Workflow plan adapter ────────────────────────────────────────────────────
+
+export type PlanWorkflowLLMRequest = {
+  commandText: string;
+  busyAgentIds?: OfficeAgentId[];
+  previousError?: boolean;
+};
+
+export type WorkflowStepLLM = {
+  title: string;
+  taskType: string;
+  agentName: string;
+  detail: string;
+  toolLabel: string;
+  handoffTo?: string;
+};
+
+export type PlanWorkflowLLMResponse = {
+  steps: WorkflowStepLLM[];
+  source: 'llm' | 'deterministic';
+  fallbackUsed: boolean;
+  errorSummary?: string;
+  model?: string;
+};
+
+/**
+ * Call POST /api/dialogue/plan-workflow to plan a workflow via LLM.
+ * Returns the PlanWorkflowLLMResponse or null on failure.
+ */
+export async function planWorkflowLLM(
+  input: PlanWorkflowLLMRequest,
+): Promise<PlanWorkflowLLMResponse | null> {
+  try {
+    const res = await fetch(`${BASE}/api/dialogue/plan-workflow`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}

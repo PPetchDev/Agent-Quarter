@@ -1,6 +1,11 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { DialogueService } from './dialogue.service';
-import type { GenerateOfficeDialogueInput, DialogueResponse } from './dialogue.service';
+import type {
+  GenerateOfficeDialogueInput,
+  DialogueResponse,
+  PlanWorkflowInput,
+  PlanWorkflowResponse,
+} from './dialogue.service';
 
 @Controller('dialogue')
 export class DialogueController {
@@ -11,5 +16,12 @@ export class DialogueController {
     @Body() body: GenerateOfficeDialogueInput,
   ): Promise<DialogueResponse> {
     return this.dialogueService.generateOfficeDialogue(body);
+  }
+
+  @Post('plan-workflow')
+  async planOfficeWorkflow(
+    @Body() body: PlanWorkflowInput,
+  ): Promise<PlanWorkflowResponse> {
+    return this.dialogueService.planOfficeWorkflow(body);
   }
 }

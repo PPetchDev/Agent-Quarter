@@ -7,6 +7,20 @@ _Each item has a Contract ID. Items without a contract are not executable._
 
 ## Now
 
+### C-ORCHESTRATE-LLM-002 — LLM-Powered Workflow Planner (Phase 2)
+
+**Status:** PASS (2026-06-19)
+**Goal:** Replace rule-based agent scoring with LLM-powered planning via DialogueService. Backend `POST /api/dialogue/plan-workflow` delegates to Claude with deterministic fallback. Frontend `planWorkflowStepsLLM()` + `convertLLMSteps()` integrated into LoungeCanvas workflow start.
+**Scope:** `apps/api/src/dialogue/*`, `apps/web/src/game/agents/officeWorkflow.*`, `apps/web/src/game/dialogue/dialogueAdapter.ts`, `apps/web/src/components/lounge/LoungeCanvas.tsx`
+**Result:** STABLE — 37 API dialogue tests, 29 web workflow tests, 305 web total, typecheck + lint + build all PASS.
+
+### C-AGENT-DIALOGUE-001 — Agent-to-Agent Autonomous Dialogue System
+
+**Status:** PASS (2026-06-19)
+**Goal:** Verify and close out the autonomous agent-to-agent dialogue system (REST API + deterministic pools + LLM fallback), built during C-GAME-RESEARCH-001 but never formally closed out.
+**Scope:** `apps/api/src/dialogue/*`, `apps/web/src/game/dialogue/*`, `apps/web/src/components/lounge/LoungeCanvas.tsx` (lines 1487-1622, 2623-2637)
+**Result:** STABLE — 60 dialogue tests pass (30 API + 30 web), 399 total, TypeScript + lint clean, browser QA confirms dialogue bubbles + AGENT CHAT panel working with zero JS errors.
+
 ### C-LOUNGE-PERF-ROUTE-GRID-002 — Shared Lounge Route Grid
 
 **Status:** PASS (2026-06-10)

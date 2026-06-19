@@ -32,6 +32,7 @@ export interface RoomScene {
   furnitureLayer: PIXI.Container;
   activeStationGraphics: PIXI.Graphics;
   highlightGraphics: PIXI.Graphics;
+  particleGraphics: PIXI.Graphics;
   items: Map<number, FurnitureItem>;
   /** Redraw a single furniture item at its current position */
   updateItem: (id: number, wx: number, wy: number, wz: number) => void;
@@ -115,6 +116,7 @@ export function buildRoomScene(
   const furnitureLayer = new PIXI.Container();
   const activeStationGraphics = new PIXI.Graphics();
   const highlightGraphics = new PIXI.Graphics();
+  const particleGraphics = new PIXI.Graphics();
 
   tileGridGraphics.visible = false;
   furnitureLayer.sortableChildren = true;
@@ -124,6 +126,7 @@ export function buildRoomScene(
   stage.addChild(furnitureLayer);
   stage.addChild(activeStationGraphics);
   stage.addChild(highlightGraphics);
+  stage.addChild(particleGraphics);
 
   // Load Azur Lane room background if URL provided
   if (roomBgUrl) {
@@ -252,6 +255,7 @@ export function buildRoomScene(
     furnitureLayer,
     activeStationGraphics,
     highlightGraphics,
+    particleGraphics,
     items,
     updateItem,
     setSelected,

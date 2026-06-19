@@ -7,7 +7,9 @@ import {
   inferPrimaryOfficeTask,
   normalizeOfficeCommand,
   OFFICE_WORKFLOW_AGENTS,
+  planWorkflowSteps,
 } from './officeWorkflow';
+import type { OfficeAgentId } from './officeWorkflow';
 
 describe('office workflow planner', () => {
   it('normalizes blank commands to a default command', () => {
@@ -65,5 +67,83 @@ describe('office workflow planner', () => {
       'yui',
       'mika',
     ]);
+  });
+});
+
+describe('planWorkflowSteps (dynamic planner)', () => {
+  it('produces 2 steps for simple commands', () => {
+    const steps = planWorkflowSteps('fix typo');
+    // build + close = 2
+    expect(steps.length).toBeGreaterThanOrEqual(2);
+    expect(steps.map((s) => s.title)).toContain('Build');
+    expect(steps.map((s) => s.title)).toContain('Close');
+  });
+
+  it('produces more steps for complex commands', () => {
+    const steps = planWorkflowSteps('refactor the entire backend API and migrate database schema');
+    // plan + build + review + contract + close >= 4
+    expect(steps.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('routes UI keywords to Mika or Mai', () => {
+    const steps = planWorkflowSteps('polish the responsive layout');
+    const buildStep = steps.find((s) => s.title === 'Build');
+    expect(buildStep).toBeDefined();
+    // Mika (agent-5) or Mai (agent-1) should be the builder
+    expect(['agent-1', 'agent-5']).toContain(buildStep!.agentId);
+  });
+
+  it('routes backend keywords to Ren', () => {
+    const steps = planWorkflowSteps('design the database schema and API contract');
+    const buildStep = steps.find((s) => s.title === 'Build');
+    expect(buildStep!.agentId).toBe('agent-3'); // Ren
+  });
+
+  it('routes test keywords to Yui', () => {
+    const steps = planWorkflowSteps('audit regression tests');
+    const buildStep = steps.find((s) => s.title === 'Build');
+    expect(buildStep!.agentId).toBe('agent-4'); // Yui
+  });
+
+  it('routes deploy keywords to Aki', () => {
+    const steps = planWorkflowSteps('deploy the new CI pipeline');
+    const buildStep = steps.find((s) => s.title === 'Build');
+    expect(buildStep!.agentId).toBe('agent-2'); // Aki
+  });
+
+  it('skips busy agents', () => {
+    const busy: OfficeAgentId[] = ['agent-3']; // Ren is busy
+    const steps = planWorkflowSteps('design the database schema', { busyAgentIds: busy });
+    const buildStep = steps.find((s) => s.title === 'Build');
+    // Should pick someone else since Ren is busy
+    expect(buildStep!.agentId).not.toBe('agent-3');
+  });
+
+  it('produces single rest step for rest commands', () => {
+    const steps = planWorkflowSteps('rest');
+    expect(steps).toHaveLength(1);
+    expect(steps[0]!.taskType).toBe('rest');
+    expect(steps[0]!.title).toBe('Rest');
+  });
+
+  it('adds retry step when previousError is true', () => {
+    const steps = planWorkflowSteps('refactor the API layer', {
+      previousError: true,
+    });
+    const titles = steps.map((s) => s.title);
+    expect(titles).toContain('Retry');
+    // Retry is between Plan and Build
+    const retryIdx = titles.indexOf('Retry');
+    const buildIdx = titles.indexOf('Build');
+    expect(retryIdx).toBeLessThan(buildIdx);
+  });
+
+  it('review step goes to different agent than builder', () => {
+    const steps = planWorkflowSteps('verify the UI tests');
+    const buildStep = steps.find((s) => s.title === 'Build');
+    const reviewStep = steps.find((s) => s.title === 'Review');
+    if (reviewStep) {
+      expect(reviewStep.agentId).not.toBe(buildStep!.agentId);
+    }
   });
 });

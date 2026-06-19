@@ -165,7 +165,93 @@ function sanitizeDialogueText(raw: string): string {
   return text;
 }
 
-// ─── Service ──────────────────────────────────────────────────────────────────
+// ─── Workflow planning types ─────────────────────────────────────────────────
+
+export type PlanWorkflowInput = {
+  commandText: string;
+  busyAgentIds?: OfficeAgentId[];
+  previousError?: boolean;
+};
+
+export type WorkflowStepPlan = {
+  title: string;
+  taskType: string;
+  agentName: string;
+  detail: string;
+  toolLabel: string;
+  handoffTo?: string;
+};
+
+export type PlanWorkflowResponse = {
+  steps: WorkflowStepPlan[];
+  source: 'llm' | 'deterministic';
+  fallbackUsed: boolean;
+  errorSummary?: string;
+  model?: string;
+};
+
+// ─── Workflow plan prompt builder ────────────────────────────────────────────
+
+export function buildWorkflowPlanPrompt(input: PlanWorkflowInput): string {
+  const busyList = input.busyAgentIds?.length
+    ? `Busy agents (DO NOT assign as primary builder): ${input.busyAgentIds.map((id) => AGENTS[id]?.name ?? id).join(', ')}.`
+    : 'All agents available.';
+  const errorNote = input.previousError ? 'Previous workflow step failed — include a Retry step with a different agent.' : '';
+
+  return [
+    `You are a workflow planner for an anime agent squad.`,
+    `Agents: Mai (Frontend Lead, UI/design), Aki (DevOps, CI/deploy), Ren (Backend, APIs/data), Yui (Reviewer, QA/tests), Mika (Designer, visual/flow).`,
+    `Tools: Map (scope), Build (implement), Review (verify), Contract (check boundaries), Close (git/package).`,
+    `Task types: code, review, document, research, meeting, print, rest.`,
+    busyList,
+    errorNote,
+    `Command: "${input.commandText}"`,
+    `Respond with ONLY a JSON array of steps. Each step: {"title":"Plan","taskType":"meeting","agentName":"Mika","detail":"Scope the command","toolLabel":"Map","handoffTo":"Mai"}.`,
+    `The first step should assign to the best agent for the command. The last step should be "Close".`,
+    `Use 2-5 steps based on command complexity. Simple = 2-3 steps, complex = 4-5 steps.`,
+    `Output ONLY the JSON array — no markdown, no explanation.`,
+  ].filter(Boolean).join('\n');
+}
+
+// ─── Workflow plan parser ────────────────────────────────────────────────────
+
+const VALID_TASK_TYPES = new Set(['code', 'review', 'document', 'research', 'meeting', 'print', 'rest']);
+const VALID_TOOL_LABELS = new Set(['Map', 'Build', 'Review', 'Contract', 'Close']);
+
+function parseWorkflowPlanText(raw: string): WorkflowStepPlan[] {
+  // Extract JSON array from response
+  const jsonMatch = raw.match(/\[[\s\S]*\]/);
+  if (!jsonMatch) return [];
+
+  try {
+    const parsed = JSON.parse(jsonMatch[0]) as unknown[];
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+      .map((item) => ({
+        title: String(item.title ?? '').trim(),
+        taskType: VALID_TASK_TYPES.has(String(item.taskType ?? '')) ? String(item.taskType) : 'code',
+        agentName: String(item.agentName ?? '').trim(),
+        detail: String(item.detail ?? '').trim(),
+        toolLabel: VALID_TOOL_LABELS.has(String(item.toolLabel ?? '')) ? String(item.toolLabel) : 'Build',
+        handoffTo: item.handoffTo ? String(item.handoffTo).trim() : undefined,
+      }))
+      .filter((step) => step.title.length > 0 && step.agentName.length > 0);
+  } catch {
+    return [];
+  }
+}
+
+// ─── Plan workflow method ────────────────────────────────────────────────────
+
+export function planWorkflowFallback(input: PlanWorkflowInput): PlanWorkflowResponse {
+  return {
+    steps: [],
+    source: 'deterministic',
+    fallbackUsed: true,
+  };
+}
 
 @Injectable()
 export class DialogueService {
@@ -173,6 +259,35 @@ export class DialogueService {
     @Inject(LLM_TEXT_PROVIDER)
     private readonly llmProvider?: LlmTextProvider,
   ) {}
+
+  async planOfficeWorkflow(input: PlanWorkflowInput): Promise<PlanWorkflowResponse> {
+    // Try LLM
+    if (this.llmProvider) {
+      try {
+        const prompt = buildWorkflowPlanPrompt(input);
+        const result = await this.llmProvider.generateText({
+          prompt,
+          maxTokens: 512,
+        });
+
+        if (result.text?.trim()) {
+          const steps = parseWorkflowPlanText(result.text);
+          if (steps.length > 0) {
+            return {
+              steps,
+              source: 'llm',
+              fallbackUsed: false,
+              model: result.model,
+            };
+          }
+        }
+      } catch {
+        // Fall through to deterministic
+      }
+    }
+
+    return planWorkflowFallback(input);
+  }
 
   async generateOfficeDialogue(input: GenerateOfficeDialogueInput): Promise<DialogueResponse> {
     const now = input.now ?? Date.now();

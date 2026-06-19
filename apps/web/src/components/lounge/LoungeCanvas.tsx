@@ -18,6 +18,7 @@ import {
   ROOM_THEME_KEYS,
 } from './pixiRoom';
 import type { RoomTheme, RoomThemeKey } from './pixiRoom';
+import { drawThemeParticles } from './themeParticles';
 import { buildRoomScene, loadRoomJSON } from './roomLoader';
 import type { RoomScene } from './roomLoader';
 import type { RoomObject } from './roomDefs';
@@ -62,6 +63,8 @@ import type { Agent, AgentState, AgentTaskType } from '@/game/agents/agentTypes'
 import {
   createOfficeToolEvent,
   createOfficeWorkflowSteps,
+  planWorkflowSteps,
+  convertLLMSteps,
   describeOfficeStepDone,
   describeOfficeStepStart,
   OFFICE_TOOL_BOUNDARIES,
@@ -596,7 +599,7 @@ export function LoungeCanvas() {
   );
   const [officeStatus, setOfficeStatus] = useState<OfficeWorkflowStatus>('idle');
   const [officeSteps, setOfficeSteps] = useState<OfficeWorkflowStep[]>(() =>
-    createOfficeWorkflowSteps('Build a verified lounge workflow slice'),
+    planWorkflowSteps('Build a verified lounge workflow slice'),
   );
   const [officeStepIndex, setOfficeStepIndex] = useState(0);
   const [officeChat, setOfficeChat] = useState<OfficeChatMessage[]>([]);
@@ -1137,6 +1140,7 @@ export function LoungeCanvas() {
       });
       sceneRef.current = scene;
       drawBackground(scene.backgroundGraphics, roomWRef.current, roomHRef.current, theme);
+      drawThemeParticles(scene.particleGraphics, roomWRef.current, roomHRef.current, theme);
 
       // ── Load real Spine 3.8 characters ────────────────────────────────────
       for (const def of OFFICE_AGENT_SPINE_ASSETS) {
@@ -1311,6 +1315,7 @@ export function LoungeCanvas() {
     if (!sceneRef.current?.backgroundGraphics) return;
     setRoomProjection(roomW, roomH);
     drawBackground(sceneRef.current.backgroundGraphics, roomW, roomH, theme);
+    drawThemeParticles(sceneRef.current.particleGraphics, roomW, roomH, theme);
     sceneRef.current.rebuild(objectsRef.current);
   }, [roomW, roomH, theme]);
 
@@ -1662,13 +1667,35 @@ export function LoungeCanvas() {
     setOfficeToolEvents((prev) => [...prev, { id, ...event }].slice(-6));
   }, []);
 
-  const handleRunOfficeCommand = useCallback(() => {
+  const handleRunOfficeCommand = useCallback(async () => {
     if (!roomReady) {
       showToast('Room is loading');
       return;
     }
 
-    const steps = createOfficeWorkflowSteps(officeCommand);
+    const busyAgentIds = Object.entries(officeWalkers)
+      .filter(([, w]) => w.agent.state !== 'idle')
+      .map(([id]) => id as OfficeAgentId);
+
+    // Try LLM planner first, fall back to rule-based
+    let steps = planWorkflowSteps(officeCommand, { busyAgentIds });
+    try {
+      const { planWorkflowLLM } = await import('@/game/dialogue/dialogueAdapter');
+      const llmResult = await planWorkflowLLM({ commandText: officeCommand, busyAgentIds });
+      if (llmResult && llmResult.steps.length > 0) {
+        const converted = convertLLMSteps(llmResult.steps);
+        if (converted.length > 0) {
+          steps = converted;
+          appendOfficeChat({
+            agentId: steps[0]!.agentId,
+            kind: 'status',
+            text: llmResult.source === 'llm' ? '🧠 LLM planned this workflow' : '📋 Rule-based plan',
+          });
+        }
+      }
+    } catch {
+      // Use rule-based fallback (already set)
+    }
     const first = steps[0];
 
     officeStepInFlightRef.current = null;
@@ -2138,6 +2165,15 @@ export function LoungeCanvas() {
       onMouseUp={handlePanEnd}
       onMouseLeave={handlePanEnd}
     >
+      {/* ── Character ambient lighting overlay (theme-based tint) ────────── */}
+      <div
+        className="pointer-events-none absolute inset-0 z-25"
+        style={{
+          backgroundColor: `#${theme.wallTint.toString(16).padStart(6, '0')}`,
+          opacity: theme.wallTintAlpha * 0.35,
+          mixBlendMode: 'overlay' as React.CSSProperties['mixBlendMode'],
+        }}
+      />
       {/* ── Top-left: Back + Room name ───────────────────────────────── */}
       <div className="absolute left-3 top-3 z-30 flex items-center gap-2 max-sm:left-1 max-sm:top-1 max-sm:gap-1">
         <button

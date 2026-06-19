@@ -102,3 +102,15 @@ describe('DialogueController', () => {
     }
   });
 });
+
+describe('planOfficeWorkflow', () => {
+  const service = new DialogueService();
+  const ctrl = new DialogueController(service);
+
+  it('returns deterministic fallback when no LLM provider', async () => {
+    const result = await ctrl.planOfficeWorkflow({ commandText: 'build UI' });
+    expect(result.source).toBe('deterministic');
+    expect(result.fallbackUsed).toBe(true);
+    expect(result.steps).toEqual([]);
+  });
+});

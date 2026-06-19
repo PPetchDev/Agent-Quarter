@@ -1,6 +1,20 @@
 # Changelog — Anime Agent Squad
 
 > ⚠️ **Recovery note (2026-06-03):**
+
+## C-ORCHESTRATE-LLM-002 — LLM-Powered Workflow Planner (Phase 2) (Closeout)
+
+**Date:** 2026-06-19
+**Status:** PASS
+
+Completed Phase 2 of the dynamic workflow planner:
+- **Backend**: Added `planOfficeWorkflow()` to DialogueService with LLM + deterministic fallback chain. Claude generates JSON step array via `buildWorkflowPlanPrompt()`. `POST /api/dialogue/plan-workflow` endpoint in controller.
+- **Frontend**: Added `planWorkflowStepsLLM()` (REST client) and `convertLLMSteps()` (maps LLM taskType → AgentTaskType enum) in officeWorkflow.ts. Extended dialogueAdapter with `PlanWorkflowLLMResponse` types.
+- **Integration**: LoungeCanvas workflow start calls LLM planner first, falls back to rule-based `planWorkflowSteps()` when LLM unavailable.
+
+All gates PASS: 37 API dialogue tests, 29 web workflow tests, 305 web total, typecheck, lint, build.
+
+---
 > This file was accidentally overwritten during C-OFFICE-RUN-EXECUTION-API-004B.
 > The original untracked 53KB file could not be restored from git.
 > Entries below are reconstructed from: partial read cache, `ai/backlog.md`, session history, `ai/maps/*`, and verified patch reports.
@@ -9,6 +23,23 @@
 >
 > **Unrecoverable:** ~865 lines (lines 501–1365) of the original changelog were never read and cannot be recovered.
 > See `ai/backlog.md` for a comprehensive contract inventory covering the same contracts.
+
+---
+
+## C-AGENT-DIALOGUE-001 — Agent-to-Agent Dialogue System (Closeout)
+
+**Date:** 2026-06-19
+**Status:** PASS
+
+Closed out the autonomous agent-to-agent dialogue system built during C-GAME-RESEARCH-001:
+- Verified 60 dialogue tests pass (30 API + 30 web), 399 total tests
+- Backend: `POST /api/dialogue/office` with LLM + deterministic fallback, 5 agent personas
+- Frontend: `dialogueScheduler.ts` with cooldown/probability gate, `dialogueAdapter.ts` REST client
+- LoungeCanvas: autonomous tick, purple chat bubbles (e.g., "Mai/ Ready for the sprint! ✨"), AGENT CHAT panel
+- TypeScript + lint clean across all workspaces
+- Browser QA: dialogue visible in AGENT CHAT, chat bubbles above agents, zero JS errors
+
+No code changes — closeout only. System was already fully functional.
 
 ---
 

@@ -161,6 +161,12 @@ export type RoomTheme = {
   wallTintAlpha: number;
   floorTint: number;
   floorTintAlpha: number;
+  /** Light cast through window onto floor/wall */
+  windowGlow: number;
+  windowGlowAlpha: number;
+  wallpaperPattern: 'stars' | 'hearts' | 'sakura' | 'stripe' | 'maple';
+  wallpaperColor1: number;
+  wallpaperColor2: number;
 };
 
 export type RoomThemeKey = 'dawn' | 'morning' | 'afternoon' | 'dusk' | 'night';
@@ -173,6 +179,11 @@ const THEMES: Record<RoomThemeKey, RoomTheme> = {
     wallTintAlpha: 0.12,
     floorTint: 0xffdab9,
     floorTintAlpha: 0.08,
+    windowGlow: 0xffe4d0,
+    windowGlowAlpha: 0.15,
+    wallpaperPattern: 'hearts',
+    wallpaperColor1: 0xffd1dc,
+    wallpaperColor2: 0xffe4e9,
   },
   morning: {
     skyTop: '#e0f0ff',
@@ -181,6 +192,11 @@ const THEMES: Record<RoomThemeKey, RoomTheme> = {
     wallTintAlpha: 0.08,
     floorTint: 0xfffff0,
     floorTintAlpha: 0.05,
+    windowGlow: 0xffffff,
+    windowGlowAlpha: 0.20,
+    wallpaperPattern: 'sakura',
+    wallpaperColor1: 0xffdde8,
+    wallpaperColor2: 0xffe4e9,
   },
   afternoon: {
     skyTop: '#fff8e8',
@@ -189,6 +205,11 @@ const THEMES: Record<RoomThemeKey, RoomTheme> = {
     wallTintAlpha: 0.04,
     floorTint: 0xfff8e0,
     floorTintAlpha: 0.03,
+    windowGlow: 0xfffaf0,
+    windowGlowAlpha: 0.12,
+    wallpaperPattern: 'stripe',
+    wallpaperColor1: 0xf5f0e8,
+    wallpaperColor2: 0xfaf5f0,
   },
   dusk: {
     skyTop: '#ffb6c1',
@@ -197,6 +218,11 @@ const THEMES: Record<RoomThemeKey, RoomTheme> = {
     wallTintAlpha: 0.18,
     floorTint: 0xffb899,
     floorTintAlpha: 0.12,
+    windowGlow: 0xffcc88,
+    windowGlowAlpha: 0.18,
+    wallpaperPattern: 'maple',
+    wallpaperColor1: 0xffccaa,
+    wallpaperColor2: 0xffd4b8,
   },
   night: {
     skyTop: '#2a1a3e',
@@ -205,6 +231,11 @@ const THEMES: Record<RoomThemeKey, RoomTheme> = {
     wallTintAlpha: 0.22,
     floorTint: 0x182038,
     floorTintAlpha: 0.15,
+    windowGlow: 0xffdd88,
+    windowGlowAlpha: 0.08,
+    wallpaperPattern: 'stars',
+    wallpaperColor1: 0x8888cc,
+    wallpaperColor2: 0xffffcc,
   },
 };
 
@@ -372,21 +403,160 @@ export function drawBackground(
     0xffb7c5,
   );
 
-  // 🌸 Sakura on back wall (above chair rail)
-  const backFlowerCount = Math.max(2, Math.ceil((cols * 12) / ROOM_TILES_X));
-  const backSpacing = cols / backFlowerCount;
-  for (let fi = 0; fi < backFlowerCount; fi++) {
-    const fwx = backSpacing * (fi + 0.5),
-      fwz = WAINSCOT_H + 0.6 + (fi % 3) * 0.9;
-    const [fpx, fpy] = proj(fwx, rows - 0.01, fwz);
-    const fc = sakuraPink[fi % sakuraPink.length]!;
-    for (let p = 0; p < 5; p++) {
-      const angle = (p / 5) * Math.PI * 2 - Math.PI / 2;
-      g.beginFill(fc, 0.7)
-        .drawEllipse(fpx + Math.cos(angle) * 5, fpy + Math.sin(angle) * 4.5, 4, 2.5)
-        .endFill();
+  // ── Wallpaper pattern (varies by theme) ──────────────────────────────────
+  const wpPattern = theme?.wallpaperPattern ?? 'sakura';
+  const wpC1 = theme?.wallpaperColor1 ?? 0xffdde8;
+  const wpC2 = theme?.wallpaperColor2 ?? 0xffe4e9;
+  const backDotCount = Math.max(3, Math.ceil((cols * 12) / ROOM_TILES_X));
+
+  if (wpPattern === 'stars') {
+    // Night — scattered stars and dots
+    for (let fi = 0; fi < backDotCount + 4; fi++) {
+      const fwx = 0.5 + (fi * cols) / (backDotCount + 3);
+      const fwz = WAINSCOT_H + 0.5 + (fi % 4) * 0.7;
+      const [fpx, fpy] = proj(fwx, rows - 0.01, fwz);
+      // Small stars (4-point sparkles)
+      const sz = 1.5 + (fi % 3) * 1.0;
+      for (let p = 0; p < 4; p++) {
+        const angle = (p / 4) * Math.PI * 2;
+        g.beginFill(wpC2, 0.5 + (fi % 3) * 0.2);
+        g.drawEllipse(fpx + Math.cos(angle) * 3, fpy + Math.sin(angle) * 2, sz, sz * 0.5);
+        g.endFill();
+      }
+      g.beginFill(wpC1, 0.4).drawCircle(fpx, fpy, 1.0).endFill();
     }
-    g.beginFill(0xffe4b5, 0.85).drawCircle(fpx, fpy, 2.5).endFill();
+  } else if (wpPattern === 'hearts') {
+    // Dawn — scattered hearts
+    for (let fi = 0; fi < backDotCount; fi++) {
+      const fwx = 0.5 + (fi * cols) / (backDotCount + 1);
+      const fwz = WAINSCOT_H + 0.5 + (fi % 3) * 0.8;
+      const [fpx, fpy] = proj(fwx, rows - 0.01, fwz);
+      const hc = [wpC1, wpC2, 0xffe4d0][fi % 3]!;
+      // Simple heart: two circles + triangle
+      g.beginFill(hc, 0.5);
+      g.drawCircle(fpx - 2, fpy - 1, 2.5);
+      g.drawCircle(fpx + 2, fpy - 1, 2.5);
+      g.moveTo(fpx - 4, fpy + 1);
+      g.lineTo(fpx, fpy + 4);
+      g.lineTo(fpx + 4, fpy + 1);
+      g.closePath();
+      g.endFill();
+    }
+  } else if (wpPattern === 'stripe') {
+    // Afternoon — subtle vertical stripes
+    const stripeSpacing = cols / (backDotCount + 2);
+    for (let fi = 0; fi <= backDotCount + 2; fi++) {
+      const fwx = 0.3 + fi * stripeSpacing;
+      const [px1, py1] = proj(fwx, rows - 0.01, WAINSCOT_H + 0.2);
+      const [px2, py2] = proj(fwx, rows - 0.01, 3.9);
+      ln(g, px1, py1, px2, py2, wpC1, 1.5, 0.15 + (fi % 3) * 0.05);
+    }
+  } else if (wpPattern === 'maple') {
+    // Dusk — maple-like leaf dots
+    for (let fi = 0; fi < backDotCount + 2; fi++) {
+      const fwx = 1.0 + (fi * (cols - 2)) / (backDotCount + 1);
+      const fwz = WAINSCOT_H + 0.5 + (fi % 3) * 0.8;
+      const [fpx, fpy] = proj(fwx, rows - 0.01, fwz);
+      const mc = [wpC1, wpC2, 0xffd4a0][fi % 3]!;
+      for (let p = 0; p < 5; p++) {
+        const angle = (p / 5) * Math.PI * 2;
+        g.beginFill(mc, 0.5);
+        g.drawEllipse(fpx + Math.cos(angle) * 3.5, fpy + Math.sin(angle) * 3, 3, 2);
+        g.endFill();
+      }
+      g.beginFill(0xffe4b5, 0.6).drawCircle(fpx, fpy, 2).endFill();
+    }
+  } else {
+    // Sakura (morning / default) — classic blossoms
+    const backSpacing = cols / backDotCount;
+    for (let fi = 0; fi < backDotCount; fi++) {
+      const fwx = backSpacing * (fi + 0.5),
+        fwz = WAINSCOT_H + 0.6 + (fi % 3) * 0.9;
+      const [fpx, fpy] = proj(fwx, rows - 0.01, fwz);
+      const fc = [wpC1, wpC2, 0xffd1dc, 0xffe4e9][fi % 4]!;
+      for (let p = 0; p < 5; p++) {
+        const angle = (p / 5) * Math.PI * 2 - Math.PI / 2;
+        g.beginFill(fc, 0.7)
+          .drawEllipse(fpx + Math.cos(angle) * 5, fpy + Math.sin(angle) * 4.5, 4, 2.5)
+          .endFill();
+      }
+      g.beginFill(0xffe4b5, 0.85).drawCircle(fpx, fpy, 2.5).endFill();
+    }
+  }
+
+  // ── Window on back wall ──────────────────────────────────────────────────
+  // Arched window centered on back wall, with sky-colored glass and floor glow
+  const winW = 2.8;                    // window width in world units
+  const winH = 2.2;                    // window height
+  const winX = (cols - winW) / 2;      // centered horizontally
+  const winZ = WAINSCOT_H + 0.35;      // bottom of window above chair rail
+  const winTopZ = winZ + winH;         // top of window arch
+  const winWy = rows - 0.02;           // flush with back wall
+
+  // Window frame — dark wood outer
+  qfill(g, [
+    proj(winX - 0.08, winWy, winZ - 0.06),
+    proj(winX + winW + 0.08, winWy, winZ - 0.06),
+    proj(winX + winW + 0.08, winWy, winTopZ + 0.08),
+    proj(winX - 0.08, winWy, winTopZ + 0.08),
+  ], 0x5a3a28);
+
+  // Window glass — sky color from theme
+  if (theme) {
+    const skyHex = parseInt(theme.skyTop.replace('#', ''), 16);
+    qfill(g, [
+      proj(winX, winWy, winZ),
+      proj(winX + winW, winWy, winZ),
+      proj(winX + winW, winWy, winTopZ),
+      proj(winX, winWy, winTopZ),
+    ], skyHex, 0.65);
+  } else {
+    // No theme — neutral blue sky
+    qfill(g, [
+      proj(winX, winWy, winZ),
+      proj(winX + winW, winWy, winZ),
+      proj(winX + winW, winWy, winTopZ),
+      proj(winX, winWy, winTopZ),
+    ], 0xd0e8ff, 0.6);
+  }
+
+  // Window mullions (cross bars)
+  const mullionColor = 0x4a2a18;
+  // Vertical center bar
+  const [vx1, vy1] = proj(winX + winW / 2, winWy, winZ);
+  const [vx2, vy2] = proj(winX + winW / 2, winWy, winTopZ);
+  ln(g, vx1, vy1, vx2, vy2, mullionColor, 2.2, 0.7);
+  // Horizontal bar
+  const midZ = winZ + winH * 0.55;
+  const [hx1, hy1] = proj(winX, winWy, midZ);
+  const [hx2, hy2] = proj(winX + winW, winWy, midZ);
+  ln(g, hx1, hy1, hx2, hy2, mullionColor, 2.0, 0.6);
+
+  // Inner frame trim
+  qstroke(g, [
+    proj(winX + 0.04, winWy, winZ + 0.04),
+    proj(winX + winW - 0.04, winWy, winZ + 0.04),
+    proj(winX + winW - 0.04, winWy, winTopZ - 0.04),
+    proj(winX + 0.04, winWy, winTopZ - 0.04),
+  ], 0x8b6b4a, 1.5, 0.5);
+
+  // Window glow on floor (light cast from window)
+  if (theme && theme.windowGlowAlpha > 0) {
+    // Floor glow — trapezoid extending from window toward center of room
+    const glowY = rows * 0.6;
+    qfill(g, [
+      proj(winX - 0.2, winWy, 0.01),
+      proj(winX + winW + 0.2, winWy, 0.01),
+      proj(winX + winW + 1.0, glowY, 0.01),
+      proj(winX - 1.0, glowY, 0.01),
+    ], theme.windowGlow, theme.windowGlowAlpha * 0.5);
+    // Softer wider glow
+    qfill(g, [
+      proj(winX - 0.5, winWy, 0.01),
+      proj(winX + winW + 0.5, winWy, 0.01),
+      proj(winX + winW + 1.8, glowY, 0.01),
+      proj(winX - 1.8, glowY, 0.01),
+    ], theme.windowGlow, theme.windowGlowAlpha * 0.25);
   }
 
   // ── Left wall ────────────────────────────────────────────────────────────
