@@ -4,7 +4,18 @@
 IMPLEMENTATION PROPOSAL (from C-GAME-RESEARCH-001)
 
 ## Status
-DRAFT — Awaiting review before implementation
+REDUNDANT (2026-06-19) — All proposed functionality already implemented under other contracts:
+
+| Proposal | Built As | Contract |
+|---|---|---|
+| GridMap + officeLayout | `gridPath.ts` + `loungePathGrid.ts` | C-AGENT-PATH-001/002 |
+| A* Pathfinding | BFS `findGridPath()` | C-AGENT-PATH-001 |
+| MovementSystem | `moveToTarget.ts` + `useAgentWalk.ts` | C-AGENT-ISO-001 |
+| LoungeCanvas Integration | `useAgentWalk` hook | C-AGENT-LIFECYCLE-001 |
+| IsoSorting | `roomLoader.ts` sortableChildren | C-LOUNGE-001 |
+| Tests | `gridPath.test.ts` (4 tests) | C-AGENT-PATH-001 |
+
+All grid pathfinding, movement, and Spine integration already exists. No new implementation needed.
 
 ## Goal
 Add grid-based pathfinding and movement to office agents in the LoungeCanvas.

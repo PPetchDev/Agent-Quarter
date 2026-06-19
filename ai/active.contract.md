@@ -1,11 +1,13 @@
 # Active Contract
 
-C-OFFICE-MOVEMENT-001 — Agent Movement System (GridMap + A* + MovementSystem). Status: DRAFT (awaiting review → IMPLEMENT).
+C-EVENT-001 — Agent Event Model (Socket.io event schema for agent state → character emotion). Status: PARKED → APPROVED (2026-06-19).
 
 ## Context
 
-C-ORCHESTRATE-LLM-002 closed out — PASS (2026-06-19). LLM-powered workflow planner complete.
+C-OFFICE-MOVEMENT-001 found REDUNDANT — all proposed grid/movement/A*/IsoSorting already exists under C-AGENT-PATH-001/002, C-AGENT-ISO-001, C-LOUNGE-001. Skipped.
+
+C-ORCHESTRATE-LLM-002 closed out PASS (2026-06-19).
 
 ## Next
 
-Implement C-OFFICE-MOVEMENT-001: grid-based pathfinding with A*, MovementSystem for Spine agents, and integration into LoungeCanvas. Scope: 5 new files, 1 modified, 0 new dependencies.
+Implement C-EVENT-001: Define Socket.io event schema for agent state → character emotion mapping. Foundation work for multi-agent orchestration.

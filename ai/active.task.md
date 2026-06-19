@@ -1,11 +1,11 @@
 # Active Task
 
-C-OFFICE-MOVEMENT-001 — Agent Movement System. Status: STARTING (2026-06-19).
+C-EVENT-001 — Agent Event Model. Status: STARTING (2026-06-19).
 
-Slices:
-- [ ] S1: GridMap class + officeLayout data
-- [ ] S2: A* pathfinding (astar.ts)
-- [ ] S3: MovementSystem (lerp + Spine animation)
-- [ ] S4: Integrate into LoungeCanvas
-- [ ] S5: IsoSorting (depth sort)
-- [ ] S6: Tests (GridMap + astar)
+Goal: Define Socket.io event schema for agent state → character emotion. Design spec §3 reference.
+
+Slices (to be defined in contract):
+- [ ] Event type definitions (AgentStateEvent, EmotionEvent, etc.)
+- [ ] Gateway/emitter integration
+- [ ] Frontend consumer hook
+- [ ] Tests
