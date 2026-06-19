@@ -19,3 +19,10 @@ socket_qa.js
 graphify-out
 apps/web/src/components/resource
 .claude-flow/
+
+# design-sync (claude.ai/design) — generated/staged outputs, not durable
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+apps/web/.ds-compiled.css
