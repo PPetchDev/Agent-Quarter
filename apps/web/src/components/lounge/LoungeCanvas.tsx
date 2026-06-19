@@ -26,6 +26,7 @@ import { checkCollision, FURNITURE_TILES } from './roomDefs';
 import { FurnitureInspector } from './FurnitureInspector';
 import { ShopModal } from './ShopModal';
 import { SupplyPanel } from './SupplyPanel';
+import { AgentBubble } from './AgentBubble';
 import { getDefaultSpawnPosition, type CatalogItem } from './furnitureCatalog';
 import {
   AFFECTION_MAX,
@@ -2774,16 +2775,13 @@ export function LoungeCanvas() {
 
             {/* ── Ambient chatter bubble near agent-1 ──────────────────── */}
             {agentBubble && visibleOfficeAgents.length > 0 && (
-              <div
-                className="absolute pointer-events-none z-50 whitespace-nowrap rounded-full border border-[#ffb6c1] bg-white/90 px-3 py-1 text-[10px] font-bold text-[#8b4c6e] shadow-md animate-bounce"
-                style={{
-                  left: visibleOfficeAgents[0]!.agent.position.x + 40,
-                  top: visibleOfficeAgents[0]!.agent.position.y - 85,
-                  transform: 'translate(-50%, -100%)',
-                }}
-              >
-                {agentBubble}
-              </div>
+              <AgentBubble
+                text={agentBubble}
+                left={visibleOfficeAgents[0]!.agent.position.x}
+                top={visibleOfficeAgents[0]!.agent.position.y - 65}
+                variant="ambient"
+                className="animate-bounce z-50"
+              />
             )}
 
             {/* ── Lounge agents walking overlay ─────────────────────── */}
@@ -2825,33 +2823,20 @@ export function LoungeCanvas() {
                   data-agent-avatar-fallback={showAvatarFallback ? 'true' : 'false'}
                 >
                   {a.bubbleText && (
-                    <div
-                      className="pointer-events-none absolute z-20 max-w-[160px] rounded-2xl bg-white/95 px-3 py-1.5 text-[11px] font-semibold text-gray-800 shadow-lg"
-                      style={{
-                        left: overlayLayout.bubbleOffsetX,
-                        top: -overlayLayout.bubbleOffsetY,
-                        transform: overlayLayout.bubbleTransform,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {a.bubbleText}
-                      <span className="pointer-events-none absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-white/95" />
-                    </div>
+                    <AgentBubble
+                      text={a.bubbleText}
+                      left={0}
+                      top={-65}
+                      variant="agent"
+                    />
                   )}
                   {activeDialogueBubble && a.id === activeDialogueBubble.agentId && (
-                    <div
-                      className="pointer-events-none absolute z-20 max-w-[180px] rounded-2xl bg-[#f5f3ff]/95 px-3 py-1.5 text-[11px] font-semibold text-[#5b21b6] shadow-lg border border-[#ddd6fe]/60"
-                      style={{
-                        left: overlayLayout.bubbleOffsetX,
-                        top: -overlayLayout.bubbleOffsetY,
-                        transform: overlayLayout.bubbleTransform,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      <span className="font-black">{a.name}/</span>
-                      {activeDialogueBubble.text}
-                      <span className="pointer-events-none absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-[#f5f3ff]/95" />
-                    </div>
+                    <AgentBubble
+                      text={`${a.name}/${activeDialogueBubble.text}`}
+                      left={0}
+                      top={-100}
+                      variant="dialogue"
+                    />
                   )}
                   {showAvatarFallback && (
                     <div
