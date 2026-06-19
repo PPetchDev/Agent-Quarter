@@ -81,7 +81,7 @@ import type {
 } from '@/game/agents/officeWorkflow';
 import { startOfficeRun, completeOfficeRun } from '@/game/agents/officeRunAdapter';
 import { useRunSocket } from '@/hooks/useRunSocket';
-import { loungeStations, type LoungeStationId } from '@/game/scene/loungeStations';
+import { loungeStations, type LoungeStationId, resolveLoungeStation } from '@/game/scene/loungeStations';
 import { buildLoungeRouteGrid } from '@/game/scene/loungePathGrid';
 import { pickAgentDialogue } from '@/game/dialogue/dialogueScheduler';
 import { generateOfficeDialogue } from '@/game/dialogue/dialogueAdapter';
@@ -1845,6 +1845,25 @@ export function LoungeCanvas() {
 
       walker.assignTask(step.taskType);
       officeStepInFlightRef.current = step.id;
+
+      // ── Team gathering: idle agents join the meeting ────────────────────
+      if (step.taskType === 'meeting') {
+        const meetingStation = resolveLoungeStation('meetingTable', objects);
+        const meetingIso = meetingStation.interactionIsoPoint;
+        const meetingPoint = { wx: meetingIso.x, wy: meetingIso.y, wz: meetingIso.z ?? 0.2 };
+        for (const [id, w] of Object.entries(officeWalkers)) {
+          if (id === step.agentId) continue; // skip the meeting lead
+          if (w.agent.state === 'idle') {
+            w.walkToIso(meetingPoint);
+            appendOfficeChat({
+              agentId: id as OfficeAgentId,
+              kind: 'status',
+              text: `Joining ${OFFICE_WORKFLOW_AGENTS.find(a => a.id === step.agentId)?.name ?? 'team'} at the meeting table.`,
+            });
+          }
+        }
+      }
+
       // Fire-and-forget: call backend run start, store returned run ID for completion
       startOfficeRun(OFFICE_CANONICAL_TASK_ID)
         .then((run) => {
@@ -1929,6 +1948,7 @@ export function LoungeCanvas() {
     activeOfficeCommand,
     appendOfficeChat,
     appendOfficeToolEvent,
+    objects,
     officeStatus,
     officeStepIndex,
     officeSteps,

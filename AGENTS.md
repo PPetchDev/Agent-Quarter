@@ -216,3 +216,13 @@ PASS / PARTIAL / BLOCKED
 
 If this workflow causes issues, fall back to `docs/superpowers/specs/` and `docs/superpowers/plans/`.
 Do not delete these files.
+
+---
+
+## Semantic Code Search (claude-context)
+
+_Hermes `claude-context` MCP — local Milvus + Ollama embeddings. This repo is indexed (path `/Users/titiwat/Downloads/AnimeAgentSquad`)._
+
+- **Map-first still applies.** Read `ai/maps/` first to scope the target, then use semantic `search_code` to pinpoint exact code — instead of blind source reads or broad grep.
+- The MCP needs local Milvus running. Run `code-search status` first and proceed only on `Milvus: healthy`; if down, run `code-search on` and wait. Never call the MCP tools while Milvus is down — it closes the session transport. See the global grounding rules / `code-search` skill for the start + `/reload-mcp` recovery procedure. Do not restart the gateway.
+- Re-index after large code changes.
