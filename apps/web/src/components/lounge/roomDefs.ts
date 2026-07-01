@@ -1,35 +1,13 @@
-// Tiled Editor compatible types + internal RoomObject model
-
-export interface TiledProperty {
-  name: string;
-  type: 'float' | 'int' | 'string' | 'bool';
-  value: number | string | boolean;
-}
-
-export interface TiledObject {
-  id: number;
-  name: string;
-  type: string;
-  visible: boolean;
-  properties: TiledProperty[];
-}
-
-export interface TiledLayer {
-  id: number;
-  name: string;
-  type: 'objectgroup' | 'tilelayer';
-  visible: boolean;
-  objects?: TiledObject[];
-}
-
-export interface TiledMap {
-  version: string;
-  name: string;
-  orientation: string;
-  tilewidth: number;
-  tileheight: number;
-  layers: TiledLayer[];
-}
+// Tiled Editor compatible types (re-exported from canonical tiledParser.ts)
+export {
+  type TiledProperty,
+  type TiledObject,
+  type TiledLayer,
+  type TiledMap,
+  parseTiledMap,
+  validateTiledMap,
+  detectTiledFormat,
+} from './tiledParser';
 
 // Internal model used by PixiJS renderer
 export interface RoomObject {
@@ -115,31 +93,4 @@ export function checkCollision(
     }
   }
   return false;
-}
-
-function getProp<T>(props: TiledProperty[], name: string, fallback: T): T {
-  const p = props.find((x) => x.name === name);
-  return p !== undefined ? (p.value as T) : fallback;
-}
-
-export function parseTiledMap(json: TiledMap): RoomObject[] {
-  const result: RoomObject[] = [];
-  for (const layer of json.layers) {
-    if (layer.type !== 'objectgroup' || !layer.objects) continue;
-    for (const obj of layer.objects) {
-      if (!obj.visible) continue;
-      result.push({
-        id: obj.id,
-        furnitureType: obj.name,
-        label: getProp<string>(obj.properties, 'label', obj.name),
-        description: getProp<string>(obj.properties, 'description', ''),
-        wx: getProp<number>(obj.properties, 'wx', 0),
-        wy: getProp<number>(obj.properties, 'wy', 0),
-        wz: getProp<number>(obj.properties, 'wz', 0),
-        happiness: getProp<number>(obj.properties, 'happiness', 0),
-        draggable: getProp<boolean>(obj.properties, 'draggable', false),
-      });
-    }
-  }
-  return result;
 }

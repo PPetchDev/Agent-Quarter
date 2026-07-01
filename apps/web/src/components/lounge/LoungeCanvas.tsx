@@ -19,13 +19,14 @@ import {
 } from './pixiRoom';
 import type { RoomTheme, RoomThemeKey } from './pixiRoom';
 import { drawThemeParticles } from './themeParticles';
-import { buildRoomScene, loadRoomJSON } from './roomLoader';
+import { buildRoomScene, loadRoomJSON, loadTiledMap, isValidTiledJson } from './roomLoader';
 import type { RoomScene } from './roomLoader';
 import type { RoomObject } from './roomDefs';
 import { checkCollision, FURNITURE_TILES } from './roomDefs';
 import { FurnitureInspector } from './FurnitureInspector';
 import { ShopModal } from './ShopModal';
 import { SupplyPanel } from './SupplyPanel';
+import { TiledMapImporter } from './TiledMapImporter';
 import { AgentBubble } from './AgentBubble';
 import { getDefaultSpawnPosition, type CatalogItem } from './furnitureCatalog';
 import {
@@ -2222,6 +2223,30 @@ export function LoungeCanvas() {
     showToast('Room reset');
   }, [applyLayoutObjects, pushHistorySnapshot, showToast]);
 
+  const handleTiledImport = useCallback(
+    (json: unknown) => {
+      if (!isValidTiledJson(json)) {
+        showToast('Invalid Tiled map format');
+        return;
+      }
+      try {
+        const objects = loadTiledMap(json as Parameters<typeof loadTiledMap>[0]);
+        if (objects.length === 0) {
+          showToast('No furniture found in map');
+          return;
+        }
+        pushHistorySnapshot(objectsRef.current);
+        applyLayoutObjects(objects);
+        nextIdRef.current = Math.max(...objects.map((o) => o.id), 999) + 1;
+        setSelectedId(null);
+        showToast(`Imported ${objects.length} items from Tiled map`);
+      } catch {
+        showToast('Failed to import Tiled map');
+      }
+    },
+    [applyLayoutObjects, pushHistorySnapshot, showToast],
+  );
+
   const handleShare = useCallback(async () => {
     if (typeof window === 'undefined') return;
 
@@ -2332,6 +2357,27 @@ export function LoungeCanvas() {
       onMouseMove={handlePanMove}
       onMouseUp={handlePanEnd}
       onMouseLeave={handlePanEnd}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault();
+        const file = e.dataTransfer.files[0];
+        if (!file) return;
+        if (!file.name.endsWith('.json') && !file.name.endsWith('.tmj')) {
+          showToast('Please drop a .json or .tmj Tiled Editor export.');
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const json = JSON.parse(reader.result as string);
+            handleTiledImport(json);
+          } catch {
+            showToast('Invalid JSON file.');
+          }
+        };
+        reader.onerror = () => showToast('Failed to read file.');
+        reader.readAsText(file);
+      }}
     >
       {/* ── Character ambient lighting overlay (theme-based tint) ────────── */}
       <div
@@ -3100,6 +3146,10 @@ export function LoungeCanvas() {
           <span className="text-[18px] leading-none max-sm:text-[16px]">🏪</span>
           <span className="text-[9px] font-bold text-[#7a4000] mt-0.5 max-sm:text-[7px]">Shop</span>
         </button>
+        <TiledMapImporter
+          onImport={handleTiledImport}
+          onError={(msg: string) => showToast(msg)}
+        />
         <button
           type="button"
           onClick={handleShare}

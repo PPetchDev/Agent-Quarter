@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import type { RoomObject, TiledMap } from './roomDefs';
-import { parseTiledMap, FURNITURE_TILES } from './roomDefs';
+import { parseTiledMap, validateTiledMap, FURNITURE_TILES } from './roomDefs';
 import {
   proj,
   drawFurnitureByType,
@@ -58,8 +58,22 @@ export async function loadRoomJSON(url: string): Promise<RoomObject[]> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to load room: ${url}`);
   const json: TiledMap = await res.json();
+  return loadTiledMap(json);
+}
+
+/**
+ * Parse a TiledMap JSON object into RoomObject[].
+ * Validates structure first, then delegates to parseTiledMap (auto-detects format).
+ */
+export function loadTiledMap(json: TiledMap): RoomObject[] {
+  if (!validateTiledMap(json)) {
+    throw new Error('Invalid Tiled map: missing tilewidth, tileheight, or layers');
+  }
   return parseTiledMap(json);
 }
+
+/** Check whether a JSON object is a valid Tiled map (for drag-drop validation). */
+export { validateTiledMap as isValidTiledJson } from './roomDefs';
 
 // ─── Build interactive PixiJS scene ──────────────────────────────────────────
 
