@@ -44,10 +44,10 @@ _Each item has a Contract ID. Items without a contract are not executable._
 
 ### C-TILED-001 — Tiled Editor map import
 
-**Status:** PASS (2026-06-30)
+**Status:** PASS (2026-07-01)
 **Goal:** Import room layouts from Tiled Editor JSON format
-**Scope:** `apps/web/src/components/lounge/roomLoader.ts`, `apps/web/src/components/lounge/tiledParser.ts` (new), `apps/web/public/maps/`
-**Result:** STABLE — Added `parseTiledMap`, `validateTiledMap`, and type definitions. 6 new tests pass. Total 319 tests PASS. TypeScript clean.
+**Scope:** `apps/web/src/components/lounge/tiledParser.ts`, `apps/web/src/components/lounge/roomLoader.ts`, `apps/web/src/components/lounge/TiledMapImporter.tsx` (new), `apps/web/src/components/lounge/LoungeCanvas.tsx`
+**Result:** STABLE — Consolidated parsers with auto-detect, added drag-drop import UI. 12 tests. 501 total tests PASS. TypeScript clean.
 
 ### C-PROJECTS-FULL-001 — Projects page full implementation
 

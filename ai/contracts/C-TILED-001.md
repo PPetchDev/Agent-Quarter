@@ -1,8 +1,9 @@
 # Contract C-TILED-001 — Tiled Editor map import
 
-**Status:** ACTIVE
+**Status:** PASS (2026-07-01)
 **Date:** 2026-06-30
 **Goal:** Import room layouts from Tiled Editor JSON format
+**Result:** STABLE — Consolidated parsers into canonical `tiledParser.ts` with auto-detect (property-based wx/wy/wz vs pixel-based x/y ÷ tilewidth). `roomDefs.ts` re-exports. Added `loadTiledMap()` + `isValidTiledJson()` to `roomLoader.ts`. Created `TiledMapImporter` component with drag-overlay + file picker, wired into LoungeCanvas. Tests expanded 6→12. 501 tests PASS. TypeScript clean. Lint clean.
 
 ## Context
 

@@ -1,7 +1,7 @@
 # Memory — Anime Agent Squad
 
 _Compact durable memory. Target 800–1,200 words. Do not paste session logs here._
-_Last updated: 2026-05-25 | C-SCAFFOLD-001 + C-DOMAIN-001_
+_Last updated: 2026-07-01 | C-TILED-001 + C-PROJECTS-FULL-001_
 
 ---
 
@@ -14,7 +14,8 @@ _Last updated: 2026-05-25 | C-SCAFFOLD-001 + C-DOMAIN-001_
 - Three pages: Lounge (isometric room), Stages (chat), Projects (orchestration)
 - Lounge is isometric cavalier axonometric projection rendered with PixiJS v8
 - Stages uses Claude API streaming with real-time emotion parsing from `[emotion:X]` tags
-- Projects page is stubbed — not yet active
+- Projects page has full CRUD (C-PROJECTS-FULL-001): create/edit/delete projects, CreateProjectModal, 119 API tests
+- Lounge supports Tiled Editor map import (C-TILED-001): drag-drop .json/.tmj, auto-detect 2 formats, 12 tests
 
 ### Build Philosophy
 
@@ -23,7 +24,7 @@ _Last updated: 2026-05-25 | C-SCAFFOLD-001 + C-DOMAIN-001_
 - pnpm workspaces monorepo — `packages/core` for shared types, `apps/api` Nest.js, `apps/web` Next.js
 - Package manager: pnpm. Install: `pnpm install`. Dev: `pnpm dev` (parallel). Typecheck: `pnpm exec tsc -p <workspace>/tsconfig.json --noEmit`
 - `pnpm build` requires `DATABASE_URL` env var (Prisma generates). SQLite dev DB at `apps/api/prisma/dev.db`
-- All 3 workspaces pass `tsc --noEmit` as of 2026-05-25: `apps/web`, `apps/api`, `packages/core`
+- All 3 workspaces pass `tsc --noEmit` as of 2026-07-01. 501 total tests (57 core + 119 api + 325 web)
 - Furniture and room data driven by JSON (maple_hideout.json) not hardcode
 - Projection is dynamic: `setRoomProjection(cols, rows)` recalculates S/OX/OY to fit canvas
 
@@ -82,9 +83,8 @@ _Last updated: 2026-05-25 | C-SCAFFOLD-001 + C-DOMAIN-001_
 
 ### Current Next Direction
 
-- Continue Lounge polish: furniture arrangement, character positioning
-- Stage page: verify Claude API streaming works with updated character system
-- Projects page: not yet started
+- Next: C-RUN-001 — Lead character spawns Member agents per todo item (Projects page orchestration)
+- Upcoming: C-LOUNGE-002 (time-based themes), C-SPRITE-001 (sprite furniture), C-MOBILE-001 (responsive lounge)
 
 ### Do Not Revisit
 
@@ -93,6 +93,8 @@ _Last updated: 2026-05-25 | C-SCAFFOLD-001 + C-DOMAIN-001_
 - Do not rewrite `packages/core` character types without a contract
 - Do not add back pool table to default layout
 - Do not use AABB rectangles for furniture hit areas
+- Do not re-split tiledParser back into roomDefs — canonical parser lives in tiledParser.ts
+- Do not add back the duplicate `parseTiledMap` implementation in roomDefs.ts
 
 ---
 

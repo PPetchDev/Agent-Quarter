@@ -1,20 +1,20 @@
 # Active Contract
 
-C-PROJECTS-FULL-001 — Projects page full implementation. Status: PASS (2026-06-30).
+C-TILED-001 — Tiled Editor map import. **Status: PASS** (2026-07-01).
 
 ## Context
 
-Full CRUD implementation for Projects page with create/edit/delete capabilities. Added ProjectsService, updated ProjectsController, added CreateProjectModal, updated Projects page.
+Consolidated duplicate Tiled parsers into canonical `tiledParser.ts` with auto-detect (property-based wx/wy/wz vs pixel-based x/y ÷ tilewidth). `roomDefs.ts` now re-exports from `tiledParser.ts`. Added `loadTiledMap()` + `isValidTiledJson()` to `roomLoader.ts`. Created `TiledMapImporter` component with drag-overlay + file picker, wired into LoungeCanvas action dock + viewport `onDrop`. Tests expanded from 6 → 12.
 
 ## Scope
 
-- `apps/api/src/projects/projects.service.ts` (new) — Backend CRUD service
-- `apps/api/src/projects/projects.controller.ts` — Updated with POST/PATCH/DELETE endpoints
-- `apps/api/src/projects/projects.module.ts` — Added ProjectsService provider
-- `apps/web/src/lib/api.ts` — Added CRUD API functions
-- `apps/web/src/app/projects/CreateProjectModal.tsx` (new) — Create project modal
-- `apps/web/src/app/projects/page.tsx` — Updated with create/delete UI
+- `apps/web/src/components/lounge/tiledParser.ts` — Canonical parser with auto-detect
+- `apps/web/src/components/lounge/tiledParser.test.ts` — 12 tests (property + pixel formats, detection, defaults)
+- `apps/web/src/components/lounge/roomDefs.ts` — Re-exports from tiledParser, removed duplicate types/parser
+- `apps/web/src/components/lounge/roomLoader.ts` — Added `loadTiledMap()`, `isValidTiledJson()`
+- `apps/web/src/components/lounge/TiledMapImporter.tsx` — Drag-drop + file picker UI
+- `apps/web/src/components/lounge/LoungeCanvas.tsx` — Wired import button + viewport drop handler
 
 ## Next
 
-No active contract. Ready for next recommendation.
+Ready for C-RUN-001 — Lead spawns Member agents per todo item.
