@@ -133,3 +133,79 @@ export async function cancelRun(runId: string): Promise<Run> {
   }
   return res.json() as Promise<Run>;
 }
+
+// ─── Project CRUD mutations ───────────────────────────────────────────
+
+export async function createProject(input: Omit<Project, 'id'>): Promise<Project> {
+  const res = await fetch(`${BASE}/api/projects`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const msg = await readApiErrorMessage(res);
+    throw new Error(msg || `Failed to create project (${res.status})`);
+  }
+  return res.json() as Promise<Project>;
+}
+
+export async function updateProject(id: string, updates: Partial<Omit<Project, 'id'>>): Promise<Project> {
+  const res = await fetch(`${BASE}/api/projects/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) {
+    const msg = await readApiErrorMessage(res);
+    throw new Error(msg || `Failed to update project (${res.status})`);
+  }
+  return res.json() as Promise<Project>;
+}
+
+export async function deleteProject(id: string): Promise<{ success: boolean }> {
+  const res = await fetch(`${BASE}/api/projects/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    const msg = await readApiErrorMessage(res);
+    throw new Error(msg || `Failed to delete project (${res.status})`);
+  }
+  return res.json() as Promise<{ success: boolean }>;
+}
+
+export async function createTask(projectId: string, input: Omit<Task, 'id' | 'projectId'>): Promise<Task> {
+  const res = await fetch(`${BASE}/api/projects/${encodeURIComponent(projectId)}/tasks`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const msg = await readApiErrorMessage(res);
+    throw new Error(msg || `Failed to create task (${res.status})`);
+  }
+  return res.json() as Promise<Task>;
+}
+
+export async function updateTask(id: string, updates: Partial<Omit<Task, 'id'>>): Promise<Task> {
+  const res = await fetch(`${BASE}/api/projects/tasks/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) {
+    const msg = await readApiErrorMessage(res);
+    throw new Error(msg || `Failed to update task (${res.status})`);
+  }
+  return res.json() as Promise<Task>;
+}
+
+export async function deleteTask(id: string): Promise<{ success: boolean }> {
+  const res = await fetch(`${BASE}/api/projects/tasks/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    const msg = await readApiErrorMessage(res);
+    throw new Error(msg || `Failed to delete task (${res.status})`);
+  }
+  return res.json() as Promise<{ success: boolean }>;
+}

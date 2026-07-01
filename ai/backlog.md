@@ -28,6 +28,34 @@ _Each item has a Contract ID. Items without a contract are not executable._
 **Scope:** `apps/api/src/dialogue/*`, `apps/web/src/game/dialogue/*`, `apps/web/src/components/lounge/LoungeCanvas.tsx` (lines 1487-1622, 2623-2637)
 **Result:** STABLE — 60 dialogue tests pass (30 API + 30 web), 399 total, TypeScript + lint clean, browser QA confirms dialogue bubbles + AGENT CHAT panel working with zero JS errors.
 
+### C-RUN-001 — Define run/task lifecycle for Projects page
+
+**Status:** PASS (2026-06-30)
+**Goal:** Lead character spawns Member agents per todo item
+**Evidence pointer:** Design spec §2.3
+**Result:** STABLE — Added `memberAgentIds` to Task type, member agent spawning in RunsService, member agent visualization in Projects page. 486 tests PASS. TypeScript clean.
+
+### C-LOUNGE-002 — Time-based theme system
+
+**Status:** PASS (2026-06-30)
+**Goal:** Sky/wall/floor/lighting changes based on client time
+**Evidence pointer:** Design spec §2.1 (time-based theme table)
+**Result:** STABLE — Already implemented: `getTimeTheme()`, `resolveRoomTheme()` with 'auto' mode, default themeKey='auto'. No changes needed.
+
+### C-TILED-001 — Tiled Editor map import
+
+**Status:** PASS (2026-06-30)
+**Goal:** Import room layouts from Tiled Editor JSON format
+**Scope:** `apps/web/src/components/lounge/roomLoader.ts`, `apps/web/src/components/lounge/tiledParser.ts` (new), `apps/web/public/maps/`
+**Result:** STABLE — Added `parseTiledMap`, `validateTiledMap`, and type definitions. 6 new tests pass. Total 319 tests PASS. TypeScript clean.
+
+### C-PROJECTS-FULL-001 — Projects page full implementation
+
+**Status:** PASS (2026-06-30)
+**Goal:** Full CRUD implementation for Projects page with create/edit/delete capabilities
+**Scope:** `apps/web/src/app/projects/page.tsx`, `apps/web/src/app/projects/*Modal.tsx` (new), `apps/web/src/lib/api.ts`, `apps/api/src/projects/*`
+**Result:** STABLE — Added ProjectsService with CRUD methods, updated ProjectsController with POST/PATCH/DELETE endpoints, added CreateProjectModal, updated Projects page with create/delete UI. 319 tests PASS. TypeScript clean.
+
 ### C-LOUNGE-PERF-ROUTE-GRID-002 — Shared Lounge Route Grid
 
 **Status:** PASS (2026-06-10)
@@ -196,37 +224,16 @@ and StageTracker chunk deadline behavior.
 
 ## Later
 
-### C-RUN-001 — Define run/task lifecycle for Projects page
-
-**Status:** Parked
-**Goal:** Lead character spawns Member agents per todo item
-**Evidence pointer:** Design spec §2.3
-
-### C-EVENT-001 — Define simulated agent event model
-
-**Status:** Parked
-**Goal:** Socket.io event schema for agent state → character emotion
-**Evidence pointer:** Design spec §3 (naming convention table)
-
-### C-LOUNGE-002 — Time-based theme system
-
-**Status:** Parked
-**Goal:** Sky/wall/floor/lighting changes based on client time
-**Evidence pointer:** Design spec §2.1 (time-based theme table)
-
 ---
 
 ## Parking Lot
 
-_(Ideas that need a contract before they can move to Now)_
+### Ideas that need a contract before they can move to Now
 
-- Projects page full implementation
-- Multi-agent orchestration (Lead → Member relay)
-- Character mood animation (float loop, glow based on agent state)
-- Tiled Editor map import
 - Sprite asset pipeline (PNG/WebP furniture)
 - Mobile responsive Lounge
 
 ## From C-DORM-AZUR-001 (2026-06-11)
+
 - Furniture interaction slots: agents sit/sleep on chairs/beds with matching Spine anims (deeper AL dorm parity). **PASS (2026-06-12, C-DORM-AZUR-002 Slice A)**
 - Tune dorm rates (food drain, XP, morale) after playtesting. **PASS (2026-06-12, C-DORM-AZUR-002 Slice B)**
