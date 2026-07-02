@@ -13,6 +13,8 @@ import {
 } from '@squad/core';
 import { randomUUID } from 'crypto';
 
+const MEMBER_AGENT_POOL = ['ren', 'mika', 'aki', 'senko', 'shinobu'] as const;
+
 @Injectable()
 export class RunsService {
   private readonly runs = new Map<string, Run>();
@@ -41,8 +43,8 @@ export class RunsService {
     if (run.taskId) {
       const task = this.tasks.get(run.taskId);
       if (task) {
-        const memberIds = this.generateMemberAgentIds(task.assignedCharacterId);
-        const updatedTask = { ...task, memberAgentIds: memberIds } as Task;
+        const memberIds = this.generateMemberAgentIds();
+        const updatedTask: Task = { ...task, memberAgentIds: memberIds };
         this.tasks.set(task.id, updatedTask);
       }
     }
@@ -58,21 +60,24 @@ export class RunsService {
     return getRunsByTaskId(Array.from(this.runs.values()), taskId);
   }
 
+  /** Clear member agents on run lifecycle transitions */
+  private clearMemberAgents(runId: string): void {
+    const run = this.runs.get(runId);
+    if (!run?.taskId) return;
+    const task = this.tasks.get(run.taskId);
+    if (task?.memberAgentIds) {
+      const clearedTask: Task = { ...task, memberAgentIds: undefined };
+      this.tasks.set(task.id, clearedTask);
+    }
+  }
+
   public completeRun(id: string): Run | undefined {
     const run = this.runs.get(id);
     if (!run) return undefined;
 
     const updated = completeRun(run);
     this.runs.set(updated.id, updated);
-
-    // Clear member agents on completion
-    if (run.taskId) {
-      const task = this.tasks.get(run.taskId);
-      if (task && (task as any).memberAgentIds) {
-        const clearedTask = { ...task, memberAgentIds: undefined } as Task;
-        this.tasks.set(task.id, clearedTask);
-      }
-    }
+    this.clearMemberAgents(id);
 
     return updated;
   }
@@ -83,15 +88,7 @@ export class RunsService {
 
     const updated = failRun(run);
     this.runs.set(updated.id, updated);
-
-    // Clear member agents on failure
-    if (run.taskId) {
-      const task = this.tasks.get(run.taskId);
-      if (task && (task as any).memberAgentIds) {
-        const clearedTask = { ...task, memberAgentIds: undefined } as Task;
-        this.tasks.set(task.id, clearedTask);
-      }
-    }
+    this.clearMemberAgents(id);
 
     return updated;
   }
@@ -102,27 +99,15 @@ export class RunsService {
 
     const updated = cancelRun(run);
     this.runs.set(updated.id, updated);
-
-    // Clear member agents on cancellation
-    if (run.taskId) {
-      const task = this.tasks.get(run.taskId);
-      if (task && (task as any).memberAgentIds) {
-        const clearedTask = { ...task, memberAgentIds: undefined } as Task;
-        this.tasks.set(task.id, clearedTask);
-      }
-    }
+    this.clearMemberAgents(id);
 
     return updated;
   }
 
-  private generateMemberAgentIds(leadCharacterId?: string): string[] {
-    // For now, generate 2-3 random member agent IDs
-    // In a full implementation, this would select from available agent pool
+  private generateMemberAgentIds(): string[] {
+    // Select 2-3 random agents from the available pool
     const count = Math.floor(Math.random() * 2) + 2; // 2-3 members
-    const members: string[] = [];
-    for (let i = 0; i < count; i++) {
-      members.push(`member-${randomUUID().slice(0, 8)}`);
-    }
-    return members;
+    const shuffled = [...MEMBER_AGENT_POOL].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, count);
   }
 }

@@ -1,8 +1,10 @@
 # Contract C-RUN-001 — Define run/task lifecycle for Projects page
 
-**Status:** ACTIVE
+**Status:** PASS (2026-07-01)
 **Date:** 2026-06-30
 **Goal:** Lead character spawns Member agents per todo item
+**Evidence pointer:** Design spec §2.3
+**Result:** STABLE — `memberAgentIds` on Task type, member agent spawning in RunsService on run start, member agent clearing on complete/fail/cancel, `clearMemberAgents()` private helper, agent visualization in Projects page. Cleaned up `(task as any)` casts — replaced with proper `Task` typing. Uses character-name agent pool (ren, mika, aki, senko, shinobu). 501 tests PASS. TypeScript clean.
 
 ## Context
 
