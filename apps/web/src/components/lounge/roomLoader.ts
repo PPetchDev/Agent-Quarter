@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import type { RoomObject, TiledMap } from './roomDefs';
-import { parseTiledMap, validateTiledMap, FURNITURE_TILES } from './roomDefs';
+import { parseTiledMap, validateTiledMap, FURNITURE_TILES, footprintFor } from './roomDefs';
 import {
   proj,
   drawFurnitureByType,
@@ -82,16 +82,16 @@ function createFurnitureItem(obj: RoomObject, handlers: FurnitureHandlers): Furn
   const graphics = new PIXI.Graphics();
   container.addChild(graphics);
 
-  drawFurnitureByType(graphics, obj.furnitureType, obj.wx, obj.wy, obj.wz);
+  drawFurnitureByType(graphics, obj.furnitureType, obj.wx, obj.wy, obj.wz, obj.rotation, obj.variant);
 
   // Depth sort: screen Y of back edge (closer = higher zIndex = on top).
   // wx term breaks ties horizontally (right-over-left), wz lifts wall items.
-  const fp = FURNITURE_TILES[obj.furnitureType] ?? { w: 1, d: 1 };
+  const fp = footprintFor(obj.furnitureType, obj.rotation);
   const [, backY] = proj(obj.wx + fp.w / 2, obj.wy + fp.d, obj.wz);
   container.zIndex = backY + obj.wx * 4 + obj.wz * 25;
 
   // Hit area: floor footprint
-  container.hitArea = furnitureHitPolygon(obj.furnitureType, obj.wx, obj.wy, obj.wz);
+  container.hitArea = furnitureHitPolygon(obj.furnitureType, obj.wx, obj.wy, obj.wz, obj.rotation);
   container.eventMode = 'static';
   container.cursor = obj.draggable ? 'pointer' : 'default';
 
@@ -188,14 +188,14 @@ export function buildRoomScene(
     item.obj.wz = wz;
 
     item.graphics.clear();
-    drawFurnitureByType(item.graphics, item.obj.furnitureType, wx, wy, wz);
+    drawFurnitureByType(item.graphics, item.obj.furnitureType, wx, wy, wz, item.obj.rotation, item.obj.variant);
 
     // Depth sort: screen Y of back edge (closer = higher zIndex = on top).
     // wx term breaks ties horizontally (right-over-left), wz lifts wall items.
-    const fp2 = FURNITURE_TILES[item.obj.furnitureType] ?? { w: 1, d: 1 };
+    const fp2 = footprintFor(item.obj.furnitureType, item.obj.rotation);
     const [, backY2] = proj(wx + fp2.w / 2, wy + fp2.d, wz);
     item.container.zIndex = backY2 + wx * 4 + wz * 25;
-    item.container.hitArea = furnitureHitPolygon(item.obj.furnitureType, wx, wy, wz);
+    item.container.hitArea = furnitureHitPolygon(item.obj.furnitureType, wx, wy, wz, item.obj.rotation);
   }
 
   function setSelected(id: number | null) {

@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
-import type { RoomObject } from './roomDefs';
-import { FURNITURE_DIMS, FURNITURE_TILES } from './roomDefs';
+import type { RoomObject, Rotation } from './roomDefs';
+import { FURNITURE_DIMS, FURNITURE_TILES, footprintFor } from './roomDefs';
 import { applyStationAmbient, getStationDim, type AmbientDrawContext } from './stationAmbients';
 
 export const CANVAS_W = 1240;
@@ -41,7 +41,52 @@ export function projAt(
   return [OX + wx * S + wy * S * 0.65, OY - wy * S * 0.65 - wz * S];
 }
 
+// ─── Active furniture draw rotation ───────────────────────────────────────────
+//
+// A furniture body is drawn in footprint-local coordinates ([0..w] × [0..d]).
+// To rotate it we transform those local coords in the world plane about the
+// object anchor BEFORE projecting — so every draw helper that calls proj()
+// rotates transparently. Rotation is only active between beginFurnitureRotation()
+// and endFurnitureRotation(); outside that window proj() is identity (_rotQ = 0).
+
+let _rotQ = 0; // active quarter-turns 0|1|2|3
+let _rotAx = 0; // anchor world x (min corner)
+let _rotAy = 0; // anchor world y (min corner)
+let _rotW = 1; // unrotated footprint width
+let _rotD = 1; // unrotated footprint depth
+
+function beginFurnitureRotation(type: string, wx: number, wy: number, rotation: Rotation = 0) {
+  _rotQ = rotation & 3;
+  _rotAx = wx;
+  _rotAy = wy;
+  const fp = FURNITURE_TILES[type] ?? { w: 1, d: 1 };
+  _rotW = fp.w;
+  _rotD = fp.d;
+}
+
+function endFurnitureRotation() {
+  _rotQ = 0;
+}
+
 export function proj(wx: number, wy: number, wz: number): [number, number] {
+  if (_rotQ !== 0) {
+    const lx = wx - _rotAx;
+    const ly = wy - _rotAy;
+    let nlx: number;
+    let nly: number;
+    if (_rotQ === 1) {
+      nlx = _rotD - ly;
+      nly = lx;
+    } else if (_rotQ === 2) {
+      nlx = _rotW - lx;
+      nly = _rotD - ly;
+    } else {
+      nlx = ly;
+      nly = _rotW - lx;
+    }
+    wx = _rotAx + nlx;
+    wy = _rotAy + nly;
+  }
   return projAt(wx, wy, wz, _S, _OX, _OY);
 }
 
@@ -138,8 +183,10 @@ export function furnitureHitPolygon(
   wx: number,
   wy: number,
   wz: number,
+  rotation: Rotation = 0,
 ): PIXI.Polygon {
-  const fp = FURNITURE_TILES[type] ?? { w: 1, d: 1 };
+  const base = FURNITURE_TILES[type] ?? { w: 1, d: 1 };
+  const fp = footprintFor(type, rotation);
   const pts = [
     proj(wx, wy, wz),
     proj(wx + fp.w, wy, wz),
@@ -1450,8 +1497,18 @@ export function drawLowTable(g: PIXI.Graphics, wx: number, wy: number, wz: numbe
   });
 }
 
-export function drawZabuton(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
-  isoBox(g, wx, wy, wz, 3.0, 1.0, 0.18, 0x4a5830, 0x3a4828, 0x2e3c20);
+export function drawZabuton(
+  g: PIXI.Graphics,
+  wx: number,
+  wy: number,
+  wz: number,
+  variant = 'default',
+) {
+  const tint =
+    variant === 'red' ? 0x6a3a3a : variant === 'blue' ? 0x3a5a6a : 0x4a5830;
+  const top = variant === 'red' ? 0x5a2a2a : variant === 'blue' ? 0x2a4a5a : 0x3a4828;
+  const side = variant === 'red' ? 0x4a2020 : variant === 'blue' ? 0x203040 : 0x2e3c20;
+  isoBox(g, wx, wy, wz, 3.0, 1.0, 0.18, tint, top, side);
 }
 
 export function drawPlant(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
@@ -1477,6 +1534,8 @@ export function drawFurnitureByType(
   wx: number,
   wy: number,
   wz: number,
+  rotation: Rotation = 0,
+  variant = 'default',
 ) {
   switch (type) {
     case 'bed':
@@ -1510,7 +1569,7 @@ export function drawFurnitureByType(
       drawLowTable(g, wx, wy, wz);
       break;
     case 'zabuton':
-      drawZabuton(g, wx, wy, wz);
+      drawZabuton(g, wx, wy, wz, variant);
       break;
     case 'plant':
       drawPlant(g, wx, wy, wz);
@@ -1533,7 +1592,9 @@ export function drawFurnitureLayer(g: PIXI.Graphics, objects: RoomObject[]) {
     return ay - by;
   });
   for (const obj of sorted) {
-    drawFurnitureByType(g, obj.furnitureType, obj.wx, obj.wy, obj.wz);
+    beginFurnitureRotation(obj.furnitureType, obj.wx, obj.wy, obj.rotation);
+    drawFurnitureByType(g, obj.furnitureType, obj.wx, obj.wy, obj.wz, obj.rotation, obj.variant);
+    endFurnitureRotation();
   }
 }
 
@@ -1541,35 +1602,45 @@ export function drawFurnitureLayer(g: PIXI.Graphics, objects: RoomObject[]) {
 
 export function drawHighlight(g: PIXI.Graphics, obj: RoomObject) {
   g.clear();
-  const d = FURNITURE_DIMS[obj.furnitureType] ?? { w: 2, d: 2, h: 0 };
-  const { wx, wy, wz } = obj;
-  const top: [number, number][] = [
-    proj(wx, wy, wz + d.h),
-    proj(wx + d.w, wy, wz + d.h),
-    proj(wx + d.w, wy + d.d, wz + d.h),
-    proj(wx, wy + d.d, wz + d.h),
-  ];
-  qfill(g, top, 0xffffff, 0.18);
-  qstroke(g, top, 0xffd060, 2.5, 0.9);
-  top.forEach(([px, py]) => {
-    g.beginFill(0xffd060, 0.85).drawCircle(px, py, 4).endFill();
-  });
+  beginFurnitureRotation(obj.furnitureType, obj.wx, obj.wy, obj.rotation);
+  try {
+    const d = FURNITURE_DIMS[obj.furnitureType] ?? { w: 2, d: 2, h: 0 };
+    const { wx, wy, wz } = obj;
+    const top: [number, number][] = [
+      proj(wx, wy, wz + d.h),
+      proj(wx + d.w, wy, wz + d.h),
+      proj(wx + d.w, wy + d.d, wz + d.h),
+      proj(wx, wy + d.d, wz + d.h),
+    ];
+    qfill(g, top, 0xffffff, 0.18);
+    qstroke(g, top, 0xffd060, 2.5, 0.9);
+    top.forEach(([px, py]) => {
+      g.beginFill(0xffd060, 0.85).drawCircle(px, py, 4).endFill();
+    });
+  } finally {
+    endFurnitureRotation();
+  }
 }
 
 /** Gold floor ring used to pulse the agent's active work station */
 export function drawActiveStationHighlight(g: PIXI.Graphics, obj: RoomObject, alpha: number) {
   g.clear();
-  const fp = FURNITURE_TILES[obj.furnitureType] ?? { w: 1, d: 1 };
-  const { wx, wy, wz } = obj;
-  const floor: [number, number][] = [
-    proj(wx, wy, wz),
-    proj(wx + fp.w, wy, wz),
-    proj(wx + fp.w, wy + fp.d, wz),
-    proj(wx, wy + fp.d, wz),
-  ];
-  qfill(g, floor, 0xfacc15, 0.18 * alpha);
-  qstroke(g, floor, 0xfacc15, 3, alpha);
-  drawStationAmbient(g, obj, alpha);
+  beginFurnitureRotation(obj.furnitureType, obj.wx, obj.wy, obj.rotation);
+  try {
+    const fp = FURNITURE_TILES[obj.furnitureType] ?? { w: 1, d: 1 };
+    const { wx, wy, wz } = obj;
+    const floor: [number, number][] = [
+      proj(wx, wy, wz),
+      proj(wx + fp.w, wy, wz),
+      proj(wx + fp.w, wy + fp.d, wz),
+      proj(wx, wy + fp.d, wz),
+    ];
+    qfill(g, floor, 0xfacc15, 0.18 * alpha);
+    qstroke(g, floor, 0xfacc15, 3, alpha);
+    drawStationAmbient(g, obj, alpha);
+  } finally {
+    endFurnitureRotation();
+  }
 }
 
 // ─── Per-station ambient body glow (drawn above the floor ring) ──────────────
@@ -1601,28 +1672,33 @@ export function drawStationAmbient(g: PIXI.Graphics, obj: RoomObject, alpha: num
 export function drawHighlightCollision(g: PIXI.Graphics, obj: RoomObject) {
   g.clear();
   const d = FURNITURE_DIMS[obj.furnitureType] ?? { w: 2, d: 2, h: 0 };
-  const { wx, wy, wz } = obj;
-  // Floor footprint in red
-  const floor: [number, number][] = [
-    proj(wx, wy, wz),
-    proj(wx + d.w, wy, wz),
-    proj(wx + d.w, wy + d.d, wz),
-    proj(wx, wy + d.d, wz),
-  ];
-  qfill(g, floor, 0xff2222, 0.28);
-  qstroke(g, floor, 0xff2222, 2.5, 1.0);
-  // Top face outline
-  const top: [number, number][] = [
-    proj(wx, wy, wz + d.h),
-    proj(wx + d.w, wy, wz + d.h),
-    proj(wx + d.w, wy + d.d, wz + d.h),
-    proj(wx, wy + d.d, wz + d.h),
-  ];
-  qfill(g, top, 0xff2222, 0.18);
-  qstroke(g, top, 0xff4444, 2.5, 0.9);
-  top.forEach(([px, py]) => {
-    g.beginFill(0xff3333, 0.9).drawCircle(px, py, 4).endFill();
-  });
+  beginFurnitureRotation(obj.furnitureType, obj.wx, obj.wy, obj.rotation);
+  try {
+    const { wx, wy, wz } = obj;
+    // Floor footprint in red
+    const floor: [number, number][] = [
+      proj(wx, wy, wz),
+      proj(wx + d.w, wy, wz),
+      proj(wx + d.w, wy + d.d, wz),
+      proj(wx, wy + d.d, wz),
+    ];
+    qfill(g, floor, 0xff2222, 0.28);
+    qstroke(g, floor, 0xff2222, 2.5, 1.0);
+    // Top face outline
+    const top: [number, number][] = [
+      proj(wx, wy, wz + d.h),
+      proj(wx + d.w, wy, wz + d.h),
+      proj(wx + d.w, wy + d.d, wz + d.h),
+      proj(wx, wy + d.d, wz + d.h),
+    ];
+    qfill(g, top, 0xff2222, 0.18);
+    qstroke(g, top, 0xff4444, 2.5, 0.9);
+    top.forEach(([px, py]) => {
+      g.beginFill(0xff3333, 0.9).drawCircle(px, py, 4).endFill();
+    });
+  } finally {
+    endFurnitureRotation();
+  }
 }
 
 // ─── Tile grid overlay (shown in edit/move mode) ─────────────────────────────

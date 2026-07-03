@@ -89,6 +89,11 @@ function parsePropertiesFormat(json: TiledMap): RoomObject[] {
         wz: getProp<number>(props, 'wz', 0),
         happiness: getProp<number>(props, 'happiness', 0),
         draggable: getProp<boolean>(props, 'draggable', false),
+        rotation: getProp<number>(props, 'rotation', 0) as 0 | 1 | 2 | 3,
+        variant: (() => {
+          const p = props.find((x) => x.name === 'variant');
+          return p !== undefined ? (p.value as string) : undefined;
+        })(),
       });
     }
   }
@@ -144,6 +149,7 @@ function parsePixelFormat(json: TiledMap): RoomObject[] {
         wz: (props.floor as number) ?? 0,
         happiness: catalogItem.happiness ?? 0,
         draggable: true,
+        rotation: 0,
       });
     }
   }
