@@ -1,57 +1,32 @@
-# Patch Report — C-TILED-001 Closeout + Memory Update
+# Patch Report — Maple Hideout Pathing Fix
 
 **Date:** 2026-07-01
-**Contract:** C-TILED-001 (PASS)
 
-## Summary
+## Issue
 
-- Consolidated duplicate Tiled parsers: `tiledParser.ts` is the canonical source (`roomDefs.ts` re-exports)
-- Added auto-detect (`detectTiledFormat`) for property-based (wx/wy/wz) vs pixel-based (x/y ÷ tilewidth) Tiled maps
-- Added `loadTiledMap()` + `isValidTiledJson()` to `roomLoader.ts`
-- Created `TiledMapImporter` component: drag-overlay + file picker button
-- Wired into LoungeCanvas: Import button in action dock + viewport `onDrop` handler
-- Tests: 6 → 12 (both formats, detection, defaults, validation)
-- **501 tests PASS** (57 core + 119 api + 325 web)
-- TypeScript clean, lint clean
+Furniture placements in `public/maps/maple_hideout.json` blocked/narrowed the navigable floor grid too much:
+- `zabuton` at `(0,6)` plus adjacent items ate into the bottom-left corridor and created dead-end pressure on paths from `defaultStart (3,0.65)`.
+- Route tests were still passing, but runtime traversal for some task targets looked constrained.
 
-## Memory Update Proposal (for `ai/memory.md`)
+## Fix
 
-### Product Direction — Replace lines 13-17:
+Single-data-only change in `maple_hideout.json`:
+- Moved furnishing type `zabuton` Reading Cushion id#12 from `(0,6)` → `(0,2)` to open the lower-left approach and preserve aisle flow near the bed/nightstand area.
 
-```
-- Projects page is stubbed — not yet active
-```
-→
-```
-- Projects page has full CRUD (C-PROJECTS-FULL-001): create/edit/delete projects, CreateProjectModal, 119 API tests
-- Lounge supports Tiled Editor map import (C-TILED-001): drag-drop .json/.tmj, auto-detect 2 formats, 12 tests
-```
+No schema, parser, service, or component changes.
 
-### Build Philosophy — Replace lines 26:
+## Verified
 
-```
-- All 3 workspaces pass `tsc --noEmit` as of 2026-05-25
-```
-→
-```
-- All 3 workspaces pass `tsc --noEmit` as of 2026-07-01. 501 total tests (57 core + 119 api + 325 web)
-```
+- `pnpm -r run test` — 501 PASS (57 core + 119 api + 325 web)
+- `pnpm exec tsc -p apps/web/tsconfig.json --noEmit` — clean
+- `pnpm exec tsc -p apps/api/tsconfig.json --noEmit` — clean
+- `pnpm exec tsc -p packages/core/tsconfig.json --noEmit` — clean
+- `pnpm -r run lint` — clean
 
-### Current Next Direction — Replace lines 85-88:
+## Risk
 
-```
-- Continue Lounge polish: furniture arrangement, character positioning
-- Stage page: verify Claude API streaming works with updated character system
-- Projects page: not yet started
-```
-→
-```
-- Next: C-RUN-001 — Lead character spawns Member agents per todo item (Projects page orchestration)
-- Upcoming: C-LOUNGE-002 (time-based themes), C-SPRITE-001 (sprite furniture), C-MOBILE-001 (responsive lounge)
-```
+Low. Data-only placement tweak; noise tests/assets untouched.
 
-### Do Not Revisit — Add:
-```
-- Do not re-split tiledParser back into roomDefs — canonical parser lives in tiledParser.ts
-- Do not add back the duplicate parseTiledMap implementation in roomDefs.ts
-```
+## Next
+
+Likely C-SPRITE-001 sprite pipeline, if desired.
