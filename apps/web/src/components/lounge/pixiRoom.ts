@@ -1498,16 +1498,21 @@ export function drawLowTable(g: PIXI.Graphics, wx: number, wy: number, wz: numbe
 }
 
 export function drawZabuton(
-  g: PIXI.Graphics,
-  wx: number,
-  wy: number,
-  wz: number,
-  variant = 'default',
-) {
+  g:PIXI.Graphics,
+  wx:number,
+  wy:number,
+  wz:number,
+  variant='default',
+  rotation:number=0,
+){
   const tint =
     variant === 'red' ? 0x6a3a3a : variant === 'blue' ? 0x3a5a6a : 0x4a5830;
   const top = variant === 'red' ? 0x5a2a2a : variant === 'blue' ? 0x2a4a5a : 0x3a4828;
   const side = variant === 'red' ? 0x4a2020 : variant === 'blue' ? 0x203040 : 0x2e3c20;
+  if (rotation % 2 === 1){
+    isoBox(g, wx, wy, wz, 1.0, 3.0, 0.18, tint, top, side);
+    return;
+  }
   isoBox(g, wx, wy, wz, 3.0, 1.0, 0.18, tint, top, side);
 }
 
@@ -1569,7 +1574,7 @@ export function drawFurnitureByType(
       drawLowTable(g, wx, wy, wz);
       break;
     case 'zabuton':
-      drawZabuton(g, wx, wy, wz, variant);
+      drawZabuton(g, wx, wy, wz, variant, rotation);
       break;
     case 'plant':
       drawPlant(g, wx, wy, wz);
