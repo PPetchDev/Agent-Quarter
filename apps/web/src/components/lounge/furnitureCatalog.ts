@@ -17,6 +17,8 @@ export interface CatalogItem {
   rotation?: Rotation;
   /** Optional variant tags for duplicates (e.g. zabuton colors). First entry is the default. */
   variants?: readonly string[];
+  /** Optional flag for shop/editor: whether this item supports rotation. */
+  rotatable?: boolean;
 }
 
 export const FURNITURE_CATALOG: CatalogItem[] = [
@@ -107,6 +109,7 @@ export const FURNITURE_CATALOG: CatalogItem[] = [
     tokenCost: 3,
     draggable: true,
     category: 'essential',
+    rotatable: true,
   },
   {
     type: 'pool_table',
@@ -129,6 +132,7 @@ export const FURNITURE_CATALOG: CatalogItem[] = [
     tokenCost: 2,
     draggable: true,
     category: 'essential',
+    rotatable: true,
   },
   {
     type: 'zabuton',
