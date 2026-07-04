@@ -63,6 +63,7 @@ import { useAgentSocket } from '@/hooks/useAgentSocket';
 import { useLoungePersistence } from '@/hooks/useLoungePersistence';
 import { useDormTickLoop } from '@/hooks/useDormTickLoop';
 import { useFurnitureDrag } from '@/hooks/useFurnitureDrag';
+import { useDialogueScheduler } from '@/hooks/useDialogueScheduler';
 import type { AgentLoungeState, AgentLoungeTaskType } from '@squad/core';
 import type { Agent, AgentState, AgentTaskType } from '@/game/agents/agentTypes';
 import {
@@ -86,8 +87,6 @@ import { startOfficeRun, completeOfficeRun } from '@/game/agents/officeRunAdapte
 import { useRunSocket } from '@/hooks/useRunSocket';
 import { loungeStations, type LoungeStationId, resolveLoungeStation } from '@/game/scene/loungeStations';
 import { buildLoungeRouteGrid } from '@/game/scene/loungePathGrid';
-import { pickAgentDialogue } from '@/game/dialogue/dialogueScheduler';
-import { generateOfficeDialogue } from '@/game/dialogue/dialogueAdapter';
 import Image from 'next/image';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -259,8 +258,6 @@ const OFFICE_CHAT_CLASS: Record<OfficeChatMessage['kind'], string> = {
 const OFFICE_CANONICAL_TASK_ID = 't-008'; // "File findings in backlog" (status: todo)
 
 const ENABLE_LLM_DIALOGUE = process.env.NEXT_PUBLIC_ENABLE_LLM_DIALOGUE === 'true';
-
-const LLM_REQUEST_COOLDOWN_MS = 90_000;
 
 const STORAGE_KEY = 'squad:lounge:v8';
 const LEGACY_STORAGE_KEY = 'squad:lounge:v7';
@@ -1475,152 +1472,28 @@ export function LoungeCanvas() {
     setOfficeChat((prev) => [...prev, { id, ...message }].slice(-8));
   }, []);
 
-  // ── Autonomous agent dialogue ──────────────────────────────────────────
-  const lastDialogueAtRef = useRef<number | null>(null);
-  const recentDialogueTextsRef = useRef<string[]>([]);
-  const [activeDialogueBubble, setActiveDialogueBubble] = useState<{
-    agentId: OfficeAgentId;
-    text: string;
-  } | null>(null);
-  const dialogueBubbleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // LLM guards
-  const llmInFlightRef = useRef(false);
-  const llmLastRequestAtRef = useRef<number | null>(null);
-  const dialogueMountedRef = useRef(true);
+  // officeStatusRef: a live-read handle for the "Idle chibi wandering" interval
+  // above (declared earlier in this component), which never restarts on
+  // officeStatus changes and instead checks this ref inside its setInterval
+  // callback. Independent of useDialogueScheduler's own internal copy.
   const officeStatusRef = useRef(officeStatus);
-  const llmRequestIdRef = useRef(0);
-
   useEffect(() => {
     officeStatusRef.current = officeStatus;
   }, [officeStatus]);
 
-  useEffect(() => {
-    if (officeStatus !== 'idle') return;
-    if (!roomReady) return;
-
-    const tick = () => {
-      const message = pickAgentDialogue({
-        now: Date.now(),
-        lastDialogueAt: lastDialogueAtRef.current,
-        cooldownMs: 15_000,
-        probability: 0.1,
-        agents: [
-          { id: 'agent-1', state: agent.state },
-          { id: 'agent-2', state: aki.agent.state },
-          { id: 'agent-3', state: ren.agent.state },
-          { id: 'agent-4', state: yui.agent.state },
-          { id: 'agent-5', state: mika.agent.state },
-        ],
-        recentTexts: recentDialogueTextsRef.current,
-      });
-
-      if (message) {
-        const now = message.createdAt;
-        lastDialogueAtRef.current = now;
-
-        const appendDialogue = (
-          fromAgentId: OfficeAgentId,
-          toAgentId: OfficeAgentId | undefined,
-          text: string,
-        ) => {
-          recentDialogueTextsRef.current = [...recentDialogueTextsRef.current.slice(-4), text];
-          appendOfficeChat({
-            agentId: fromAgentId,
-            toAgentId,
-            kind: 'dialogue',
-            text,
-          });
-
-          // Show bubble above speaking agent
-          const bubble = { agentId: fromAgentId, text };
-          setActiveDialogueBubble(bubble);
-          if (dialogueBubbleTimeoutRef.current) {
-            clearTimeout(dialogueBubbleTimeoutRef.current);
-          }
-          dialogueBubbleTimeoutRef.current = setTimeout(() => {
-            setActiveDialogueBubble(null);
-            dialogueBubbleTimeoutRef.current = null;
-          }, 5_000);
-        };
-
-        // Try LLM
-        if (
-          ENABLE_LLM_DIALOGUE &&
-          !llmInFlightRef.current &&
-          (llmLastRequestAtRef.current === null ||
-            now - llmLastRequestAtRef.current >= LLM_REQUEST_COOLDOWN_MS)
-        ) {
-          llmInFlightRef.current = true;
-          llmLastRequestAtRef.current = now;
-          const requestId = ++llmRequestIdRef.current;
-
-          generateOfficeDialogue({
-            fromAgentId: message.fromAgentId,
-            toAgentId: message.toAgentId,
-            officeStatus: 'idle',
-            recentDialogue: recentDialogueTextsRef.current,
-            now,
-            maxChars: 80,
-          })
-            .then((response) => {
-              llmInFlightRef.current = false;
-
-              if (
-                requestId !== llmRequestIdRef.current ||
-                !dialogueMountedRef.current ||
-                officeStatusRef.current !== 'idle'
-              ) {
-                return;
-              }
-
-              if (!response || !response.text?.trim()) {
-                // Fallback to deterministic
-                appendDialogue(message.fromAgentId, message.toAgentId, message.text);
-                return;
-              }
-
-              appendDialogue(response.fromAgentId, response.toAgentId, response.text);
-            })
-            .catch(() => {
-              llmInFlightRef.current = false;
-              if (
-                requestId === llmRequestIdRef.current &&
-                dialogueMountedRef.current &&
-                officeStatusRef.current === 'idle'
-              ) {
-                appendDialogue(message.fromAgentId, message.toAgentId, message.text);
-              }
-            });
-        } else {
-          // Deterministic only (guarded out or flag disabled)
-          appendDialogue(message.fromAgentId, message.toAgentId, message.text);
-        }
-      }
-    };
-
-    const interval = setInterval(tick, 4_000);
-    return () => clearInterval(interval);
-  }, [
+  const { activeDialogueBubble } = useDialogueScheduler({
     officeStatus,
     roomReady,
-    agent.state,
-    aki.agent.state,
-    ren.agent.state,
-    yui.agent.state,
-    mika.agent.state,
+    agents: [
+      { id: 'agent-1', state: agent.state },
+      { id: 'agent-2', state: aki.agent.state },
+      { id: 'agent-3', state: ren.agent.state },
+      { id: 'agent-4', state: yui.agent.state },
+      { id: 'agent-5', state: mika.agent.state },
+    ],
     appendOfficeChat,
-  ]);
-
-  // Cleanup dialogue bubble timeout on unmount
-  useEffect(() => {
-    return () => {
-      dialogueMountedRef.current = false;
-      if (dialogueBubbleTimeoutRef.current) {
-        clearTimeout(dialogueBubbleTimeoutRef.current);
-      }
-    };
-  }, []);
+    enableLlmDialogue: ENABLE_LLM_DIALOGUE,
+  });
 
   // ── socket run lifecycle (failed/cancelled only; started/completed handled by REST) ──
   const handleRunFailed = useCallback(({ run }: { run: { id: string } }) => {
