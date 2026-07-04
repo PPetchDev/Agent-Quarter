@@ -34,6 +34,12 @@ const EXPECTED_FIRST_MESSAGE = pickAgentDialogue({
   random: () => 0,
 })!;
 
+type SchedulerProps = {
+  officeStatus: OfficeWorkflowStatus;
+  roomReady: boolean;
+  agents: AgentSnapshot[];
+};
+
 function renderScheduler(
   overrides: {
     officeStatus?: OfficeWorkflowStatus;
@@ -45,11 +51,11 @@ function renderScheduler(
 ) {
   const appendOfficeChat = vi.fn();
   const view = renderHook(
-    (props: { officeStatus: OfficeWorkflowStatus; roomReady: boolean }) =>
+    (props: SchedulerProps) =>
       useDialogueScheduler({
         officeStatus: props.officeStatus,
         roomReady: props.roomReady,
-        agents: overrides.agents ?? AGENTS,
+        agents: props.agents,
         appendOfficeChat,
         enableLlmDialogue: overrides.enableLlmDialogue ?? false,
         random: overrides.random ?? (() => 0),
@@ -58,6 +64,7 @@ function renderScheduler(
       initialProps: {
         officeStatus: overrides.officeStatus ?? 'idle',
         roomReady: overrides.roomReady ?? true,
+        agents: overrides.agents ?? AGENTS,
       },
     },
   );
@@ -209,7 +216,7 @@ describe('useDialogueScheduler', () => {
     });
     expect(generateOfficeDialogue).toHaveBeenCalledOnce();
 
-    rerender({ officeStatus: 'running', roomReady: true });
+    rerender({ officeStatus: 'running', roomReady: true, agents: AGENTS });
 
     await act(async () => {
       resolveLlm({
@@ -300,5 +307,28 @@ describe('useDialogueScheduler', () => {
     });
 
     expect(appendOfficeChat).not.toHaveBeenCalled();
+  });
+
+  it('keeps ticking on a stable 4s cadence even when the caller passes a fresh agents array reference every render', async () => {
+    // Regression test: LoungeCanvas builds a brand-new `agents` array literal
+    // on every render (it re-renders often while idle — e.g. an unrelated
+    // 15s chatter interval). If the tick effect ever lists `agents` itself
+    // as a dependency, each such render tears down and restarts the 4s
+    // interval, resetting the countdown and potentially never letting a
+    // tick complete. This test re-renders with a new array identity (same
+    // content, different reference) shortly before the 4s mark should fire,
+    // and asserts the tick still lands on schedule.
+    const { appendOfficeChat, rerender } = renderScheduler({ enableLlmDialogue: false });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3_000);
+    });
+    rerender({ officeStatus: 'idle', roomReady: true, agents: [...AGENTS] });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_000);
+    });
+
+    expect(appendOfficeChat).toHaveBeenCalledOnce();
   });
 });

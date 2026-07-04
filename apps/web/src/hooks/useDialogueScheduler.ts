@@ -47,10 +47,24 @@ export function useDialogueScheduler({
   const dialogueMountedRef = useRef(true);
   const officeStatusRef = useRef(officeStatus);
   const llmRequestIdRef = useRef(0);
+  // agents is rebuilt as a fresh array literal on every LoungeCanvas render;
+  // reading it via ref (instead of listing it as an effect dependency) keeps
+  // the tick interval's lifecycle stable across those renders, matching the
+  // original inline effect's five-stable-primitive-deps behavior.
+  const agentsRef = useRef(agents);
+  const randomRef = useRef(random);
 
   useEffect(() => {
     officeStatusRef.current = officeStatus;
   }, [officeStatus]);
+
+  useEffect(() => {
+    agentsRef.current = agents;
+  }, [agents]);
+
+  useEffect(() => {
+    randomRef.current = random;
+  }, [random]);
 
   useEffect(() => {
     if (officeStatus !== 'idle') return;
@@ -62,9 +76,9 @@ export function useDialogueScheduler({
         lastDialogueAt: lastDialogueAtRef.current,
         cooldownMs: 15_000,
         probability: 0.1,
-        agents,
+        agents: agentsRef.current,
         recentTexts: recentDialogueTextsRef.current,
-        random,
+        random: randomRef.current,
       });
 
       if (message) {
@@ -149,7 +163,7 @@ export function useDialogueScheduler({
 
     const interval = setInterval(tick, 4_000);
     return () => clearInterval(interval);
-  }, [officeStatus, roomReady, agents, appendOfficeChat, enableLlmDialogue, random]);
+  }, [officeStatus, roomReady, appendOfficeChat, enableLlmDialogue]);
 
   useEffect(() => {
     return () => {
