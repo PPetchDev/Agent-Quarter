@@ -13,6 +13,8 @@ _Updated: C-DORM-AZUR-001_
 | Wallpaper themes (manual override + auto) | `apps/web/src/components/lounge/pixiRoom.ts` (`ROOM_THEME_KEYS`, `resolveRoomTheme`), `apps/web/src/components/lounge/LoungeCanvas.tsx` (picker in room settings) |
 | Lounge persistence save-side (both floors, dorm, tokens, themeKey, savedAt; roomReady-gated) | `apps/web/src/hooks/useLoungePersistence.ts`, `apps/web/src/hooks/useLoungePersistence.test.ts` |
 | Lounge persistence load-side (v8 read, v7 fallback, still inline — not yet extracted) | `apps/web/src/components/lounge/LoungeCanvas.tsx` (PixiJS init effect, async load IIFE) |
+| Dorm passive tick loop (food drain, XP, morale, affection; resting agent detection) | `apps/web/src/hooks/useDormTickLoop.ts`, `apps/web/src/hooks/useDormTickLoop.test.ts`, `apps/web/src/components/lounge/LoungeCanvas.tsx` (hook wiring) |
+| Lounge furniture drag state machine (move mode, collision highlight, snap-back, history snapshot) | `apps/web/src/hooks/useFurnitureDrag.ts`, `apps/web/src/hooks/useFurnitureDrag.test.ts`, `apps/web/src/components/lounge/LoungeCanvas.tsx` (Pixi pointer wiring) |
 | Lounge simulation route | `apps/web/src/app/lounge/page.tsx` |
 | Legacy office route compatibility | `apps/web/src/app/office/page.tsx` (redirect only) |
 | Room footprint, projection, walls, floor, rug, primitive furniture drawings | `apps/web/src/components/lounge/pixiRoom.ts` |
@@ -28,6 +30,7 @@ _Updated: C-DORM-AZUR-001_
 | Agent work timer lifecycle (walk → work → auto-idle) and progress fields | `apps/web/src/hooks/useAgentWalk.ts`, `apps/web/src/game/agents/agentTypes.ts` |
 | Agent task queue (auto-pop chain after work completion, shift-click enqueue) | `apps/web/src/game/agents/taskQueue.ts`, `apps/web/src/hooks/useAgentWalk.ts`, `apps/web/src/components/lounge/LoungeCanvas.tsx` |
 | Office workflow command board, agent handoff planner, chat bus, and tool boundary log | `apps/web/src/game/agents/officeWorkflow.ts`, `apps/web/src/components/lounge/LoungeCanvas.tsx` |
+| Autonomous office dialogue tick (deterministic pick, LLM fallback/race guards, speech bubble timeout) | `apps/web/src/hooks/useDialogueScheduler.ts`, `apps/web/src/hooks/useDialogueScheduler.test.ts`, `apps/web/src/game/dialogue/dialogueScheduler.ts`, `apps/web/src/game/dialogue/dialogueAdapter.ts`, `apps/web/src/components/lounge/LoungeCanvas.tsx` (hook wiring) |
 | Office agent Spine asset mapping and HTML-avatar fallback rules | `apps/web/src/components/lounge/spineAgents.ts`, `apps/web/src/components/lounge/spineAgents.test.ts` |
 | Agent type contracts | `apps/web/src/game/agents/agentTypes.ts` |
 | Isometric station registry | `apps/web/src/game/scene/loungeStations.ts` |
@@ -37,6 +40,7 @@ _Updated: C-DORM-AZUR-001_
 | Animation resolver | `apps/web/src/game/animation/animationResolver.ts` |
 | Lounge walking integration hook | `apps/web/src/hooks/useAgentWalk.ts` |
 | Global navigation | `apps/web/src/components/TopBar.tsx` |
+| Run execution event notifier (context-bound started/log/completed/failed emits) | `apps/api/src/projects/run-execution-notifier.ts`, `apps/api/src/projects/run-execution-notifier.test.ts`, `apps/api/src/projects/run-execution.service.ts`, `apps/api/src/projects/runs.gateway.ts` |
 
 ## Functional Zone Mapping
 

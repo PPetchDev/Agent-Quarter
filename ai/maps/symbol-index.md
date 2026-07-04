@@ -80,6 +80,10 @@ _Updated: C-DORM-AZUR-001_
 | `useCountdown` | hook | Reusable countdown timer hook returning formatted HH:MM:SS in `hooks/useCountdown.ts` |
 | `useLoungePersistence` | hook | Deep module — save-side of lounge persistence (v8 schema, floor1/floor2 remap, `savedAt` stamp), gated on `roomReady`; narrow interface `{ roomReady, nextIdRef, snapshot }` in `hooks/useLoungePersistence.ts`. Extracted from `LoungeCanvas.tsx`'s inline persist effect (C-ARCH-LOUNGE-001, slice 1/N — load-side still inline, pending). |
 | `LoungeSaveSnapshot` | type | Shape of the 11-field save snapshot passed to `useLoungePersistence` in `hooks/useLoungePersistence.ts` |
+| `useDormTickLoop` | hook | Deep module for the lounge dorm passive interval in `hooks/useDormTickLoop.ts`; gated by `roomReady`, reads `officeWalkersRef`/`comfortRef` fresh each tick, applies `tickDorm` through `setDorm` |
+| `DormTickWalkerMap` | type | Minimal walker map shape consumed by `useDormTickLoop`: agent id -> `{ agent: { state } }` |
+| `useFurnitureDrag` | hook | Deep module for furniture dragging in `hooks/useFurnitureDrag.ts`; owns drag accumulation, room clamp, collision highlight, snap-back, and history snapshot push behind `onDragStart`/`onPointerMove`/`endDrag` |
+| `DragScene` | type | Minimal scene adapter consumed by `useFurnitureDrag`: `updateItem`, `setDragHighlight`, and `setSelected` |
 | `projAt` | function | Pure isometric projection with explicit S/OX/OY params in `pixiRoom.ts` (used by `useAgentWalk` to avoid duplicating projection math) |
 | `Agent.workDurationMs` | field | Total milliseconds for the current work session |
 | `Agent.workElapsedMs` | field | Milliseconds elapsed in the current work session |
@@ -136,6 +140,8 @@ _Updated: C-DORM-AZUR-001_
 | `RunEventPayload` | type | `{ run: Run }` payload shape for run events |
 | `UseRunSocketHandlers` | type | Callback handlers for run events |
 | `LoungeCanvas` | component | Consumes `useRunSocket` for `onRunFailed`/`onRunCancelled` only; appends to officeChat with kind "blocked" |
+| `useDialogueScheduler` | hook | Deep module for autonomous lounge dialogue in `hooks/useDialogueScheduler.ts`; owns 4s tick, deterministic pick, recent-text cooldown, LLM in-flight/cooldown/request-id guards, fallback, and active speech bubble timeout |
+| `UseDialogueSchedulerParams` | type | Hook interface: officeStatus, roomReady, agent snapshots, appendOfficeChat, enableLlmDialogue, optional random for tests |
 | `pickAgentDialogue` | function | Pure deterministic dialogue scheduler — selects speaker/target, respects cooldown/probability/dedup, returns AgentDialogueMessage or null |
 | `AgentDialogueMessage` | type | Dialogue message shape: fromAgentId, toAgentId?, text, createdAt, source: 'deterministic' |
 | `PickAgentDialogueInput` | type | Input shape for pickAgentDialogue: now, lastDialogueAt, cooldownMs, probability, agents, recentTexts?, random? |
@@ -164,6 +170,9 @@ _Updated: C-DORM-AZUR-001_
 | `RunsGateway.emitRunExecutionTool` | method | Emits `run.execution.tool` with `RunExecutionToolPayload` (toolName, status, summary?) |
 | `RunsGateway.emitRunExecutionCompleted` | method | Emits `run.execution.completed` with `RunExecutionCompletedPayload` (summary) |
 | `RunsGateway.emitRunExecutionFailed` | method | Emits `run.execution.failed` with `RunExecutionFailedPayload` (errorSummary) |
+| `createRunExecutionNotifier` | function | Creates a context-bound run execution notifier in `apps/api/src/projects/run-execution-notifier.ts`, adding run/task/project/agent ids and fresh timestamps to gateway emits |
+| `RunExecutionNotifier` | interface | Small notifier interface for `started`, `log`, `completed`, and `failed` execution events used by `RunExecutionService` |
+| `RunExecutionNotifierContext` | type | Bound run execution context: runId plus optional taskId/projectId/agentId |
 | `RunExecutionEventBase` | type | Base payload: runId, taskId?, projectId?, agentId?, timestamp |
 | `RunExecutionStartedPayload` | type | provider: 'codex'\|'mock'\|'manual', mode: 'read-only'\|'workspace-write' |
 | `RunExecutionLogPayload` | type | level: 'debug'\|'info'\|'warn'\|'error', message |

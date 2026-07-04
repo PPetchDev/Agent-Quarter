@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { RunsGateway } from './runs.gateway';
+import { createRunExecutionNotifier } from './run-execution-notifier';
 import { LocalCodexRunner } from '../execution/local-codex-runner';
 import type { LocalCodexRunnerResult } from '../execution/local-codex-runner';
 
@@ -34,17 +35,10 @@ export class RunExecutionService {
 
   async executeRun(input: RunExecutionInput): Promise<void> {
     const { runId, taskId, projectId, agentId, prompt, cwd, mode = 'read-only' } = input;
+    const notify = createRunExecutionNotifier(this.runsGateway, { runId, taskId, projectId, agentId });
 
     // Emit execution started
-    this.runsGateway.emitRunExecutionStarted({
-      runId,
-      taskId,
-      projectId,
-      agentId,
-      provider: 'codex',
-      mode,
-      timestamp: new Date().toISOString(),
-    });
+    notify.started({ provider: 'codex', mode });
 
     // Run Codex with service-level timeout guard
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -63,61 +57,28 @@ export class RunExecutionService {
 
       // Service timeout won the race
       if (raced === SERVICE_TIMEOUT_SENTINEL) {
-        this.runsGateway.emitRunExecutionFailed({
-          runId,
-          taskId,
-          projectId,
-          agentId,
-          errorSummary: 'Execution timed out waiting for runner result',
-          timestamp: new Date().toISOString(),
-        });
+        notify.failed({ errorSummary: 'Execution timed out waiting for runner result' });
         return;
       }
 
       result = raced as LocalCodexRunnerResult;
     } catch (err) {
       clearTimeout(timer);
-      this.runsGateway.emitRunExecutionFailed({
-        runId,
-        taskId,
-        projectId,
-        agentId,
-        errorSummary: `unexpected error: ${String(err)}`,
-        timestamp: new Date().toISOString(),
-      });
+      notify.failed({ errorSummary: `unexpected error: ${String(err)}` });
       return;
     }
 
     // Emit logs from runner events
     for (const event of result.events) {
       const message = event.message ?? event.type;
-      this.runsGateway.emitRunExecutionLog({
-        runId,
-        taskId,
-        projectId,
-        agentId,
-        level: 'info',
-        message: message.slice(0, 500),
-        timestamp: new Date().toISOString(),
-      });
+      notify.log({ level: 'info', message: message.slice(0, 500) });
     }
 
     // Emit completion or failure
     if (result.ok) {
-      this.runsGateway.emitRunExecutionCompleted({
-        runId,
-        taskId,
-        projectId,
-        agentId,
-        summary: result.finalMessage ?? 'Execution completed.',
-        timestamp: new Date().toISOString(),
-      });
+      notify.completed({ summary: result.finalMessage ?? 'Execution completed.' });
     } else {
-      this.runsGateway.emitRunExecutionFailed({
-        runId,
-        taskId,
-        projectId,
-        agentId,
+      notify.failed({
         errorSummary:
           result.errorSummary ??
           (result.timedOut
@@ -125,7 +86,6 @@ export class RunExecutionService {
             : result.truncated
               ? 'Execution output truncated'
               : 'Execution failed'),
-        timestamp: new Date().toISOString(),
       });
     }
   }

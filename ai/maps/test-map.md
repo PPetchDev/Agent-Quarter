@@ -40,6 +40,10 @@ pnpm --filter @squad/core run build; echo "EXIT:$?"
 | Office run adapter — startOfficeRun / completeOfficeRun / createAndStartRun | `apps/web/src/game/agents/officeRunAdapter.test.ts` |
 | Agent walking hook idle RAF loop and task activation | `apps/web/src/hooks/useAgentWalk.test.ts` |
 | useRunSocket hook — socket /runs namespace connection + event registration + cleanup | `apps/web/src/hooks/useRunSocket.test.ts` |
+| Lounge persistence save hook | `apps/web/src/hooks/useLoungePersistence.test.ts` |
+| Dorm passive tick loop hook | `apps/web/src/hooks/useDormTickLoop.test.ts` |
+| Lounge furniture drag hook | `apps/web/src/hooks/useFurnitureDrag.test.ts` |
+| Autonomous office dialogue hook | `apps/web/src/hooks/useDialogueScheduler.test.ts` |
 | Station ambient shape table invariants | `apps/web/src/components/lounge/stationAmbients.test.ts` |
 | Direction resolver | `apps/web/src/game/movement/direction.test.ts` |
 | Movement helper | `apps/web/src/game/movement/moveToTarget.test.ts` |
@@ -77,6 +81,7 @@ pnpm exec tsc -p apps/web/tsconfig.json --noEmit; echo "EXIT:$?"
 | App module smoke | `apps/api/src/app.module.test.ts` |
 | Runs controller execute endpoint (dev-only, env-gated) | `apps/api/src/projects/projects.controller.test.ts` |
 | Runs gateway (execution events) | `apps/api/src/projects/runs.gateway.test.ts` |
+| Run execution notifier (context merge + timestamp stamping) | `apps/api/src/projects/run-execution-notifier.test.ts` |
 | Local Codex runner (mocked spawn) | `apps/api/src/execution/local-codex-runner.test.ts` |
 | Run execution service (orchestration + timeout guard) | `apps/api/src/projects/run-execution.service.test.ts` |
 | Dialogue service (mock provider, fallback) | `apps/api/src/dialogue/dialogue.service.test.ts` |
