@@ -78,6 +78,8 @@ _Updated: C-DORM-AZUR-001_
 | `useAgentWalk` | hook | Plans route waypoints using the shared `LoungeRouteGrid` when provided, animates segment by segment, exposes route debug data, refreshes routes after committed layout changes, and ticks the post-arrival work timer to auto-return the agent to idle |
 | `TASK_CONFIG` | constant | Consolidated task config: stationId, arriveState, walkingBubble, bubble, doneBubble, workDurationMs per task type in `taskResolver.ts` (replaces 6 separate Record maps) |
 | `useCountdown` | hook | Reusable countdown timer hook returning formatted HH:MM:SS in `hooks/useCountdown.ts` |
+| `useLoungePersistence` | hook | Deep module — save-side of lounge persistence (v8 schema, floor1/floor2 remap, `savedAt` stamp), gated on `roomReady`; narrow interface `{ roomReady, nextIdRef, snapshot }` in `hooks/useLoungePersistence.ts`. Extracted from `LoungeCanvas.tsx`'s inline persist effect (C-ARCH-LOUNGE-001, slice 1/N — load-side still inline, pending). |
+| `LoungeSaveSnapshot` | type | Shape of the 11-field save snapshot passed to `useLoungePersistence` in `hooks/useLoungePersistence.ts` |
 | `projAt` | function | Pure isometric projection with explicit S/OX/OY params in `pixiRoom.ts` (used by `useAgentWalk` to avoid duplicating projection math) |
 | `Agent.workDurationMs` | field | Total milliseconds for the current work session |
 | `Agent.workElapsedMs` | field | Milliseconds elapsed in the current work session |

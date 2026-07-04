@@ -7,7 +7,6 @@ import { Spine } from 'pixi-spine';
 import {
   drawBackground,
   proj,
-  worldDeltaFromScreen,
   DEFAULT_OBJECTS,
   CANVAS_W,
   CANVAS_H,
@@ -61,6 +60,9 @@ import {
 } from './spineAgents';
 import { useAgentWalk } from '@/hooks/useAgentWalk';
 import { useAgentSocket } from '@/hooks/useAgentSocket';
+import { useLoungePersistence } from '@/hooks/useLoungePersistence';
+import { useDormTickLoop } from '@/hooks/useDormTickLoop';
+import { useFurnitureDrag } from '@/hooks/useFurnitureDrag';
 import type { AgentLoungeState, AgentLoungeTaskType } from '@squad/core';
 import type { Agent, AgentState, AgentTaskType } from '@/game/agents/agentTypes';
 import {
@@ -493,17 +495,6 @@ export function LoungeCanvas() {
   const comfortRef = useRef(0);
   const trainStorageLoadedRef = useRef(false);
   const happinessMaxReachedRef = useRef(false);
-  const dragRef = useRef<{
-    id: number;
-    screenX: number;
-    screenY: number;
-    accX: number;
-    accY: number;
-    lastValidX: number;
-    lastValidY: number;
-    startX: number;
-    startY: number;
-  } | null>(null);
   const objectsRef = useRef<RoomObject[]>(DEFAULT_OBJECTS);
   const historyRef = useRef<RoomObject[][]>([]);
   const redoRef = useRef<RoomObject[][]>([]);
@@ -952,18 +943,14 @@ export function LoungeCanvas() {
     comfortRef.current = comfort;
   }, [comfort]);
   // Dorm tick: food drain + passive XP / morale / affection.
-  useEffect(() => {
-    if (!roomReady) return;
-    const id = setInterval(() => {
-      const restingIds = DORM_AGENT_IDS.filter(
-        (agentId) => officeWalkersRef.current[agentId]?.agent.state === 'resting',
-      );
-      setDorm(
-        (prev) => tickDorm(prev, Date.now(), { comfort: comfortRef.current, restingIds }).state,
-      );
-    }, DORM_TICK_MS);
-    return () => clearInterval(id);
-  }, [roomReady]);
+  useDormTickLoop({
+    roomReady,
+    agentIds: DORM_AGENT_IDS,
+    officeWalkersRef,
+    comfortRef,
+    setDorm,
+    intervalMs: DORM_TICK_MS,
+  });
   // Idle chibi wandering: send a random idle agent for a stroll.
   useEffect(() => {
     if (!roomReady) return;
@@ -1212,25 +1199,7 @@ export function LoungeCanvas() {
           if (modeRef.current === 'move') return;
           setSelectedId((prev) => (prev === id ? null : id));
         },
-        onDragStart: (id, sx, sy) => {
-          if (modeRef.current !== 'move') return;
-          if (!dragRef.current) {
-            const item = objectsRef.current.find((o) => o.id === id);
-            const wx = item?.wx ?? 0,
-              wy = item?.wy ?? 0;
-            dragRef.current = {
-              id,
-              screenX: sx,
-              screenY: sy,
-              accX: Math.round(wx),
-              accY: Math.round(wy),
-              lastValidX: wx,
-              lastValidY: wy,
-              startX: wx,
-              startY: wy,
-            };
-          }
-        },
+        onDragStart: drag.onDragStart,
       });
       sceneRef.current = scene;
       drawBackground(scene.backgroundGraphics, roomWRef.current, roomHRef.current, theme);
@@ -1334,60 +1303,9 @@ export function LoungeCanvas() {
           });
       }
 
-      app.stage.on('pointermove', (e: PIXI.FederatedPointerEvent) => {
-        const drag = dragRef.current;
-        if (!drag) return;
-        const dx = (e.global.x - drag.screenX) / scaleRef.current;
-        const dy = (e.global.y - drag.screenY) / scaleRef.current;
-        drag.screenX = e.global.x;
-        drag.screenY = e.global.y;
-        const [dwx, dwy] = worldDeltaFromScreen(dx, dy);
-        drag.accX += dwx;
-        drag.accY += dwy;
-        const item = objectsRef.current.find((o) => o.id === drag.id);
-        if (!item) return;
-        const fp = FURNITURE_TILES[item.furnitureType];
-        const nx = Math.round(Math.max(0, Math.min(roomWRef.current - fp.w, drag.accX)));
-        const ny = Math.round(Math.max(0, Math.min(roomHRef.current - fp.d, drag.accY)));
-        const colliding = checkCollision(objectsRef.current, drag.id, nx, ny);
-        // Move item visually to new position regardless of collision
-        objectsRef.current = objectsRef.current.map((o) =>
-          o.id === drag.id ? { ...o, wx: nx, wy: ny } : o,
-        );
-        scene.updateItem(drag.id, nx, ny, item.wz);
-        scene.setDragHighlight(drag.id, colliding);
-        if (!colliding) {
-          drag.lastValidX = nx;
-          drag.lastValidY = ny;
-        }
-      });
-
-      const endDrag = () => {
-        const drag = dragRef.current;
-        if (!drag) return;
-        const didMove = drag.startX !== drag.lastValidX || drag.startY !== drag.lastValidY;
-        // Snap back to last valid position if current is colliding
-        const item = objectsRef.current.find((o) => o.id === drag.id);
-        if (item) {
-          const finalX = drag.lastValidX,
-            finalY = drag.lastValidY;
-          if (didMove) {
-            const previous = objectsRef.current.map((o) =>
-              o.id === drag.id ? { ...o, wx: drag.startX, wy: drag.startY } : { ...o },
-            );
-            pushHistorySnapshot(previous);
-          }
-          objectsRef.current = objectsRef.current.map((o) =>
-            o.id === drag.id ? { ...o, wx: finalX, wy: finalY } : o,
-          );
-          scene.updateItem(drag.id, finalX, finalY, item.wz);
-        }
-        scene.setSelected(null);
-        dragRef.current = null;
-        setObjects([...objectsRef.current]);
-      };
-      app.stage.on('pointerup', endDrag);
-      app.stage.on('pointerupoutside', endDrag);
+      app.stage.on('pointermove', drag.onPointerMove);
+      app.stage.on('pointerup', drag.endDrag);
+      app.stage.on('pointerupoutside', drag.endDrag);
     })(); // close async IIFE
 
     return () => {
@@ -1516,49 +1434,23 @@ export function LoungeCanvas() {
   const handlePanEnd = useCallback(() => setIsPanning(false), []);
 
   // ── Persist ──────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    // Initial mount renders default state before the async load applies the
-    // saved snapshot — persisting then would clobber real progress.
-    if (!roomReady) return;
-    try {
-      // `objects` always holds the visible floor; persist both floors explicitly.
-      const floor1Objects = floor === 1 ? objects : inactiveFloorObjects;
-      const floor2Objects = floor === 1 ? inactiveFloorObjects : objects;
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          objects: floor1Objects,
-          floor2Objects,
-          roomName,
-          happiness,
-          floor,
-          coins,
-          tokens,
-          themeKey,
-          dorm,
-          nextId: nextIdRef.current,
-          roomW,
-          roomH,
-          savedAt: Date.now(),
-        }),
-      );
-    } catch {
-      /* ignore */
-    }
-  }, [
+  useLoungePersistence({
     roomReady,
-    objects,
-    inactiveFloorObjects,
-    roomName,
-    happiness,
-    floor,
-    coins,
-    tokens,
-    themeKey,
-    dorm,
-    roomW,
-    roomH,
-  ]);
+    nextIdRef,
+    snapshot: {
+      objects,
+      inactiveFloorObjects,
+      roomName,
+      happiness,
+      floor,
+      coins,
+      tokens,
+      themeKey,
+      dorm,
+      roomW,
+      roomH,
+    },
+  });
 
   // ── Toast helper ─────────────────────────────────────────────────────────────
   const showToast = useCallback((text: string) => {
@@ -2096,6 +1988,17 @@ export function LoungeCanvas() {
     if (historyRef.current.length > 50) historyRef.current.shift();
     redoRef.current = [];
   }, []);
+
+  const drag = useFurnitureDrag({
+    objectsRef,
+    roomWRef,
+    roomHRef,
+    scaleRef,
+    modeRef,
+    sceneRef,
+    setObjects,
+    pushHistorySnapshot,
+  });
 
   const handleUndo = useCallback(() => {
     const prev = historyRef.current.pop();

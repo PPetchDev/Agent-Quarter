@@ -11,7 +11,8 @@ _Updated: C-DORM-AZUR-001_
 | Idle chibi wandering | `apps/web/src/hooks/useAgentWalk.ts` (`walkToIso`), `apps/web/src/components/lounge/LoungeCanvas.tsx` (wander scheduler) |
 | Per-floor layouts (floor 1 work / floor 2 rest) | `apps/web/src/components/lounge/LoungeCanvas.tsx` (`handleFloorToggle`, `inactiveFloorObjects`, `DEFAULT_FLOOR2_TEMPLATE`) |
 | Wallpaper themes (manual override + auto) | `apps/web/src/components/lounge/pixiRoom.ts` (`ROOM_THEME_KEYS`, `resolveRoomTheme`), `apps/web/src/components/lounge/LoungeCanvas.tsx` (picker in room settings) |
-| Lounge persistence v8 (both floors, dorm, tokens, themeKey, savedAt; v7 fallback; roomReady-gated) | `apps/web/src/components/lounge/LoungeCanvas.tsx` |
+| Lounge persistence save-side (both floors, dorm, tokens, themeKey, savedAt; roomReady-gated) | `apps/web/src/hooks/useLoungePersistence.ts`, `apps/web/src/hooks/useLoungePersistence.test.ts` |
+| Lounge persistence load-side (v8 read, v7 fallback, still inline — not yet extracted) | `apps/web/src/components/lounge/LoungeCanvas.tsx` (PixiJS init effect, async load IIFE) |
 | Lounge simulation route | `apps/web/src/app/lounge/page.tsx` |
 | Legacy office route compatibility | `apps/web/src/app/office/page.tsx` (redirect only) |
 | Room footprint, projection, walls, floor, rug, primitive furniture drawings | `apps/web/src/components/lounge/pixiRoom.ts` |
