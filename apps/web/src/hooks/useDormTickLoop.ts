@@ -1,4 +1,4 @@
-import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
+import { useEffect, useRef, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
 import { tickDorm, type DormState } from '@/game/dorm/dormEngine';
 import type { AgentState } from '@/game/agents/agentTypes';
 
@@ -28,10 +28,18 @@ export function useDormTickLoop({
   setDorm,
   intervalMs = DEFAULT_INTERVAL_MS,
 }: UseDormTickLoopParams): void {
+  // agentIds is read via ref (not an effect dependency) so a caller passing
+  // a fresh array literal each render can't reset this interval's cadence —
+  // same defensive shape as useDialogueScheduler's agents/random refs.
+  const agentIdsRef = useRef(agentIds);
+  useEffect(() => {
+    agentIdsRef.current = agentIds;
+  }, [agentIds]);
+
   useEffect(() => {
     if (!roomReady) return;
     const id = setInterval(() => {
-      const restingIds = agentIds.filter(
+      const restingIds = agentIdsRef.current.filter(
         (agentId) => officeWalkersRef.current[agentId]?.agent.state === 'resting',
       );
       setDorm(
@@ -39,5 +47,5 @@ export function useDormTickLoop({
       );
     }, intervalMs);
     return () => clearInterval(id);
-  }, [roomReady, agentIds, officeWalkersRef, comfortRef, setDorm, intervalMs]);
+  }, [roomReady, officeWalkersRef, comfortRef, setDorm, intervalMs]);
 }
