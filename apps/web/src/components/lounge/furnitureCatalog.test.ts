@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { FURNITURE_CATALOG, getDefaultSpawnPosition } from './furnitureCatalog';
+import {
+  FURNITURE_CATALOG,
+  getDefaultSpawnPosition,
+  ZABUTON_PALETTES,
+  zabutonPalette,
+} from './furnitureCatalog';
 
 describe('furniture catalog smoke', () => {
   it('has unique furniture types', () => {
@@ -34,5 +39,18 @@ describe('furniture catalog smoke', () => {
       expect(item.tokenCost).toBeGreaterThanOrEqual(1);
       expect(Number.isInteger(item.tokenCost)).toBe(true);
     }
+  });
+});
+
+describe('zabutonPalette', () => {
+  it('resolves legacy map variant names to the current palettes', () => {
+    expect(zabutonPalette('red')).toBe(ZABUTON_PALETTES.rose);
+    expect(zabutonPalette('default')).toBe(ZABUTON_PALETTES.green);
+    expect(zabutonPalette('blue')).toBe(ZABUTON_PALETTES.blue);
+  });
+
+  it('falls back to green for missing or unknown variants', () => {
+    expect(zabutonPalette(undefined)).toBe(ZABUTON_PALETTES.green);
+    expect(zabutonPalette('bogus')).toBe(ZABUTON_PALETTES.green);
   });
 });

@@ -33,6 +33,7 @@
 - Dev SQLite DB lives at `apps/api/prisma/dev.db`
 - ESLint and Prettier are configured at the repo root; TypeScript strict mode remains the primary correctness gate
 - Root `tsconfig.json` uses project references — workspace builds are isolated
+- `pnpm typecheck` builds `@squad/core`, then runs `tsc --noEmit` in every workspace (`pnpm -r run typecheck`)
 
 ## Audit
 

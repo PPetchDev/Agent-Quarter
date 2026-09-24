@@ -41,7 +41,7 @@ export async function generateOfficeDialogue(
       body: JSON.stringify(input),
     });
     if (!res.ok) return null;
-    return res.json();
+    return await res.json();
   } catch {
     return null;
   }
@@ -78,16 +78,20 @@ export type PlanWorkflowLLMResponse = {
  */
 export async function planWorkflowLLM(
   input: PlanWorkflowLLMRequest,
+  options: { signal?: AbortSignal } = {},
 ): Promise<PlanWorkflowLLMResponse | null> {
   try {
     const res = await fetch(`${BASE}/api/dialogue/plan-workflow`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),
+      signal: options.signal,
     });
     if (!res.ok) return null;
-    return res.json();
+    // Awaited so parse errors and aborts during the body read land in the catch.
+    return await res.json();
   } catch {
+    // Includes AbortError: an aborted plan resolves null like any other failure.
     return null;
   }
 }

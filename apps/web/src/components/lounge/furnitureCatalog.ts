@@ -19,6 +19,29 @@ export interface CatalogItem {
   variants?: readonly string[];
   /** Optional flag for shop/editor: whether this item supports rotation. */
   rotatable?: boolean;
+  /** Quarter-turns a rotatable item may take. Absent = all four. */
+  rotations?: readonly Rotation[];
+}
+
+/** Zabuton colour palettes keyed by variant; the first key is the default. */
+export const ZABUTON_PALETTES = {
+  green: { top: 0x4a5830, front: 0x3a4828, side: 0x2e3c20 },
+  rose: { top: 0x6a3a3a, front: 0x5a2a2a, side: 0x4a2020 },
+  blue: { top: 0x3a5a6a, front: 0x2a4a5a, side: 0x203040 },
+  gold: { top: 0x8a6a2a, front: 0x7a5a1c, side: 0x5e4414 },
+} as const;
+
+type ZabutonVariant = keyof typeof ZABUTON_PALETTES;
+
+// Older maps use these names for the same colours.
+const ZABUTON_VARIANT_ALIASES: Record<string, ZabutonVariant> = { red: 'rose', default: 'green' };
+
+/** Palette for a zabuton variant, resolving legacy aliases and falling back to green. */
+export function zabutonPalette(variant: string | undefined) {
+  const key = (variant && ZABUTON_VARIANT_ALIASES[variant]) ?? variant;
+  return key && key in ZABUTON_PALETTES
+    ? ZABUTON_PALETTES[key as ZabutonVariant]
+    : ZABUTON_PALETTES.green;
 }
 
 export const FURNITURE_CATALOG: CatalogItem[] = [
@@ -110,6 +133,8 @@ export const FURNITURE_CATALOG: CatalogItem[] = [
     draggable: true,
     category: 'essential',
     rotatable: true,
+    // Book spines are drawn on the front face; at 180°/270° that face points away.
+    rotations: [0, 1],
   },
   {
     type: 'pool_table',
@@ -144,7 +169,8 @@ export const FURNITURE_CATALOG: CatalogItem[] = [
     tokenCost: 1,
     draggable: true,
     category: 'essential',
-    variants: ['green', 'rose', 'blue', 'gold'],
+    variants: Object.keys(ZABUTON_PALETTES),
+    rotatable: true,
   },
   {
     type: 'plant',

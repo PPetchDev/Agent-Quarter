@@ -7,7 +7,6 @@ import { Spine } from 'pixi-spine';
 import {
   drawBackground,
   proj,
-  worldDeltaFromScreen,
   DEFAULT_OBJECTS,
   CANVAS_W,
   CANVAS_H,
@@ -22,7 +21,15 @@ import { drawThemeParticles } from './themeParticles';
 import { buildRoomScene, loadRoomJSON, loadTiledMap, isValidTiledJson } from './roomLoader';
 import type { RoomScene } from './roomLoader';
 import type { RoomObject } from './roomDefs';
-import { checkCollision, FURNITURE_TILES } from './roomDefs';
+import {
+  allowedRotations,
+  checkCollision,
+  footprintFor,
+  FURNITURE_TILES,
+  normalizeRotation,
+  normalizeVariant,
+  rotateInLayout,
+} from './roomDefs';
 import { FurnitureInspector } from './FurnitureInspector';
 import { ShopModal } from './ShopModal';
 import { SupplyPanel } from './SupplyPanel';
@@ -61,6 +68,10 @@ import {
 } from './spineAgents';
 import { useAgentWalk } from '@/hooks/useAgentWalk';
 import { useAgentSocket } from '@/hooks/useAgentSocket';
+import { useLoungePersistence } from '@/hooks/useLoungePersistence';
+import { useDormTickLoop } from '@/hooks/useDormTickLoop';
+import { useFurnitureDrag } from '@/hooks/useFurnitureDrag';
+import { useDialogueScheduler } from '@/hooks/useDialogueScheduler';
 import type { AgentLoungeState, AgentLoungeTaskType } from '@squad/core';
 import type { Agent, AgentState, AgentTaskType } from '@/game/agents/agentTypes';
 import {
@@ -84,8 +95,6 @@ import { startOfficeRun, completeOfficeRun } from '@/game/agents/officeRunAdapte
 import { useRunSocket } from '@/hooks/useRunSocket';
 import { loungeStations, type LoungeStationId, resolveLoungeStation } from '@/game/scene/loungeStations';
 import { buildLoungeRouteGrid } from '@/game/scene/loungePathGrid';
-import { pickAgentDialogue } from '@/game/dialogue/dialogueScheduler';
-import { generateOfficeDialogue } from '@/game/dialogue/dialogueAdapter';
 import Image from 'next/image';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -110,8 +119,14 @@ const AUTONOMOUS_LEAD_ID = 'agent-1'; // Mai
 type RunGuard = () => boolean;
 
 function snapObj(o: RoomObject, maxX = ROOM_TILES_X, maxY = ROOM_TILES_Y): RoomObject {
+  // Rotation/variant arrive untrusted (saves, share links, Tiled); omit them when default.
+  const { rotation: rawRotation, variant: rawVariant, ...base } = o;
+  const rotation = normalizeRotation(o.furnitureType, rawRotation);
+  const variant = normalizeVariant(rawVariant);
   return {
-    ...o,
+    ...base,
+    ...(rotation ? { rotation } : {}),
+    ...(variant ? { variant } : {}),
     wx: Math.round(Math.max(0, Math.min(maxX - 1, o.wx))),
     wy: Math.min(maxY, Math.round(Math.max(0, o.wy))),
   };
@@ -132,7 +147,7 @@ function autoArrangeLayout(objects: RoomObject[], maxW: number, maxH: number): R
   const positions = new Map<number, { wx: number; wy: number }>();
 
   for (const current of sorted) {
-    const fp = FURNITURE_TILES[current.furnitureType] ?? { w: 1, d: 1 };
+    const fp = footprintFor(current.furnitureType, current.rotation);
     const maxX = Math.max(0, maxW - fp.w);
     const maxY = Math.max(0, maxH - fp.d);
     let found = false;
@@ -259,8 +274,6 @@ const OFFICE_CHAT_CLASS: Record<OfficeChatMessage['kind'], string> = {
 const OFFICE_CANONICAL_TASK_ID = 't-008'; // "File findings in backlog" (status: todo)
 
 const ENABLE_LLM_DIALOGUE = process.env.NEXT_PUBLIC_ENABLE_LLM_DIALOGUE === 'true';
-
-const LLM_REQUEST_COOLDOWN_MS = 90_000;
 
 const STORAGE_KEY = 'squad:lounge:v8';
 const LEGACY_STORAGE_KEY = 'squad:lounge:v7';
@@ -495,17 +508,6 @@ export function LoungeCanvas() {
   const comfortRef = useRef(0);
   const trainStorageLoadedRef = useRef(false);
   const happinessMaxReachedRef = useRef(false);
-  const dragRef = useRef<{
-    id: number;
-    screenX: number;
-    screenY: number;
-    accX: number;
-    accY: number;
-    lastValidX: number;
-    lastValidY: number;
-    startX: number;
-    startY: number;
-  } | null>(null);
   const objectsRef = useRef<RoomObject[]>(DEFAULT_OBJECTS);
   const historyRef = useRef<RoomObject[][]>([]);
   const redoRef = useRef<RoomObject[][]>([]);
@@ -694,6 +696,13 @@ export function LoungeCanvas() {
   const autonomousModeRef = useRef(false);
   // Bumped to cancel any pending autonomous cycle (toggle, manual run, reset, unmount).
   const autonomousCycleRef = useRef(0);
+  // In-flight planner request of the current autonomous run, aborted when its cycle is cancelled.
+  const plannerAbortRef = useRef<AbortController | null>(null);
+  const cancelAutonomousCycle = useCallback(() => {
+    autonomousCycleRef.current += 1;
+    plannerAbortRef.current?.abort();
+    plannerAbortRef.current = null;
+  }, []);
   const autonomousTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeOfficeCommand, setActiveOfficeCommand] = useState(
     'Build a verified lounge workflow slice',
@@ -959,18 +968,14 @@ export function LoungeCanvas() {
     comfortRef.current = comfort;
   }, [comfort]);
   // Dorm tick: food drain + passive XP / morale / affection.
-  useEffect(() => {
-    if (!roomReady) return;
-    const id = setInterval(() => {
-      const restingIds = DORM_AGENT_IDS.filter(
-        (agentId) => officeWalkersRef.current[agentId]?.agent.state === 'resting',
-      );
-      setDorm(
-        (prev) => tickDorm(prev, Date.now(), { comfort: comfortRef.current, restingIds }).state,
-      );
-    }, DORM_TICK_MS);
-    return () => clearInterval(id);
-  }, [roomReady]);
+  useDormTickLoop({
+    roomReady,
+    agentIds: DORM_AGENT_IDS,
+    officeWalkersRef,
+    comfortRef,
+    setDorm,
+    intervalMs: DORM_TICK_MS,
+  });
   // Idle chibi wandering: send a random idle agent for a stroll.
   useEffect(() => {
     if (!roomReady) return;
@@ -1219,25 +1224,7 @@ export function LoungeCanvas() {
           if (modeRef.current === 'move') return;
           setSelectedId((prev) => (prev === id ? null : id));
         },
-        onDragStart: (id, sx, sy) => {
-          if (modeRef.current !== 'move') return;
-          if (!dragRef.current) {
-            const item = objectsRef.current.find((o) => o.id === id);
-            const wx = item?.wx ?? 0,
-              wy = item?.wy ?? 0;
-            dragRef.current = {
-              id,
-              screenX: sx,
-              screenY: sy,
-              accX: Math.round(wx),
-              accY: Math.round(wy),
-              lastValidX: wx,
-              lastValidY: wy,
-              startX: wx,
-              startY: wy,
-            };
-          }
-        },
+        onDragStart: drag.onDragStart,
       });
       sceneRef.current = scene;
       drawBackground(scene.backgroundGraphics, roomWRef.current, roomHRef.current, theme);
@@ -1341,60 +1328,9 @@ export function LoungeCanvas() {
           });
       }
 
-      app.stage.on('pointermove', (e: PIXI.FederatedPointerEvent) => {
-        const drag = dragRef.current;
-        if (!drag) return;
-        const dx = (e.global.x - drag.screenX) / scaleRef.current;
-        const dy = (e.global.y - drag.screenY) / scaleRef.current;
-        drag.screenX = e.global.x;
-        drag.screenY = e.global.y;
-        const [dwx, dwy] = worldDeltaFromScreen(dx, dy);
-        drag.accX += dwx;
-        drag.accY += dwy;
-        const item = objectsRef.current.find((o) => o.id === drag.id);
-        if (!item) return;
-        const fp = FURNITURE_TILES[item.furnitureType];
-        const nx = Math.round(Math.max(0, Math.min(roomWRef.current - fp.w, drag.accX)));
-        const ny = Math.round(Math.max(0, Math.min(roomHRef.current - fp.d, drag.accY)));
-        const colliding = checkCollision(objectsRef.current, drag.id, nx, ny);
-        // Move item visually to new position regardless of collision
-        objectsRef.current = objectsRef.current.map((o) =>
-          o.id === drag.id ? { ...o, wx: nx, wy: ny } : o,
-        );
-        scene.updateItem(drag.id, nx, ny, item.wz);
-        scene.setDragHighlight(drag.id, colliding);
-        if (!colliding) {
-          drag.lastValidX = nx;
-          drag.lastValidY = ny;
-        }
-      });
-
-      const endDrag = () => {
-        const drag = dragRef.current;
-        if (!drag) return;
-        const didMove = drag.startX !== drag.lastValidX || drag.startY !== drag.lastValidY;
-        // Snap back to last valid position if current is colliding
-        const item = objectsRef.current.find((o) => o.id === drag.id);
-        if (item) {
-          const finalX = drag.lastValidX,
-            finalY = drag.lastValidY;
-          if (didMove) {
-            const previous = objectsRef.current.map((o) =>
-              o.id === drag.id ? { ...o, wx: drag.startX, wy: drag.startY } : { ...o },
-            );
-            pushHistorySnapshot(previous);
-          }
-          objectsRef.current = objectsRef.current.map((o) =>
-            o.id === drag.id ? { ...o, wx: finalX, wy: finalY } : o,
-          );
-          scene.updateItem(drag.id, finalX, finalY, item.wz);
-        }
-        scene.setSelected(null);
-        dragRef.current = null;
-        setObjects([...objectsRef.current]);
-      };
-      app.stage.on('pointerup', endDrag);
-      app.stage.on('pointerupoutside', endDrag);
+      app.stage.on('pointermove', drag.onPointerMove);
+      app.stage.on('pointerup', drag.endDrag);
+      app.stage.on('pointerupoutside', drag.endDrag);
     })(); // close async IIFE
 
     return () => {
@@ -1523,49 +1459,23 @@ export function LoungeCanvas() {
   const handlePanEnd = useCallback(() => setIsPanning(false), []);
 
   // ── Persist ──────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    // Initial mount renders default state before the async load applies the
-    // saved snapshot — persisting then would clobber real progress.
-    if (!roomReady) return;
-    try {
-      // `objects` always holds the visible floor; persist both floors explicitly.
-      const floor1Objects = floor === 1 ? objects : inactiveFloorObjects;
-      const floor2Objects = floor === 1 ? inactiveFloorObjects : objects;
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          objects: floor1Objects,
-          floor2Objects,
-          roomName,
-          happiness,
-          floor,
-          coins,
-          tokens,
-          themeKey,
-          dorm,
-          nextId: nextIdRef.current,
-          roomW,
-          roomH,
-          savedAt: Date.now(),
-        }),
-      );
-    } catch {
-      /* ignore */
-    }
-  }, [
+  useLoungePersistence({
     roomReady,
-    objects,
-    inactiveFloorObjects,
-    roomName,
-    happiness,
-    floor,
-    coins,
-    tokens,
-    themeKey,
-    dorm,
-    roomW,
-    roomH,
-  ]);
+    nextIdRef,
+    snapshot: {
+      objects,
+      inactiveFloorObjects,
+      roomName,
+      happiness,
+      floor,
+      coins,
+      tokens,
+      themeKey,
+      dorm,
+      roomW,
+      roomH,
+    },
+  });
 
   // ── Toast helper ─────────────────────────────────────────────────────────────
   const showToast = useCallback((text: string) => {
@@ -1590,152 +1500,28 @@ export function LoungeCanvas() {
     setOfficeChat((prev) => [...prev, { id, ...message }].slice(-8));
   }, []);
 
-  // ── Autonomous agent dialogue ──────────────────────────────────────────
-  const lastDialogueAtRef = useRef<number | null>(null);
-  const recentDialogueTextsRef = useRef<string[]>([]);
-  const [activeDialogueBubble, setActiveDialogueBubble] = useState<{
-    agentId: OfficeAgentId;
-    text: string;
-  } | null>(null);
-  const dialogueBubbleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // LLM guards
-  const llmInFlightRef = useRef(false);
-  const llmLastRequestAtRef = useRef<number | null>(null);
-  const dialogueMountedRef = useRef(true);
+  // officeStatusRef: a live-read handle for the "Idle chibi wandering" interval
+  // above (declared earlier in this component), which never restarts on
+  // officeStatus changes and instead checks this ref inside its setInterval
+  // callback. Independent of useDialogueScheduler's own internal copy.
   const officeStatusRef = useRef(officeStatus);
-  const llmRequestIdRef = useRef(0);
-
   useEffect(() => {
     officeStatusRef.current = officeStatus;
   }, [officeStatus]);
 
-  useEffect(() => {
-    if (officeStatus !== 'idle') return;
-    if (!roomReady) return;
-
-    const tick = () => {
-      const message = pickAgentDialogue({
-        now: Date.now(),
-        lastDialogueAt: lastDialogueAtRef.current,
-        cooldownMs: 15_000,
-        probability: 0.1,
-        agents: [
-          { id: 'agent-1', state: agent.state },
-          { id: 'agent-2', state: aki.agent.state },
-          { id: 'agent-3', state: ren.agent.state },
-          { id: 'agent-4', state: yui.agent.state },
-          { id: 'agent-5', state: mika.agent.state },
-        ],
-        recentTexts: recentDialogueTextsRef.current,
-      });
-
-      if (message) {
-        const now = message.createdAt;
-        lastDialogueAtRef.current = now;
-
-        const appendDialogue = (
-          fromAgentId: OfficeAgentId,
-          toAgentId: OfficeAgentId | undefined,
-          text: string,
-        ) => {
-          recentDialogueTextsRef.current = [...recentDialogueTextsRef.current.slice(-4), text];
-          appendOfficeChat({
-            agentId: fromAgentId,
-            toAgentId,
-            kind: 'dialogue',
-            text,
-          });
-
-          // Show bubble above speaking agent
-          const bubble = { agentId: fromAgentId, text };
-          setActiveDialogueBubble(bubble);
-          if (dialogueBubbleTimeoutRef.current) {
-            clearTimeout(dialogueBubbleTimeoutRef.current);
-          }
-          dialogueBubbleTimeoutRef.current = setTimeout(() => {
-            setActiveDialogueBubble(null);
-            dialogueBubbleTimeoutRef.current = null;
-          }, 5_000);
-        };
-
-        // Try LLM
-        if (
-          ENABLE_LLM_DIALOGUE &&
-          !llmInFlightRef.current &&
-          (llmLastRequestAtRef.current === null ||
-            now - llmLastRequestAtRef.current >= LLM_REQUEST_COOLDOWN_MS)
-        ) {
-          llmInFlightRef.current = true;
-          llmLastRequestAtRef.current = now;
-          const requestId = ++llmRequestIdRef.current;
-
-          generateOfficeDialogue({
-            fromAgentId: message.fromAgentId,
-            toAgentId: message.toAgentId,
-            officeStatus: 'idle',
-            recentDialogue: recentDialogueTextsRef.current,
-            now,
-            maxChars: 80,
-          })
-            .then((response) => {
-              llmInFlightRef.current = false;
-
-              if (
-                requestId !== llmRequestIdRef.current ||
-                !dialogueMountedRef.current ||
-                officeStatusRef.current !== 'idle'
-              ) {
-                return;
-              }
-
-              if (!response || !response.text?.trim()) {
-                // Fallback to deterministic
-                appendDialogue(message.fromAgentId, message.toAgentId, message.text);
-                return;
-              }
-
-              appendDialogue(response.fromAgentId, response.toAgentId, response.text);
-            })
-            .catch(() => {
-              llmInFlightRef.current = false;
-              if (
-                requestId === llmRequestIdRef.current &&
-                dialogueMountedRef.current &&
-                officeStatusRef.current === 'idle'
-              ) {
-                appendDialogue(message.fromAgentId, message.toAgentId, message.text);
-              }
-            });
-        } else {
-          // Deterministic only (guarded out or flag disabled)
-          appendDialogue(message.fromAgentId, message.toAgentId, message.text);
-        }
-      }
-    };
-
-    const interval = setInterval(tick, 4_000);
-    return () => clearInterval(interval);
-  }, [
+  const { activeDialogueBubble } = useDialogueScheduler({
     officeStatus,
     roomReady,
-    agent.state,
-    aki.agent.state,
-    ren.agent.state,
-    yui.agent.state,
-    mika.agent.state,
+    agents: [
+      { id: 'agent-1', state: agent.state },
+      { id: 'agent-2', state: aki.agent.state },
+      { id: 'agent-3', state: ren.agent.state },
+      { id: 'agent-4', state: yui.agent.state },
+      { id: 'agent-5', state: mika.agent.state },
+    ],
     appendOfficeChat,
-  ]);
-
-  // Cleanup dialogue bubble timeout on unmount
-  useEffect(() => {
-    return () => {
-      dialogueMountedRef.current = false;
-      if (dialogueBubbleTimeoutRef.current) {
-        clearTimeout(dialogueBubbleTimeoutRef.current);
-      }
-    };
-  }, []);
+    enableLlmDialogue: ENABLE_LLM_DIALOGUE,
+  });
 
   // ── socket run lifecycle (failed/cancelled only; started/completed handled by REST) ──
   const handleRunFailed = useCallback(({ run }: { run: { id: string } }) => {
@@ -1777,7 +1563,7 @@ export function LoungeCanvas() {
     }
     // A manual run supersedes any pending autonomous cycle; an autonomous run is
     // re-checked after the planner await, since Auto may be switched off meanwhile.
-    if (!guard) autonomousCycleRef.current += 1;
+    if (!guard) cancelAutonomousCycle();
     const wanted = () => !guard || guard();
 
     const busyAgentIds = Object.entries(officeWalkers)
@@ -1786,9 +1572,15 @@ export function LoungeCanvas() {
 
     // Try LLM planner first, fall back to rule-based
     let steps = planWorkflowSteps(cmd, { busyAgentIds });
+    // Only autonomous runs are abortable, so toggling Auto never downgrades a manual run's plan.
+    const controller = guard ? new AbortController() : null;
+    if (controller) plannerAbortRef.current = controller;
     try {
       const { planWorkflowLLM } = await import('@/game/dialogue/dialogueAdapter');
-      const llmResult = await planWorkflowLLM({ commandText: cmd, busyAgentIds });
+      const llmResult = await planWorkflowLLM(
+        { commandText: cmd, busyAgentIds },
+        { signal: controller?.signal },
+      );
       if (wanted() && llmResult && llmResult.steps.length > 0) {
         const converted = convertLLMSteps(llmResult.steps);
         if (converted.length > 0) {
@@ -1802,6 +1594,8 @@ export function LoungeCanvas() {
       }
     } catch {
       // Use rule-based fallback (already set)
+    } finally {
+      if (controller && plannerAbortRef.current === controller) plannerAbortRef.current = null;
     }
     if (!wanted()) return false;
     const first = steps[0];
@@ -1824,7 +1618,7 @@ export function LoungeCanvas() {
     }
     showToast('Office workflow started');
     return true;
-  }, [appendOfficeChat, officeCommand, roomReady, showToast]);
+  }, [appendOfficeChat, cancelAutonomousCycle, officeCommand, roomReady, showToast]);
 
   const handlePauseOfficeWorkflow = useCallback(() => {
     setOfficeStatus((current) => {
@@ -1835,7 +1629,7 @@ export function LoungeCanvas() {
   }, []);
 
   const handleResetOfficeWorkflow = useCallback(() => {
-    autonomousCycleRef.current += 1;
+    cancelAutonomousCycle();
     officeStepInFlightRef.current = null;
     Object.values(officeWalkers).forEach((walker) => walker.clearAgentTask());
     setOfficeStatus('idle');
@@ -1843,7 +1637,7 @@ export function LoungeCanvas() {
     setOfficeToolEvents([]);
     setOfficeChat([]);
     showToast('Office workflow reset');
-  }, [officeWalkers, showToast]);
+  }, [cancelAutonomousCycle, officeWalkers, showToast]);
 
   useEffect(() => {
     if (officeStatus !== 'running') return;
@@ -1990,14 +1784,14 @@ export function LoungeCanvas() {
   const handleToggleAutonomousMode = useCallback(() => {
     const next = !autonomousModeRef.current;
     autonomousModeRef.current = next;
-    autonomousCycleRef.current += 1;
+    cancelAutonomousCycle();
     setAutonomousMode(next);
     showToast(
       next
         ? `Auto on: ${AUTONOMOUS_COOLDOWN_MS / 1000}s after each run, Mai starts another (one LLM planner call per run)`
         : 'Auto off',
     );
-  }, [showToast]);
+  }, [cancelAutonomousCycle, showToast]);
 
   // ── Autonomous orchestration: Lead auto-restarts on workflow completion ──
   useEffect(() => {
@@ -2051,12 +1845,7 @@ export function LoungeCanvas() {
   }, [autonomousMode, officeStatus, officeWalkers, appendOfficeChat, handleRunOfficeCommand, showToast]);
 
   // Cancel any in-flight autonomous cycle on unmount.
-  useEffect(
-    () => () => {
-      autonomousCycleRef.current += 1;
-    },
-    [],
-  );
+  useEffect(() => cancelAutonomousCycle, [cancelAutonomousCycle]);
 
   // ── Happiness with cap ───────────────────────────────────────────────────────
   // Functional update so rapid same-frame calls never read a stale snapshot.
@@ -2143,6 +1932,17 @@ export function LoungeCanvas() {
     if (historyRef.current.length > 50) historyRef.current.shift();
     redoRef.current = [];
   }, []);
+
+  const drag = useFurnitureDrag({
+    objectsRef,
+    roomWRef,
+    roomHRef,
+    scaleRef,
+    modeRef,
+    sceneRef,
+    setObjects,
+    pushHistorySnapshot,
+  });
 
   const handleUndo = useCallback(() => {
     const prev = historyRef.current.pop();
@@ -2250,6 +2050,23 @@ export function LoungeCanvas() {
       setObjects([...objectsRef.current]);
       setSelectedId(null);
       showToast('Item removed');
+    },
+    [pushHistorySnapshot, showToast],
+  );
+
+  const handleRotate = useCallback(
+    (id: number) => {
+      const next = rotateInLayout(objectsRef.current, id, roomWRef.current, roomHRef.current);
+      const rotated = next?.find((o) => o.id === id);
+      if (!next || !rotated) {
+        showToast('Not enough space to rotate');
+        return;
+      }
+      pushHistorySnapshot(objectsRef.current);
+      objectsRef.current = next;
+      sceneRef.current?.updateItem(id, rotated.wx, rotated.wy, rotated.wz, rotated.rotation);
+      sceneRef.current?.setSelected(id);
+      setObjects([...next]);
     },
     [pushHistorySnapshot, showToast],
   );
@@ -2976,6 +2793,10 @@ export function LoungeCanvas() {
             onClose={() => setSelectedId(null)}
             onMoveMode={() => setMode('move')}
             onDelete={handleDelete}
+            canRotate={
+              !!selectedObj?.draggable && allowedRotations(selectedObj.furnitureType).length > 1
+            }
+            onRotate={handleRotate}
           />
         </div>
       </div>

@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import type { RoomObject, Rotation } from './roomDefs';
-import { FURNITURE_DIMS, FURNITURE_TILES, footprintFor } from './roomDefs';
+import { FURNITURE_DIMS, FURNITURE_TILES, footprintFor, rotateFootprintLocal } from './roomDefs';
+import { zabutonPalette } from './furnitureCatalog';
 import { applyStationAmbient, getStationDim, type AmbientDrawContext } from './stationAmbients';
 
 export const CANVAS_W = 1240;
@@ -68,25 +69,14 @@ function endFurnitureRotation() {
   _rotQ = 0;
 }
 
+/** Maps a world point inside the active furniture footprint through the active rotation. */
+function rotateLocal(wx: number, wy: number): [number, number] {
+  const [x, y] = rotateFootprintLocal(wx - _rotAx, wy - _rotAy, _rotW, _rotD, _rotQ);
+  return [_rotAx + x, _rotAy + y];
+}
+
 export function proj(wx: number, wy: number, wz: number): [number, number] {
-  if (_rotQ !== 0) {
-    const lx = wx - _rotAx;
-    const ly = wy - _rotAy;
-    let nlx: number;
-    let nly: number;
-    if (_rotQ === 1) {
-      nlx = _rotD - ly;
-      nly = lx;
-    } else if (_rotQ === 2) {
-      nlx = _rotW - lx;
-      nly = _rotD - ly;
-    } else {
-      nlx = ly;
-      nly = _rotW - lx;
-    }
-    wx = _rotAx + nlx;
-    wy = _rotAy + nly;
-  }
+  if (_rotQ !== 0) [wx, wy] = rotateLocal(wx, wy);
   return projAt(wx, wy, wz, _S, _OX, _OY);
 }
 
@@ -144,6 +134,34 @@ export function isoBox(
   frontAlpha = 1,
   rightAlpha = 1,
 ) {
+  if (_rotQ !== 0) {
+    // A quarter-turned box is still axis-aligned: draw it over its rotated world
+    // extent with rotation paused, so the visible faces keep their shading.
+    const [ax, ay] = rotateLocal(wx, wy);
+    const [bx, by] = rotateLocal(wx + w, wy + d);
+    const quarter = _rotQ;
+    _rotQ = 0;
+    try {
+      isoBox(
+        g,
+        Math.min(ax, bx),
+        Math.min(ay, by),
+        wz,
+        Math.abs(bx - ax),
+        Math.abs(by - ay),
+        h,
+        topColor,
+        frontColor,
+        rightColor,
+        topAlpha,
+        frontAlpha,
+        rightAlpha,
+      );
+    } finally {
+      _rotQ = quarter;
+    }
+    return;
+  }
   if (topColor !== undefined) {
     const pts: [number, number][] = [
       proj(wx, wy, wz + h),
@@ -185,7 +203,6 @@ export function furnitureHitPolygon(
   wz: number,
   rotation: Rotation = 0,
 ): PIXI.Polygon {
-  const base = FURNITURE_TILES[type] ?? { w: 1, d: 1 };
   const fp = footprintFor(type, rotation);
   const pts = [
     proj(wx, wy, wz),
@@ -1497,23 +1514,10 @@ export function drawLowTable(g: PIXI.Graphics, wx: number, wy: number, wz: numbe
   });
 }
 
-export function drawZabuton(
-  g:PIXI.Graphics,
-  wx:number,
-  wy:number,
-  wz:number,
-  variant='default',
-  rotation:number=0,
-){
-  const tint =
-    variant === 'red' ? 0x6a3a3a : variant === 'blue' ? 0x3a5a6a : 0x4a5830;
-  const top = variant === 'red' ? 0x5a2a2a : variant === 'blue' ? 0x2a4a5a : 0x3a4828;
-  const side = variant === 'red' ? 0x4a2020 : variant === 'blue' ? 0x203040 : 0x2e3c20;
-  if (rotation % 2 === 1){
-    isoBox(g, wx, wy, wz, 1.0, 3.0, 0.18, tint, top, side);
-    return;
-  }
-  isoBox(g, wx, wy, wz, 3.0, 1.0, 0.18, tint, top, side);
+/** Drawn in its unrotated 3x1 footprint; drawFurnitureObject applies any rotation. */
+export function drawZabuton(g: PIXI.Graphics, wx: number, wy: number, wz: number, variant?: string) {
+  const { top, front, side } = zabutonPalette(variant);
+  isoBox(g, wx, wy, wz, 3.0, 1.0, 0.18, top, front, side);
 }
 
 export function drawPlant(g: PIXI.Graphics, wx: number, wy: number, wz: number) {
@@ -1539,8 +1543,7 @@ export function drawFurnitureByType(
   wx: number,
   wy: number,
   wz: number,
-  rotation: Rotation = 0,
-  variant = 'default',
+  variant?: string,
 ) {
   switch (type) {
     case 'bed':
@@ -1574,7 +1577,7 @@ export function drawFurnitureByType(
       drawLowTable(g, wx, wy, wz);
       break;
     case 'zabuton':
-      drawZabuton(g, wx, wy, wz, variant, rotation);
+      drawZabuton(g, wx, wy, wz, variant);
       break;
     case 'plant':
       drawPlant(g, wx, wy, wz);
@@ -1596,9 +1599,15 @@ export function drawFurnitureLayer(g: PIXI.Graphics, objects: RoomObject[]) {
     const [, by] = proj(b.wx, b.wy, b.wz);
     return ay - by;
   });
-  for (const obj of sorted) {
-    beginFurnitureRotation(obj.furnitureType, obj.wx, obj.wy, obj.rotation);
-    drawFurnitureByType(g, obj.furnitureType, obj.wx, obj.wy, obj.wz, obj.rotation, obj.variant);
+  for (const obj of sorted) drawFurnitureObject(g, obj);
+}
+
+/** Draws one furniture body with its rotation applied; the shared projection is always restored. */
+export function drawFurnitureObject(g: PIXI.Graphics, obj: RoomObject) {
+  beginFurnitureRotation(obj.furnitureType, obj.wx, obj.wy, obj.rotation);
+  try {
+    drawFurnitureByType(g, obj.furnitureType, obj.wx, obj.wy, obj.wz, obj.variant);
+  } finally {
     endFurnitureRotation();
   }
 }

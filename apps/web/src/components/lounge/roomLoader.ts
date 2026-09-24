@@ -1,9 +1,9 @@
 import * as PIXI from 'pixi.js';
-import type { RoomObject, TiledMap } from './roomDefs';
+import type { RoomObject, Rotation, TiledMap } from './roomDefs';
 import { parseTiledMap, validateTiledMap, FURNITURE_TILES, footprintFor } from './roomDefs';
 import {
   proj,
-  drawFurnitureByType,
+  drawFurnitureObject,
   drawHighlight,
   drawHighlightCollision,
   drawActiveStationHighlight,
@@ -34,8 +34,8 @@ export interface RoomScene {
   highlightGraphics: PIXI.Graphics;
   particleGraphics: PIXI.Graphics;
   items: Map<number, FurnitureItem>;
-  /** Redraw a single furniture item at its current position */
-  updateItem: (id: number, wx: number, wy: number, wz: number) => void;
+  /** Redraw a single furniture item at its current position (and rotation, when given) */
+  updateItem: (id: number, wx: number, wy: number, wz: number, rotation?: Rotation) => void;
   /** Set the selected item (draws highlight) */
   setSelected: (id: number | null) => void;
   /** Replace all furniture objects (e.g. after loading saved state) */
@@ -82,7 +82,7 @@ function createFurnitureItem(obj: RoomObject, handlers: FurnitureHandlers): Furn
   const graphics = new PIXI.Graphics();
   container.addChild(graphics);
 
-  drawFurnitureByType(graphics, obj.furnitureType, obj.wx, obj.wy, obj.wz, obj.rotation, obj.variant);
+  drawFurnitureObject(graphics, obj);
 
   // Depth sort: screen Y of back edge (closer = higher zIndex = on top).
   // wx term breaks ties horizontally (right-over-left), wz lifts wall items.
@@ -180,15 +180,16 @@ export function buildRoomScene(
 
   populateFurniture(objects);
 
-  function updateItem(id: number, wx: number, wy: number, wz: number) {
+  function updateItem(id: number, wx: number, wy: number, wz: number, rotation?: Rotation) {
     const item = items.get(id);
     if (!item) return;
     item.obj.wx = wx;
     item.obj.wy = wy;
     item.obj.wz = wz;
+    if (rotation !== undefined) item.obj.rotation = rotation;
 
     item.graphics.clear();
-    drawFurnitureByType(item.graphics, item.obj.furnitureType, wx, wy, wz, item.obj.rotation, item.obj.variant);
+    drawFurnitureObject(item.graphics, item.obj);
 
     // Depth sort: screen Y of back edge (closer = higher zIndex = on top).
     // wx term breaks ties horizontally (right-over-left), wz lifts wall items.

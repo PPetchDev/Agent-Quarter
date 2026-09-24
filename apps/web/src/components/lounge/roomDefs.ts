@@ -9,6 +9,8 @@ export {
   detectTiledFormat,
 } from './tiledParser';
 
+import { getCatalogItem } from './furnitureCatalog';
+
 /** 90° quarter-turn rotation: 0 = default, 1 = 90°, 2 = 180°, 3 = 270°. */
 export type Rotation = 0 | 1 | 2 | 3;
 
@@ -109,4 +111,87 @@ export function checkCollision(
     }
   }
   return false;
+}
+// ─── Rotation ─────────────────────────────────────────────────────────────────
+
+const ALL_ROTATIONS: readonly Rotation[] = [0, 1, 2, 3];
+
+/** Quarter-turns a type may take: only [0] unless the catalog marks it rotatable. */
+export function allowedRotations(type: string): readonly Rotation[] {
+  const item = getCatalogItem(type);
+  if (!item?.rotatable) return [0];
+  return item.rotations ?? ALL_ROTATIONS;
+}
+
+/** Coerces untrusted rotation input (saves, share links, Tiled props) to an allowed quarter-turn. */
+export function normalizeRotation(type: string, value: unknown): Rotation {
+  if (typeof value !== 'number' || !Number.isInteger(value)) return 0;
+  const quarter = (((value % 4) + 4) % 4) as Rotation;
+  const allowed = allowedRotations(type);
+  if (allowed.includes(quarter)) return quarter;
+  // Prefer the opposite turn so the footprint keeps its orientation (bookcase 270° -> 90°).
+  const opposite = ((quarter + 2) % 4) as Rotation;
+  return allowed.includes(opposite) ? opposite : 0;
+}
+
+/** Keeps only non-empty string variants. */
+export function normalizeVariant(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() !== '' ? value : undefined;
+}
+
+/** The allowed rotation after `current`, wrapping around. */
+export function nextRotation(type: string, current: Rotation = 0): Rotation {
+  const allowed = allowedRotations(type);
+  return allowed[(allowed.indexOf(current) + 1) % allowed.length] ?? 0;
+}
+
+/**
+ * Turns object `id` to its next allowed rotation, pivoting on its min corner and
+ * nudging it back inside the room. Returns a new layout, or null when the object
+ * cannot rotate, does not fit, or would collide with other furniture.
+ */
+export function rotateInLayout(
+  objects: readonly RoomObject[],
+  id: number,
+  roomW: number,
+  roomH: number,
+): RoomObject[] | null {
+  const target = objects.find((o) => o.id === id);
+  if (!target) return null;
+  const current = target.rotation ?? 0;
+  const rotation = nextRotation(target.furnitureType, current);
+  if (rotation === current) return null;
+  const fp = footprintFor(target.furnitureType, rotation);
+  if (fp.w > roomW || fp.d > roomH) return null;
+  const rotated: RoomObject = {
+    ...target,
+    rotation,
+    wx: Math.max(0, Math.min(target.wx, roomW - fp.w)),
+    wy: Math.max(0, Math.min(target.wy, roomH - fp.d)),
+  };
+  const next = objects.map((o) => (o.id === id ? rotated : o));
+  return checkCollision(next, id, rotated.wx, rotated.wy) ? null : next;
+}
+
+/**
+ * Maps a footprint-local point (relative to the object's min corner) through a
+ * quarter-turn of a w×d footprint. Shared by the renderer and station placement.
+ */
+export function rotateFootprintLocal(
+  lx: number,
+  ly: number,
+  w: number,
+  d: number,
+  quarter: number,
+): [number, number] {
+  switch (quarter & 3) {
+    case 1:
+      return [d - ly, lx];
+    case 2:
+      return [w - lx, d - ly];
+    case 3:
+      return [ly, w - lx];
+    default:
+      return [lx, ly];
+  }
 }

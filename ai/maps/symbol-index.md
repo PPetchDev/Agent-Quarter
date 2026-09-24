@@ -78,6 +78,8 @@ _Updated: C-DORM-AZUR-001_
 | `useAgentWalk` | hook | Plans route waypoints using the shared `LoungeRouteGrid` when provided, animates segment by segment, exposes route debug data, refreshes routes after committed layout changes, and ticks the post-arrival work timer to auto-return the agent to idle |
 | `TASK_CONFIG` | constant | Consolidated task config: stationId, arriveState, walkingBubble, bubble, doneBubble, workDurationMs per task type in `taskResolver.ts` (replaces 6 separate Record maps) |
 | `useCountdown` | hook | Reusable countdown timer hook returning formatted HH:MM:SS in `hooks/useCountdown.ts` |
+| `useLoungePersistence` | hook | Deep module — save-side of lounge persistence (v8 schema, floor1/floor2 remap, `savedAt` stamp), gated on `roomReady`; narrow interface `{ roomReady, nextIdRef, snapshot }` in `hooks/useLoungePersistence.ts`. Extracted from `LoungeCanvas.tsx`'s inline persist effect (C-ARCH-LOUNGE-001, slice 1/N — load-side still inline, pending). |
+| `LoungeSaveSnapshot` | type | Shape of the 11-field save snapshot passed to `useLoungePersistence` in `hooks/useLoungePersistence.ts` |
 | `projAt` | function | Pure isometric projection with explicit S/OX/OY params in `pixiRoom.ts` (used by `useAgentWalk` to avoid duplicating projection math) |
 | `Agent.workDurationMs` | field | Total milliseconds for the current work session |
 | `Agent.workElapsedMs` | field | Milliseconds elapsed in the current work session |
@@ -205,3 +207,23 @@ _Updated: C-DORM-AZUR-001_
 | `generateOfficeDialogue` (frontend) | function | Fetch adapter — POSTs to `/api/dialogue/office`, returns `DialogueResponse` or null on failure |
 | `GenerateOfficeDialogueRequest` | type | Frontend request shape: fromAgentId, toAgentId?, officeStatus?, recentDialogue?, now?, maxChars? |
 | `DialogueResponse` (frontend) | type | Frontend response shape: fromAgentId, toAgentId?, text, source:'llm'\|'deterministic', fallbackUsed, model?, errorSummary? |
+
+## Furniture Rotation (`apps/web/src/components/lounge/`)
+
+| Symbol | Kind | Description |
+|---|---|---|
+| `allowedRotations` / `normalizeRotation` / `normalizeVariant` / `nextRotation` | functions | Catalog-driven allowed quarter-turns; coerce untrusted rotation/variant input (`roomDefs.ts`) |
+| `rotateInLayout` | function | Next allowed rotation for one object, min-corner pivot + nudge into room; null on collision/no fit (`roomDefs.ts`) |
+| `rotateFootprintLocal` | function | Shared quarter-turn mapping for footprint-local points, used by the renderer and station placement (`roomDefs.ts`) |
+| `drawFurnitureObject` | function | Draws one furniture body with its rotation applied, restoring the projection in `finally` (`pixiRoom.ts`) |
+| `ZABUTON_PALETTES` / `zabutonPalette` | const/fn | Zabuton variant colours with `red`→`rose`, `default`→`green` aliases (`furnitureCatalog.ts`) |
+| `CatalogItem.rotations` | field | Allowed quarter-turns for a rotatable item (bookcase `[0, 1]`) |
+
+## Extracted Lounge Hooks (`apps/web/src/hooks/`)
+
+| Symbol | Kind | Description |
+|---|---|---|
+| `useDormTickLoop` | hook | Dorm tick interval (reads agent ids via ref) |
+| `useFurnitureDrag` | hook | Move-mode drag: rotated-footprint clamp, collision highlight, snap-back, history snapshot |
+| `useDialogueScheduler` | hook | Idle agent-to-agent dialogue bubbles (refs for agents/random so the interval does not reset each render) |
+

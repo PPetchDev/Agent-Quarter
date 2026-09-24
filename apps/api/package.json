@@ -8,7 +8,8 @@
     "build": "nest build",
     "start": "node dist/main",
     "test": "vitest run --passWithNoTests",
-    "lint": "eslint src/"
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.24",
