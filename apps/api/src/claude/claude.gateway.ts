@@ -8,6 +8,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { ClaudeService } from './claude.service';
+import { toPriorTurns } from './chat-history';
 import { ConversationsService } from '../conversations/conversations.service';
 import { StageTracker, readCharacterMood, type IdleTier } from '@squad/core';
 
@@ -104,16 +105,7 @@ export class ClaudeGateway implements OnGatewayInit {
     let detectedMood: string | undefined;
 
     try {
-      const stream = this.claudeSvc.streamResponse(
-        characterId,
-        history
-          .slice(0, -1)
-          .map((m: { role: string; content: string }) => ({
-            role: m.role as 'user' | 'assistant',
-            content: m.content,
-          })),
-        content,
-      );
+      const stream = this.claudeSvc.streamResponse(characterId, toPriorTurns(history), content);
 
       for await (const { chunk, moodOverride } of stream) {
         fullContent += chunk;

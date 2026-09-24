@@ -25,11 +25,12 @@ export class ConversationsService {
     });
   }
 
+  /** Latest `limit` messages, oldest first. */
   async getHistory(characterId: string, limit = 20) {
     const conv = await this.prisma.conversation.findUnique({
       where: { characterId },
-      include: { messages: { orderBy: { createdAt: 'asc' }, take: limit } },
+      include: { messages: { orderBy: { createdAt: 'desc' }, take: limit } },
     });
-    return conv?.messages ?? [];
+    return [...(conv?.messages ?? [])].reverse();
   }
 }
