@@ -1,0 +1,91 @@
+# design-sync NOTES — @squad/web
+
+## ⚡ Upload-only handoff (authed claude.ai session, finishing the upload)
+
+The bundle is already built and verified in the worktree at
+`~/Downloads/AnimeAgentSquad/.claude/worktrees/jolly-jemison-2674a7` (it has
+`node_modules`, `apps/web/.ds-compiled.css`, the staged `.ds-sync/` scripts, and a
+clean `ds-bundle/`). `config.json` has **no `projectId`** → this is still a
+first-time import: the skill will CREATE a new project and upload.
+
+**Fastest path — reuse the prebuilt state:**
+1. Launch claude from that worktree so everything is reused:
+   `cd ~/Downloads/AnimeAgentSquad/.claude/worktrees/jolly-jemison-2674a7 && claude`
+2. Run `/design-sync`. It reads this config, creates a new Claude Design project,
+   asks for ONE upload approval, then pushes the 4 components.
+   - If it re-validates/captures, export first:
+     `export DS_CHROMIUM_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`
+   - A deterministic rebuild is a no-op; the prebuilt `ds-bundle/` is valid.
+
+**From the main repo instead** (`~/Downloads/AnimeAgentSquad`, on `development`): first
+`git checkout claude/jolly-jemison-2674a7` (or merge PR #5), then follow the full
+"Non-standard pipeline" below to rebuild before `/design-sync` — `node_modules`,
+`.ds-compiled.css`, and `ds-bundle/` are NOT committed and must be regenerated there.
+
+## What this sync is
+
+`@squad/web` is a **Next.js 15 app**, NOT a component library. There is no
+component `dist/`. This sync imports only the **standalone-renderable
+presentational subset** of `apps/web/src/components` — everything that does not
+need PixiJS, Socket.io, or Next runtime context.
+
+**Synced (4):** `MessageBubble`, `ShopModal`, `SupplyPanel`, `FurnitureInspector`.
+
+**Deliberately excluded (do not render standalone):**
+- `ChatPanel`, `CharacterSidebar` — live data via `useStageSocket` (Socket.io).
+- `CharacterSpot`, `LoungeCanvas` — PixiJS / pixi-spine canvas.
+- `TopBar` — `next/navigation` (`usePathname` needs the App Router context).
+- `CharacterAvatar` — `next/image` + `animejs` hook.
+To add any later: supply a provider/mock for the Next router, `next/image`, and a
+fake socket, then add it to `apps/web/.ds-entry.tsx` + `componentSrcMap`.
+
+## Non-standard pipeline (re-run before every converter build)
+
+1. Install (skips api/Prisma):
+   `COREPACK_ENABLE_STRICT=0 pnpm install --frozen-lockfile --filter "@squad/web..."`
+2. Build the workspace dep: `pnpm -F @squad/core build` (its `dist/` starts empty).
+3. **Compile Tailwind → cssEntry** (components use Tailwind v3 utilities + arbitrary
+   values; `globals.css` is only `@tailwind` directives, so a raw copy ships
+   unstyled):
+   `cd apps/web && ./node_modules/.bin/tailwindcss -c tailwind.config.ts -i src/app/globals.css -o .ds-compiled.css --minify`
+   → `cfg.cssEntry = ".ds-compiled.css"` (PKG_DIR-relative). This file is generated → gitignored.
+4. Converter (from repo root):
+   `node .ds-sync/package-build.mjs --config .design-sync/config.json --node-modules apps/web/node_modules --entry ./apps/web/.ds-entry.tsx --out ./ds-bundle`
+   - `--entry apps/web/.ds-entry.tsx` is the **hand-authored curated entry** (committed). It exports only the synced subset so esbuild bundles just those, not the whole app. Without it, synth-entry `export * from` every src file → pulls PixiJS/Next/socket.
+   - `--node-modules apps/web/node_modules` — pnpm linker keeps `react` there, not at repo root.
+
+## Render check / capture — system Chrome
+
+Playwright's chromium download is blocked here (`ECONNRESET` to the playwright CDN,
+retried twice). The render check + capture run against the system browser instead:
+`export DS_CHROMIUM_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`
+before `package-validate.mjs` / `package-capture.mjs` / `resync.mjs`. If that app is
+gone, retry `npx playwright install chromium` (cwd `.ds-sync`).
+
+## Config notes
+
+- `dtsPropsFor` carries hand-written prop bodies for all 4 — each component uses a
+  local **unexported** `interface Props` / `type Props`, which ts-morph cannot
+  extract (emits `{[key:string]:unknown}`). Callback param object types are inlined
+  so the `.d.ts` is self-contained. **These mirror the source Props by hand — if a
+  component's props change, update `dtsPropsFor` to match.**
+- `tsconfig: "tsconfig.json"` is PKG_DIR-relative (resolves to `apps/web/tsconfig.json`);
+  a repo-root-relative value is wrong (cfgPath resolves against PKG_DIR).
+- `MessageBubble` → `cardMode: column` (its cells are wider than a grid cell → `[GRID_OVERFLOW]`).
+  Overlays (`ShopModal`/`SupplyPanel`/`FurnitureInspector`) → `cardMode: single` + viewport.
+
+## Known render warns
+
+- None. Validate exits clean (1 non-blocking `[GRID_OVERFLOW]` was resolved via the
+  MessageBubble `column` override). `tokens: 1 missing, below threshold` is informational.
+
+## Re-sync risks (what can silently go stale)
+
+- **`apps/web/.ds-compiled.css`** is generated by step 3 — re-run it or styles ship stale.
+- **`dtsPropsFor`** is a hand-maintained mirror of source Props (see above).
+- **System-Chrome render path** depends on `/Applications/Google Chrome.app`.
+- Preview wrappers (dark `#0e0a24` panel for MessageBubble; relative sized stage for
+  overlays) live in `.design-sync/previews/*.tsx` and assume the components' current
+  positioning idiom (`absolute inset-0` / bottom-anchored popover). If that changes
+  upstream, the stages need resizing.
+- Only a 4-component subset is synced; the excluded list above is the backlog.
