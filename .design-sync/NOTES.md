@@ -1,26 +1,18 @@
 # design-sync NOTES — @squad/web
 
-## ⚡ Upload-only handoff (authed claude.ai session, finishing the upload)
+## ⚡ Status (updated 2026-09-24)
 
-The bundle is already built and verified in the worktree at
-`~/Downloads/AnimeAgentSquad/.claude/worktrees/jolly-jemison-2674a7` (it has
-`node_modules`, `apps/web/.ds-compiled.css`, the staged `.ds-sync/` scripts, and a
-clean `ds-bundle/`). `config.json` has **no `projectId`** → this is still a
-first-time import: the skill will CREATE a new project and upload.
+`config.json` records `projectId` `297ca068-6a6d-4b41-a870-0e40ce936321`: the Claude
+Design project was already created, so this is no longer a first-time import and
+`/design-sync` should target that project instead of creating a new one.
 
-**Fastest path — reuse the prebuilt state:**
-1. Launch claude from that worktree so everything is reused:
-   `cd ~/Downloads/AnimeAgentSquad/.claude/worktrees/jolly-jemison-2674a7 && claude`
-2. Run `/design-sync`. It reads this config, creates a new Claude Design project,
-   asks for ONE upload approval, then pushes the 4 components.
-   - If it re-validates/captures, export first:
-     `export DS_CHROMIUM_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`
-   - A deterministic rebuild is a no-op; the prebuilt `ds-bundle/` is valid.
-
-**From the main repo instead** (`~/Downloads/AnimeAgentSquad`, on `development`): first
-`git checkout claude/jolly-jemison-2674a7` (or merge PR #5), then follow the full
-"Non-standard pipeline" below to rebuild before `/design-sync` — `node_modules`,
-`.ds-compiled.css`, and `ds-bundle/` are NOT committed and must be regenerated there.
+The prebuilt bundle that lived in the `jolly-jemison-2674a7` worktree was removed on
+2026-09-24, and these files reached `main` via PR #7 (PR #5 was closed). To sync again
+from the main repo, follow the "Non-standard pipeline" below to regenerate
+`node_modules`, `apps/web/.ds-compiled.css`, and `ds-bundle/` (none are committed), then
+run `/design-sync` from an authed claude.ai session.
+- If it re-validates/captures, export first:
+  `export DS_CHROMIUM_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`
 
 ## What this sync is
 
