@@ -106,6 +106,8 @@ const AUTONOMOUS_COMMANDS = [
 
 const AUTONOMOUS_COOLDOWN_MS = 8_000;
 const AUTONOMOUS_LEAD_ID = 'agent-1'; // Mai
+/** Returns false once the autonomous cycle that started a run has been cancelled. */
+type RunGuard = () => boolean;
 
 function snapObj(o: RoomObject, maxX = ROOM_TILES_X, maxY = ROOM_TILES_Y): RoomObject {
   return {
@@ -688,6 +690,10 @@ export function LoungeCanvas() {
   const [officeCommand, setOfficeCommand] = useState('Build a verified lounge workflow slice');
   // Off by default: every autonomous cycle calls the LLM workflow planner.
   const [autonomousMode, setAutonomousMode] = useState(false);
+  // Read by timers that outlive a render, so switching off takes effect immediately.
+  const autonomousModeRef = useRef(false);
+  // Bumped to cancel any pending autonomous cycle (toggle, manual run, reset, unmount).
+  const autonomousCycleRef = useRef(0);
   const autonomousTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeOfficeCommand, setActiveOfficeCommand] = useState(
     'Build a verified lounge workflow slice',
@@ -1762,12 +1768,17 @@ export function LoungeCanvas() {
     setOfficeToolEvents((prev) => [...prev, { id, ...event }].slice(-6));
   }, []);
 
-  const handleRunOfficeCommand = useCallback(async (commandOverride?: string) => {
+  /** Resolves true when the workflow actually started. */
+  const handleRunOfficeCommand = useCallback(async (commandOverride?: string, guard?: RunGuard) => {
     const cmd = commandOverride ?? officeCommand;
     if (!roomReady) {
       showToast('Room is loading');
-      return;
+      return false;
     }
+    // A manual run supersedes any pending autonomous cycle; an autonomous run is
+    // re-checked after the planner await, since Auto may be switched off meanwhile.
+    if (!guard) autonomousCycleRef.current += 1;
+    const wanted = () => !guard || guard();
 
     const busyAgentIds = Object.entries(officeWalkers)
       .filter(([, w]) => w.agent.state !== 'idle')
@@ -1778,7 +1789,7 @@ export function LoungeCanvas() {
     try {
       const { planWorkflowLLM } = await import('@/game/dialogue/dialogueAdapter');
       const llmResult = await planWorkflowLLM({ commandText: cmd, busyAgentIds });
-      if (llmResult && llmResult.steps.length > 0) {
+      if (wanted() && llmResult && llmResult.steps.length > 0) {
         const converted = convertLLMSteps(llmResult.steps);
         if (converted.length > 0) {
           steps = converted;
@@ -1792,6 +1803,7 @@ export function LoungeCanvas() {
     } catch {
       // Use rule-based fallback (already set)
     }
+    if (!wanted()) return false;
     const first = steps[0];
 
     officeStepInFlightRef.current = null;
@@ -1811,6 +1823,7 @@ export function LoungeCanvas() {
       });
     }
     showToast('Office workflow started');
+    return true;
   }, [appendOfficeChat, officeCommand, roomReady, showToast]);
 
   const handlePauseOfficeWorkflow = useCallback(() => {
@@ -1822,6 +1835,7 @@ export function LoungeCanvas() {
   }, []);
 
   const handleResetOfficeWorkflow = useCallback(() => {
+    autonomousCycleRef.current += 1;
     officeStepInFlightRef.current = null;
     Object.values(officeWalkers).forEach((walker) => walker.clearAgentTask());
     setOfficeStatus('idle');
@@ -1973,6 +1987,18 @@ export function LoungeCanvas() {
     showToast,
   ]);
 
+  const handleToggleAutonomousMode = useCallback(() => {
+    const next = !autonomousModeRef.current;
+    autonomousModeRef.current = next;
+    autonomousCycleRef.current += 1;
+    setAutonomousMode(next);
+    showToast(
+      next
+        ? `Auto on: ${AUTONOMOUS_COOLDOWN_MS / 1000}s after each run, Mai starts another (one LLM planner call per run)`
+        : 'Auto off',
+    );
+  }, [showToast]);
+
   // ── Autonomous orchestration: Lead auto-restarts on workflow completion ──
   useEffect(() => {
     if (!autonomousMode) return;
@@ -1981,17 +2007,15 @@ export function LoungeCanvas() {
     const lead = officeWalkers[AUTONOMOUS_LEAD_ID];
     if (lead?.agent.state !== 'idle') return;
 
+    const cycle = autonomousCycleRef.current;
+    const isStillWanted = () => autonomousModeRef.current && autonomousCycleRef.current === cycle;
+
     autonomousTimerRef.current = setTimeout(() => {
+      if (!isStillWanted()) return;
       const cmd =
         AUTONOMOUS_COMMANDS[
           Math.floor(Math.random() * AUTONOMOUS_COMMANDS.length)
         ]!;
-
-      appendOfficeChat({
-        agentId: AUTONOMOUS_LEAD_ID,
-        kind: 'status',
-        text: `🤖 Mai (Lead): Orchestrating next mission — "${cmd}"`,
-      });
 
       // Reset and start with auto-selected command
       officeStepInFlightRef.current = null;
@@ -1999,9 +2023,23 @@ export function LoungeCanvas() {
       setOfficeStepIndex(0);
       setOfficeStatus('idle');
 
-      // Brief tick for React state, then fire
+      // Brief tick for React state, then fire. Not cleared by the effect cleanup (the
+      // status change above re-runs this effect), so re-check the cycle here.
       setTimeout(() => {
-        void handleRunOfficeCommand(cmd);
+        if (!isStillWanted()) return;
+        appendOfficeChat({
+          agentId: AUTONOMOUS_LEAD_ID,
+          kind: 'status',
+          text: `🤖 Mai (Lead): Orchestrating next mission — "${cmd}"`,
+        });
+        void handleRunOfficeCommand(cmd, isStillWanted).then((started) => {
+          if (started) return;
+          appendOfficeChat({
+            agentId: AUTONOMOUS_LEAD_ID,
+            kind: 'status',
+            text: '🤖 Mai (Lead): Next mission cancelled',
+          });
+        });
       }, 400);
     }, AUTONOMOUS_COOLDOWN_MS);
 
@@ -2011,6 +2049,14 @@ export function LoungeCanvas() {
       }
     };
   }, [autonomousMode, officeStatus, officeWalkers, appendOfficeChat, handleRunOfficeCommand, showToast]);
+
+  // Cancel any in-flight autonomous cycle on unmount.
+  useEffect(
+    () => () => {
+      autonomousCycleRef.current += 1;
+    },
+    [],
+  );
 
   // ── Happiness with cap ───────────────────────────────────────────────────────
   // Functional update so rapid same-frame calls never read a stale snapshot.
@@ -2484,6 +2530,20 @@ export function LoungeCanvas() {
           <span className="text-[12px] font-black text-[#5a3c18] max-sm:text-[10px]">
             Command Board
           </span>
+          <button
+            type="button"
+            onClick={handleToggleAutonomousMode}
+            aria-pressed={autonomousMode}
+            title="Auto-restart: start a new mission after each run (calls the LLM planner every cycle)"
+            className={`rounded-full border px-2 py-0.5 text-[9px] font-black shadow-sm transition active:scale-95 max-sm:text-[7px] ${
+              autonomousMode
+                ? 'border-[#15803d] bg-[#15803d] text-white hover:bg-[#166534]'
+                : 'border-[#c8a870] bg-[#fff8e8] text-[#5a3c18] hover:bg-[#fde68a]'
+            }`}
+          >
+            {/* Stable accessible name "Auto"; aria-pressed carries the state. */}
+            Auto <span aria-hidden="true">{autonomousMode ? 'on' : 'off'}</span>
+          </button>
           <span
             className={`ml-auto rounded-full px-2 py-0.5 text-[9px] font-black max-sm:text-[7px] ${OFFICE_STATUS_CLASS[officeStatus]}`}
           >
