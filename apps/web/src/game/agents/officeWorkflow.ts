@@ -432,25 +432,30 @@ const TOOL_LABEL_TO_TOOL_ID: Record<string, OfficeToolId> = {
   Close: 'git',
 };
 
+// LLM output is untrusted: only own keys count, so names like `constructor` fall back too.
+function lookupOwn<T>(table: Partial<Record<string, T>>, key: string): T | undefined {
+  return Object.hasOwn(table, key) ? table[key] : undefined;
+}
+
 export function convertLLMSteps(
   llmSteps: { agentName: string; title: string; taskType: string; detail: string; toolLabel: string; handoffTo?: string }[],
 ): OfficeWorkflowStep[] {
   return llmSteps.map((step, i) => {
-    const agentId = AGENT_NAME_TO_ID[step.agentName] ?? 'agent-1';
+    const agentId = lookupOwn(AGENT_NAME_TO_ID, step.agentName) ?? 'agent-1';
     const handoffToName = step.handoffTo;
-    const handoffToId = handoffToName ? (AGENT_NAME_TO_ID[handoffToName] as OfficeAgentId | undefined) : undefined;
+    const handoffToId = handoffToName ? lookupOwn(AGENT_NAME_TO_ID, handoffToName) : undefined;
     const nextStep = llmSteps[i + 1];
     const nextAgentName = nextStep?.agentName;
-    const nextAgentId = nextAgentName ? (AGENT_NAME_TO_ID[nextAgentName] as OfficeAgentId | undefined) : undefined;
+    const nextAgentId = nextAgentName ? lookupOwn(AGENT_NAME_TO_ID, nextAgentName) : undefined;
 
     return {
       id: `llm-${i}-${step.title.toLowerCase()}`,
       order: i + 1,
       agentId,
-      taskType: TASK_TYPE_TO_AGENT_TYPE[step.taskType] ?? 'coding',
+      taskType: lookupOwn(TASK_TYPE_TO_AGENT_TYPE, step.taskType) ?? 'code',
       title: step.title,
       detail: step.detail,
-      toolId: TOOL_LABEL_TO_TOOL_ID[step.toolLabel] ?? 'edit',
+      toolId: lookupOwn(TOOL_LABEL_TO_TOOL_ID, step.toolLabel) ?? 'edit',
       handoffTo: handoffToId ?? nextAgentId,
     };
   });

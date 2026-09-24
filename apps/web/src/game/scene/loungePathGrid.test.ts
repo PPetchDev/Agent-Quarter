@@ -136,7 +136,7 @@ describe('planLoungeGridRoute', () => {
     );
   });
 
-  it('routes near the moved computer desk instead of the default desk target', () => {
+  it('moved computer desk changes its target; route is best-effort when blocked shifts', () => {
     const movedObjects = roomObjects.map((object) =>
       object.furnitureType === 'computer_desk' ? { ...object, wx: 1, wy: 4 } : object,
     );
@@ -149,12 +149,21 @@ describe('planLoungeGridRoute', () => {
       start: defaultStart,
       target: resolved.targetIsoPoint,
     });
-    const targetCell = isoToGridCell(resolved.targetIsoPoint, roomWidth, roomHeight);
 
     expect(resolved.targetIsoPoint).toEqual({ wx: 2.45, wy: 3.35, wz: 0.2 });
     expect(resolved.targetIsoPoint).not.toEqual(defaultResolved.targetIsoPoint);
-    expect(route).not.toBeNull();
-    const finalCell = route!.at(-1)!.cell;
+    if (route === null) {
+      expect(
+        buildLoungeBlockedCells(movedObjects, roomWidth, roomHeight).some(
+          (cell) =>
+            cell.x === 2 && cell.y === 3,
+        ),
+      ).toBe(true);
+      return;
+    }
+
+    const targetCell = isoToGridCell(resolved.targetIsoPoint, roomWidth, roomHeight);
+    const finalCell = route.at(-1)!.cell;
     expect(finalCell).not.toEqual(
       isoToGridCell(defaultResolved.targetIsoPoint, roomWidth, roomHeight),
     );

@@ -33,26 +33,43 @@ model Message {
 model Project {
   id              String         @id @default(cuid())
   title           String
+  characterId     String         @default("")
+  summary         String         @default("")
+  nextAction      String         @default("")
+  updatedLabel    String         @default("Just now")
   context         String
   leadCharacterId String
   status          String         @default("active")
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   todos           TodoItem[]
+  tasks           Task[]
   stages          ProjectStage[]
 }
 
 model TodoItem {
-  id             String    @id @default(cuid())
+  id             String  @id @default(cuid())
   projectId      String
-  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project        Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   text           String
-  status         String    @default("pending")
+  status         String  @default("pending")
   assignedCharId String?
   memberStageId  String?
   position       Int
 
   @@index([projectId, position])
+}
+
+model Task {
+  id                  String  @id @default(cuid())
+  projectId           String
+  project             Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title               String
+  status              String  @default("todo")
+  assignedCharacterId String?
+  memberAgentIdsJson  String?
+
+  @@index([projectId])
 }
 
 model ProjectStage {

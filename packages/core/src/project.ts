@@ -20,6 +20,7 @@ export interface Task {
   title: string;
   status: TaskStatus;
   assignedCharacterId?: string;
+  memberAgentIds?: string[];
 }
 
 export interface Run {
@@ -334,4 +335,23 @@ export function failRun(run: Run, completedAt?: string): Run {
 /** Returns a new Run with status cancelled. */
 export function cancelRun(run: Run, completedAt?: string): Run {
   return finishRun(run, 'cancelled', completedAt);
+}
+
+/** Assigns member agents to a task for multi-agent execution. */
+export function assignMemberAgents(
+  task: Task,
+  memberAgentIds: string[],
+): Task {
+  return {
+    ...task,
+    memberAgentIds,
+  };
+}
+
+/** Clears member agents from a task (e.g., on completion). */
+export function clearMemberAgents(task: Task): Task {
+  return {
+    ...task,
+    memberAgentIds: undefined,
+  };
 }

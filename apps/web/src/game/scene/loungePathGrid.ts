@@ -1,5 +1,5 @@
 import type { RoomObject } from '../../components/lounge/roomDefs';
-import { FURNITURE_TILES } from '../../components/lounge/roomDefs';
+import { FURNITURE_TILES, footprintFor } from '../../components/lounge/roomDefs';
 import type { IsoWorldPoint } from '../agents/agentTypes';
 import type { GridCell, IsoRoutePoint } from '../movement/gridPath';
 import { isCellInBounds, planIsoGridPath } from '../movement/gridPath';
@@ -29,7 +29,7 @@ export function buildLoungeBlockedCells(
   for (const obj of objects) {
     if (!isFloorBlockingObject(obj)) continue;
 
-    const footprint = FURNITURE_TILES[obj.furnitureType] ?? { w: 1, d: 1 };
+    const footprint = footprintFor(obj.furnitureType, obj.rotation);
     const originX = Math.round(obj.wx);
     const originY = Math.round(obj.wy);
 

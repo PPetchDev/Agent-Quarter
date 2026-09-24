@@ -1,35 +1,16 @@
-// Tiled Editor compatible types + internal RoomObject model
+// Tiled Editor compatible types (re-exported from canonical tiledParser.ts)
+export {
+  type TiledProperty,
+  type TiledObject,
+  type TiledLayer,
+  type TiledMap,
+  parseTiledMap,
+  validateTiledMap,
+  detectTiledFormat,
+} from './tiledParser';
 
-export interface TiledProperty {
-  name: string;
-  type: 'float' | 'int' | 'string' | 'bool';
-  value: number | string | boolean;
-}
-
-export interface TiledObject {
-  id: number;
-  name: string;
-  type: string;
-  visible: boolean;
-  properties: TiledProperty[];
-}
-
-export interface TiledLayer {
-  id: number;
-  name: string;
-  type: 'objectgroup' | 'tilelayer';
-  visible: boolean;
-  objects?: TiledObject[];
-}
-
-export interface TiledMap {
-  version: string;
-  name: string;
-  orientation: string;
-  tilewidth: number;
-  tileheight: number;
-  layers: TiledLayer[];
-}
+/** 90° quarter-turn rotation: 0 = default, 1 = 90°, 2 = 180°, 3 = 270°. */
+export type Rotation = 0 | 1 | 2 | 3;
 
 // Internal model used by PixiJS renderer
 export interface RoomObject {
@@ -42,6 +23,10 @@ export interface RoomObject {
   wz: number;
   happiness: number;
   draggable: boolean;
+  /** Optional quarter-turn rotation. Absent = 0 (no rotation). */
+  rotation?: Rotation;
+  /** Optional variant tag for visually distinguishing duplicates (e.g. zabuton colors). */
+  variant?: string;
 }
 
 // Approximate bounding box per furniture type (w, d, h in world units)
@@ -80,9 +65,18 @@ export const FURNITURE_TILES: Record<string, { w: number; d: number }> = {
   wall_shelf: { w: 3, d: 1 },
 };
 
+/**
+ * Tile footprint after applying rotation. Odd quarter-turns (90°/270°) swap
+ * width and depth; even turns leave the footprint unchanged.
+ */
+export function footprintFor(type: string, rotation: Rotation = 0): { w: number; d: number } {
+  const fp = FURNITURE_TILES[type] ?? { w: 1, d: 1 };
+  return rotation % 2 === 1 ? { w: fp.d, d: fp.w } : { w: fp.w, d: fp.d };
+}
+
 /** Returns the set of tile coordinates occupied by an object */
 export function getOccupiedTiles(obj: RoomObject): Array<[number, number]> {
-  const fp = FURNITURE_TILES[obj.furnitureType] ?? { w: 1, d: 1 };
+  const fp = footprintFor(obj.furnitureType, obj.rotation);
   const tiles: Array<[number, number]> = [];
   for (let dx = 0; dx < fp.w; dx++) {
     for (let dy = 0; dy < fp.d; dy++) {
@@ -101,7 +95,7 @@ export function checkCollision(
 ): boolean {
   const dragged = objects.find((o) => o.id === dragId);
   if (!dragged) return false;
-  const fp = FURNITURE_TILES[dragged.furnitureType] ?? { w: 1, d: 1 };
+  const fp = footprintFor(dragged.furnitureType, dragged.rotation);
   const others = objects.filter((o) => o.id !== dragId && !(o.wz >= 1.5 && dragged.wz < 1.0));
   for (let dx = 0; dx < fp.w; dx++) {
     for (let dy = 0; dy < fp.d; dy++) {
@@ -115,31 +109,4 @@ export function checkCollision(
     }
   }
   return false;
-}
-
-function getProp<T>(props: TiledProperty[], name: string, fallback: T): T {
-  const p = props.find((x) => x.name === name);
-  return p !== undefined ? (p.value as T) : fallback;
-}
-
-export function parseTiledMap(json: TiledMap): RoomObject[] {
-  const result: RoomObject[] = [];
-  for (const layer of json.layers) {
-    if (layer.type !== 'objectgroup' || !layer.objects) continue;
-    for (const obj of layer.objects) {
-      if (!obj.visible) continue;
-      result.push({
-        id: obj.id,
-        furnitureType: obj.name,
-        label: getProp<string>(obj.properties, 'label', obj.name),
-        description: getProp<string>(obj.properties, 'description', ''),
-        wx: getProp<number>(obj.properties, 'wx', 0),
-        wy: getProp<number>(obj.properties, 'wy', 0),
-        wz: getProp<number>(obj.properties, 'wz', 0),
-        happiness: getProp<number>(obj.properties, 'happiness', 0),
-        draggable: getProp<boolean>(obj.properties, 'draggable', false),
-      });
-    }
-  }
-  return result;
 }

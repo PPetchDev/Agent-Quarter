@@ -1,5 +1,7 @@
 // Catalog of all furniture types available in the shop
 
+import type { Rotation } from './roomDefs';
+
 export interface CatalogItem {
   type: string;
   label: string;
@@ -11,6 +13,12 @@ export interface CatalogItem {
   tokenCost: number;
   draggable: boolean;
   category: 'essential' | 'decor' | 'entertainment' | 'wall';
+  /** Optional default quarter-turn rotation applied on spawn. Absent = 0. */
+  rotation?: Rotation;
+  /** Optional variant tags for duplicates (e.g. zabuton colors). First entry is the default. */
+  variants?: readonly string[];
+  /** Optional flag for shop/editor: whether this item supports rotation. */
+  rotatable?: boolean;
 }
 
 export const FURNITURE_CATALOG: CatalogItem[] = [
@@ -101,6 +109,7 @@ export const FURNITURE_CATALOG: CatalogItem[] = [
     tokenCost: 3,
     draggable: true,
     category: 'essential',
+    rotatable: true,
   },
   {
     type: 'pool_table',
@@ -123,6 +132,7 @@ export const FURNITURE_CATALOG: CatalogItem[] = [
     tokenCost: 2,
     draggable: true,
     category: 'essential',
+    rotatable: true,
   },
   {
     type: 'zabuton',
@@ -134,6 +144,7 @@ export const FURNITURE_CATALOG: CatalogItem[] = [
     tokenCost: 1,
     draggable: true,
     category: 'essential',
+    variants: ['green', 'rose', 'blue', 'gold'],
   },
   {
     type: 'plant',

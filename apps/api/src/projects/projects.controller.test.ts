@@ -4,42 +4,121 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
 import { PROJECTS, RUNS, TASKS } from '@squad/core';
 import { ProjectsController } from './projects.controller';
+import { ProjectsService } from './projects.service';
 import { RunsController } from './runs.controller';
 import { TasksController } from './tasks.controller';
 import { RunsService } from './runs.service';
 import { RunsGateway } from './runs.gateway';
 import { RunExecutionService } from './run-execution.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { assertTestDatabase } from '../prisma/test-database';
 
 describe('ProjectsController', () => {
-  const controller = new ProjectsController();
+  let prisma: PrismaService;
+  let controller: ProjectsController;
 
-  it('returns all seeded projects', () => {
-    expect(controller.findAll()).toBe(PROJECTS);
+  beforeAll(async () => {
+    prisma = new PrismaService();
+    await prisma.$connect();
   });
 
-  it('returns a project by id', () => {
-    expect(controller.findOne('p-001')).toEqual(PROJECTS[0]);
+  beforeEach(async () => {
+    await resetProjectTables(prisma);
+    controller = new ProjectsController(new ProjectsService(prisma));
   });
 
-  it('throws the existing not found message for a missing project', () => {
-    expect(() => controller.findOne('missing')).toThrow(NotFoundException);
-    expect(() => controller.findOne('missing')).toThrow("Project 'missing' not found");
+  afterAll(async () => {
+    await resetProjectTables(prisma);
+    await prisma.$disconnect();
   });
 
-  it('returns tasks for an existing project', () => {
-    expect(controller.findTasks('p-001')).toEqual(
+  it('returns all seeded projects', async () => {
+    await expect(controller.findAll()).resolves.toEqual(PROJECTS);
+  });
+
+  it('returns a project by id', async () => {
+    await expect(controller.findOne('p-001')).resolves.toEqual(PROJECTS[0]);
+  });
+
+  it('throws the existing not found message for a missing project', async () => {
+    await expect(controller.findOne('missing')).rejects.toThrow(NotFoundException);
+    await expect(controller.findOne('missing')).rejects.toThrow("Project 'missing' not found");
+  });
+
+  it('creates, updates, and deletes a project', async () => {
+    const created = await controller.create({
+      characterId: 'yui',
+      title: 'Docs Refresh',
+      status: 'active',
+      summary: 'Update onboarding docs.',
+      nextAction: 'Draft outline',
+      updatedLabel: 'Just now',
+    });
+
+    expect(created.id).toEqual(expect.any(String));
+    expect(created.title).toBe('Docs Refresh');
+
+    await expect(
+      controller.update(created.id, { status: 'review', nextAction: 'Review outline' }),
+    ).resolves.toMatchObject({
+      id: created.id,
+      status: 'review',
+      nextAction: 'Review outline',
+    });
+
+    await expect(controller.delete(created.id)).resolves.toEqual({ success: true });
+    await expect(controller.findOne(created.id)).rejects.toThrow(NotFoundException);
+  });
+
+  it('returns tasks for an existing project', async () => {
+    await expect(controller.findTasks('p-001')).resolves.toEqual(
       TASKS.filter((task) => task.projectId === 'p-001'),
     );
   });
 
-  it('throws before returning tasks for a missing project', () => {
-    expect(() => controller.findTasks('missing')).toThrow(NotFoundException);
-    expect(() => controller.findTasks('missing')).toThrow("Project 'missing' not found");
+  it('creates and updates tasks for a project', async () => {
+    const task = await controller.createTask('p-001', {
+      title: 'Write migration notes',
+      status: 'todo',
+      assignedCharacterId: 'aki',
+    });
+
+    expect(task.projectId).toBe('p-001');
+    expect(task.id).toEqual(expect.any(String));
+
+    await expect(controller.updateTask(task.id, { status: 'in_progress' })).resolves.toMatchObject({
+      id: task.id,
+      status: 'in_progress',
+    });
+  });
+
+  it('cascade-deletes tasks when a project is deleted', async () => {
+    await expect(controller.findTasks('p-001')).resolves.toHaveLength(2);
+
+    await controller.delete('p-001');
+
+    await expect(controller.findTasks('p-001')).rejects.toThrow(NotFoundException);
+    expect(await prisma.task.findMany({ where: { projectId: 'p-001' } })).toEqual([]);
+  });
+
+  it('throws before returning tasks for a missing project', async () => {
+    await expect(controller.findTasks('missing')).rejects.toThrow(NotFoundException);
+    await expect(controller.findTasks('missing')).rejects.toThrow("Project 'missing' not found");
   });
 });
+
+async function resetProjectTables(prisma: PrismaService) {
+  assertTestDatabase();
+  await prisma.relay.deleteMany();
+  await prisma.stageMessage.deleteMany();
+  await prisma.projectStage.deleteMany();
+  await prisma.todoItem.deleteMany();
+  await prisma.task.deleteMany();
+  await prisma.project.deleteMany();
+}
 
 describe('TasksController', () => {
   const runsService = new RunsService();

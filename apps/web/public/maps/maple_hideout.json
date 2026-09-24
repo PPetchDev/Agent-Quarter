@@ -209,7 +209,9 @@
               "value": "A soft Japanese zabuton floor cushion"
             },
             { "name": "happiness", "type": "int", "value": 4 },
-            { "name": "draggable", "type": "bool", "value": true }
+            { "name": "draggable", "type": "bool", "value": true },
+            { "name": "rotation", "type": "int", "value": 0 },
+            { "name": "variant", "type": "string", "value": "red" }
           ]
         },
         {
@@ -233,7 +235,9 @@
               "value": "A soft Japanese zabuton floor cushion"
             },
             { "name": "happiness", "type": "int", "value": 4 },
-            { "name": "draggable", "type": "bool", "value": true }
+            { "name": "draggable", "type": "bool", "value": true },
+            { "name": "rotation", "type": "int", "value": 1 },
+            { "name": "variant", "type": "string", "value": "blue" }
           ]
         },
         {
@@ -248,7 +252,7 @@
           "rotation": 0,
           "properties": [
             { "name": "wx", "type": "float", "value": 0 },
-            { "name": "wy", "type": "float", "value": 6 },
+            { "name": "wy", "type": "float", "value": 2 },
             { "name": "wz", "type": "float", "value": 0 },
             { "name": "label", "type": "string", "value": "Reading Cushion" },
             {
@@ -257,7 +261,9 @@
               "value": "A soft Japanese zabuton floor cushion"
             },
             { "name": "happiness", "type": "int", "value": 4 },
-            { "name": "draggable", "type": "bool", "value": true }
+            { "name": "draggable", "type": "bool", "value": true },
+            { "name": "rotation", "type": "int", "value": 2 },
+            { "name": "variant", "type": "string", "value": "default" }
           ]
         },
         {
