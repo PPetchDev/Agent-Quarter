@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  convertLLMSteps,
   createOfficeToolEvent,
   createOfficeWorkflowSteps,
   describeOfficeStepDone,
@@ -10,6 +11,7 @@ import {
   planWorkflowSteps,
 } from './officeWorkflow';
 import type { OfficeAgentId } from './officeWorkflow';
+import { resolveAgentTask } from './taskResolver';
 
 describe('office workflow planner', () => {
   it('normalizes blank commands to a default command', () => {
@@ -146,4 +148,42 @@ describe('planWorkflowSteps (dynamic planner)', () => {
       expect(reviewStep.agentId).not.toBe(buildStep!.agentId);
     }
   });
+});
+
+describe('convertLLMSteps', () => {
+  it('falls back to a task type the lounge can resolve when the LLM returns an unknown one', () => {
+    const [step] = convertLLMSteps([
+      {
+        agentName: 'Mai',
+        title: 'Build',
+        taskType: 'coding',
+        detail: 'Ship it',
+        toolLabel: 'Build',
+      },
+    ]);
+
+    expect(step!.taskType).toBe('code');
+    expect(() => resolveAgentTask(step!.taskType)).not.toThrow();
+  });
+
+  it.each(['constructor', '__proto__', 'toString'])(
+    'treats inherited object keys like %s as unknown',
+    (key) => {
+      const [step] = convertLLMSteps([
+        {
+          agentName: key,
+          title: 'Build',
+          taskType: key,
+          detail: 'x',
+          toolLabel: key,
+          handoffTo: key,
+        },
+      ]);
+
+      expect(step!.taskType).toBe('code');
+      expect(step!.agentId).toBe('agent-1');
+      expect(step!.toolId).toBe('edit');
+      expect(step!.handoffTo).toBeUndefined();
+    },
+  );
 });
