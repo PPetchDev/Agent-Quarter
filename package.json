@@ -7,7 +7,7 @@
     "test": "pnpm -r run test",
     "lint": "pnpm -r run lint",
     "format": "prettier --write .",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "pnpm -r run typecheck"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
