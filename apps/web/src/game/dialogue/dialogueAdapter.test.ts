@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { generateOfficeDialogue } from './dialogueAdapter';
+import { generateOfficeDialogue, planWorkflowLLM } from './dialogueAdapter';
 import type { DialogueResponse } from './dialogueAdapter';
 
 const mockLlmResponse: DialogueResponse = {
@@ -196,5 +196,61 @@ describe('generateOfficeDialogue', () => {
     expect(result).not.toBeNull();
     expect(result!.errorSummary).toBe('Unknown agent id: agent-99');
     expect(result!.fallbackUsed).toBe(true);
+  });
+});
+
+describe('planWorkflowLLM', () => {
+  const input = { commandText: 'Ship the lounge fix', busyAgentIds: [] };
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('passes the abort signal to fetch without serializing it into the body', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ steps: [], source: 'llm' }) });
+    vi.stubGlobal('fetch', fetchMock);
+    const controller = new AbortController();
+
+    await planWorkflowLLM(input, { signal: controller.signal });
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain('/api/dialogue/plan-workflow');
+    expect(init.signal).toBe(controller.signal);
+    expect(JSON.parse(init.body as string)).toEqual(input);
+  });
+
+  it('resolves null when the request is aborted mid-flight', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_url: string, init: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            init.signal?.addEventListener('abort', () =>
+              reject(new DOMException('Aborted', 'AbortError')),
+            );
+          }),
+      ),
+    );
+    const controller = new AbortController();
+
+    const pending = planWorkflowLLM(input, { signal: controller.signal });
+    controller.abort();
+
+    await expect(pending).resolves.toBeNull();
+  });
+
+  it('resolves null when the response body fails to parse', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: () => Promise.reject(new SyntaxError('bad json')) }),
+    );
+
+    await expect(planWorkflowLLM(input)).resolves.toBeNull();
+  });
+
+  it('resolves null on a non-ok response', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, json: async () => ({}) }));
+
+    await expect(planWorkflowLLM(input)).resolves.toBeNull();
   });
 });

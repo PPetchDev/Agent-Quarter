@@ -682,6 +682,13 @@ export function LoungeCanvas() {
   const autonomousModeRef = useRef(false);
   // Bumped to cancel any pending autonomous cycle (toggle, manual run, reset, unmount).
   const autonomousCycleRef = useRef(0);
+  // In-flight planner request of the current autonomous run, aborted when its cycle is cancelled.
+  const plannerAbortRef = useRef<AbortController | null>(null);
+  const cancelAutonomousCycle = useCallback(() => {
+    autonomousCycleRef.current += 1;
+    plannerAbortRef.current?.abort();
+    plannerAbortRef.current = null;
+  }, []);
   const autonomousTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeOfficeCommand, setActiveOfficeCommand] = useState(
     'Build a verified lounge workflow slice',
@@ -1542,7 +1549,7 @@ export function LoungeCanvas() {
     }
     // A manual run supersedes any pending autonomous cycle; an autonomous run is
     // re-checked after the planner await, since Auto may be switched off meanwhile.
-    if (!guard) autonomousCycleRef.current += 1;
+    if (!guard) cancelAutonomousCycle();
     const wanted = () => !guard || guard();
 
     const busyAgentIds = Object.entries(officeWalkers)
@@ -1551,9 +1558,15 @@ export function LoungeCanvas() {
 
     // Try LLM planner first, fall back to rule-based
     let steps = planWorkflowSteps(cmd, { busyAgentIds });
+    // Only autonomous runs are abortable, so toggling Auto never downgrades a manual run's plan.
+    const controller = guard ? new AbortController() : null;
+    if (controller) plannerAbortRef.current = controller;
     try {
       const { planWorkflowLLM } = await import('@/game/dialogue/dialogueAdapter');
-      const llmResult = await planWorkflowLLM({ commandText: cmd, busyAgentIds });
+      const llmResult = await planWorkflowLLM(
+        { commandText: cmd, busyAgentIds },
+        { signal: controller?.signal },
+      );
       if (wanted() && llmResult && llmResult.steps.length > 0) {
         const converted = convertLLMSteps(llmResult.steps);
         if (converted.length > 0) {
@@ -1567,6 +1580,8 @@ export function LoungeCanvas() {
       }
     } catch {
       // Use rule-based fallback (already set)
+    } finally {
+      if (controller && plannerAbortRef.current === controller) plannerAbortRef.current = null;
     }
     if (!wanted()) return false;
     const first = steps[0];
@@ -1589,7 +1604,7 @@ export function LoungeCanvas() {
     }
     showToast('Office workflow started');
     return true;
-  }, [appendOfficeChat, officeCommand, roomReady, showToast]);
+  }, [appendOfficeChat, cancelAutonomousCycle, officeCommand, roomReady, showToast]);
 
   const handlePauseOfficeWorkflow = useCallback(() => {
     setOfficeStatus((current) => {
@@ -1600,7 +1615,7 @@ export function LoungeCanvas() {
   }, []);
 
   const handleResetOfficeWorkflow = useCallback(() => {
-    autonomousCycleRef.current += 1;
+    cancelAutonomousCycle();
     officeStepInFlightRef.current = null;
     Object.values(officeWalkers).forEach((walker) => walker.clearAgentTask());
     setOfficeStatus('idle');
@@ -1608,7 +1623,7 @@ export function LoungeCanvas() {
     setOfficeToolEvents([]);
     setOfficeChat([]);
     showToast('Office workflow reset');
-  }, [officeWalkers, showToast]);
+  }, [cancelAutonomousCycle, officeWalkers, showToast]);
 
   useEffect(() => {
     if (officeStatus !== 'running') return;
@@ -1755,14 +1770,14 @@ export function LoungeCanvas() {
   const handleToggleAutonomousMode = useCallback(() => {
     const next = !autonomousModeRef.current;
     autonomousModeRef.current = next;
-    autonomousCycleRef.current += 1;
+    cancelAutonomousCycle();
     setAutonomousMode(next);
     showToast(
       next
         ? `Auto on: ${AUTONOMOUS_COOLDOWN_MS / 1000}s after each run, Mai starts another (one LLM planner call per run)`
         : 'Auto off',
     );
-  }, [showToast]);
+  }, [cancelAutonomousCycle, showToast]);
 
   // ── Autonomous orchestration: Lead auto-restarts on workflow completion ──
   useEffect(() => {
@@ -1816,12 +1831,7 @@ export function LoungeCanvas() {
   }, [autonomousMode, officeStatus, officeWalkers, appendOfficeChat, handleRunOfficeCommand, showToast]);
 
   // Cancel any in-flight autonomous cycle on unmount.
-  useEffect(
-    () => () => {
-      autonomousCycleRef.current += 1;
-    },
-    [],
-  );
+  useEffect(() => cancelAutonomousCycle, [cancelAutonomousCycle]);
 
   // ── Happiness with cap ───────────────────────────────────────────────────────
   // Functional update so rapid same-frame calls never read a stale snapshot.
