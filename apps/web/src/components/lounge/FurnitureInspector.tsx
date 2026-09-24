@@ -6,6 +6,10 @@ interface Props {
   onClose: () => void;
   onMoveMode: () => void;
   onDelete: (id: number) => void;
+  /** Shows the Rotate action when true and onRotate is provided. */
+  canRotate?: boolean;
+  /** Turns the object to its next allowed rotation. */
+  onRotate?: (id: number) => void;
 }
 
 const FURNITURE_ICONS: Record<string, string> = {
@@ -22,7 +26,14 @@ const FURNITURE_ICONS: Record<string, string> = {
   wall_shelf: '📦',
 };
 
-export function FurnitureInspector({ object, onClose, onMoveMode, onDelete }: Props) {
+export function FurnitureInspector({
+  object,
+  onClose,
+  onMoveMode,
+  onDelete,
+  canRotate = false,
+  onRotate,
+}: Props) {
   if (!object) return null;
 
   const icon = FURNITURE_ICONS[object.furnitureType] ?? '🪑';
@@ -84,6 +95,15 @@ export function FurnitureInspector({ object, onClose, onMoveMode, onDelete }: Pr
             className="flex-1 rounded-xl bg-[#f5c518] py-1.5 text-[10px] font-black text-[#5a3c00] hover:bg-[#e8b800] active:scale-95 transition"
           >
             Move
+          </button>
+        )}
+        {canRotate && onRotate && (
+          <button
+            type="button"
+            onClick={() => onRotate(object.id)}
+            className="flex-1 rounded-xl border border-[#c8a870] bg-[#fff8e8] py-1.5 text-[10px] font-black text-[#5a3c18] hover:bg-[#fde68a] active:scale-95 transition"
+          >
+            ⟳ Rotate
           </button>
         )}
         <button

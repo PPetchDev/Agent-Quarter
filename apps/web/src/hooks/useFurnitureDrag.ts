@@ -1,5 +1,5 @@
 import { useRef, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
-import { checkCollision, FURNITURE_TILES, type RoomObject } from '@/components/lounge/roomDefs';
+import { checkCollision, footprintFor, type RoomObject } from '@/components/lounge/roomDefs';
 import { worldDeltaFromScreen } from '@/components/lounge/pixiRoom';
 import type { RoomScene } from '@/components/lounge/roomLoader';
 
@@ -89,7 +89,7 @@ export function useFurnitureDrag({
     drag.accY += dwy;
     const item = objectsRef.current.find((o) => o.id === drag.id);
     if (!item) return;
-    const fp = FURNITURE_TILES[item.furnitureType];
+    const fp = footprintFor(item.furnitureType, item.rotation);
     const nx = Math.round(Math.max(0, Math.min(roomWRef.current - fp.w, drag.accX)));
     const ny = Math.round(Math.max(0, Math.min(roomHRef.current - fp.d, drag.accY)));
     const colliding = checkCollision(objectsRef.current, drag.id, nx, ny);

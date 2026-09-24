@@ -21,7 +21,15 @@ import { drawThemeParticles } from './themeParticles';
 import { buildRoomScene, loadRoomJSON, loadTiledMap, isValidTiledJson } from './roomLoader';
 import type { RoomScene } from './roomLoader';
 import type { RoomObject } from './roomDefs';
-import { checkCollision, FURNITURE_TILES } from './roomDefs';
+import {
+  allowedRotations,
+  checkCollision,
+  footprintFor,
+  FURNITURE_TILES,
+  normalizeRotation,
+  normalizeVariant,
+  rotateInLayout,
+} from './roomDefs';
 import { FurnitureInspector } from './FurnitureInspector';
 import { ShopModal } from './ShopModal';
 import { SupplyPanel } from './SupplyPanel';
@@ -111,8 +119,14 @@ const AUTONOMOUS_LEAD_ID = 'agent-1'; // Mai
 type RunGuard = () => boolean;
 
 function snapObj(o: RoomObject, maxX = ROOM_TILES_X, maxY = ROOM_TILES_Y): RoomObject {
+  // Rotation/variant arrive untrusted (saves, share links, Tiled); omit them when default.
+  const { rotation: rawRotation, variant: rawVariant, ...base } = o;
+  const rotation = normalizeRotation(o.furnitureType, rawRotation);
+  const variant = normalizeVariant(rawVariant);
   return {
-    ...o,
+    ...base,
+    ...(rotation ? { rotation } : {}),
+    ...(variant ? { variant } : {}),
     wx: Math.round(Math.max(0, Math.min(maxX - 1, o.wx))),
     wy: Math.min(maxY, Math.round(Math.max(0, o.wy))),
   };
@@ -133,7 +147,7 @@ function autoArrangeLayout(objects: RoomObject[], maxW: number, maxH: number): R
   const positions = new Map<number, { wx: number; wy: number }>();
 
   for (const current of sorted) {
-    const fp = FURNITURE_TILES[current.furnitureType] ?? { w: 1, d: 1 };
+    const fp = footprintFor(current.furnitureType, current.rotation);
     const maxX = Math.max(0, maxW - fp.w);
     const maxY = Math.max(0, maxH - fp.d);
     let found = false;
@@ -2040,6 +2054,23 @@ export function LoungeCanvas() {
     [pushHistorySnapshot, showToast],
   );
 
+  const handleRotate = useCallback(
+    (id: number) => {
+      const next = rotateInLayout(objectsRef.current, id, roomWRef.current, roomHRef.current);
+      const rotated = next?.find((o) => o.id === id);
+      if (!next || !rotated) {
+        showToast('Not enough space to rotate');
+        return;
+      }
+      pushHistorySnapshot(objectsRef.current);
+      objectsRef.current = next;
+      sceneRef.current?.updateItem(id, rotated.wx, rotated.wy, rotated.wz, rotated.rotation);
+      sceneRef.current?.setSelected(id);
+      setObjects([...next]);
+    },
+    [pushHistorySnapshot, showToast],
+  );
+
   const handleReset = useCallback(async () => {
     if (!confirm('Reset room to default layout? Any custom items will be removed.')) return;
     pushHistorySnapshot(objectsRef.current);
@@ -2762,6 +2793,10 @@ export function LoungeCanvas() {
             onClose={() => setSelectedId(null)}
             onMoveMode={() => setMode('move')}
             onDelete={handleDelete}
+            canRotate={
+              !!selectedObj?.draggable && allowedRotations(selectedObj.furnitureType).length > 1
+            }
+            onRotate={handleRotate}
           />
         </div>
       </div>

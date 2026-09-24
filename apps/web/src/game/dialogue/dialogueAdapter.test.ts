@@ -207,7 +207,9 @@ describe('planWorkflowLLM', () => {
   });
 
   it('passes the abort signal to fetch without serializing it into the body', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ steps: [], source: 'llm' }) });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue({ ok: true, json: async () => ({ steps: [], source: 'llm' }) });
     vi.stubGlobal('fetch', fetchMock);
     const controller = new AbortController();
 
@@ -242,7 +244,9 @@ describe('planWorkflowLLM', () => {
   it('resolves null when the response body fails to parse', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue({ ok: true, json: () => Promise.reject(new SyntaxError('bad json')) }),
+      vi
+        .fn()
+        .mockResolvedValue({ ok: true, json: () => Promise.reject(new SyntaxError('bad json')) }),
     );
 
     await expect(planWorkflowLLM(input)).resolves.toBeNull();
