@@ -686,7 +686,8 @@ export function LoungeCanvas() {
   }, [agent.state, aki.agent.state, ren.agent.state, yui.agent.state, mika.agent.state, agentSocket]);
 
   const [officeCommand, setOfficeCommand] = useState('Build a verified lounge workflow slice');
-  const [autonomousMode, setAutonomousMode] = useState(true);
+  // Off by default: every autonomous cycle calls the LLM workflow planner.
+  const [autonomousMode, setAutonomousMode] = useState(false);
   const autonomousTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeOfficeCommand, setActiveOfficeCommand] = useState(
     'Build a verified lounge workflow slice',
