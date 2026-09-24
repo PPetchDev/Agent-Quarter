@@ -47,7 +47,7 @@ pnpm --filter @squad/core run build; echo "EXIT:$?"
 | Lounge blocked-cell routing and shared route grid reuse | `apps/web/src/game/scene/loungePathGrid.test.ts` |
 | Animation resolver | `apps/web/src/game/animation/animationResolver.test.ts` |
 | Lounge furniture catalog | `apps/web/src/components/lounge/furnitureCatalog.test.ts` |
-| Lounge furniture dimensions | `apps/web/src/components/lounge/roomDefs.test.ts` |
+| Lounge furniture dimensions + rotation helpers (`normalizeRotation`, `rotateInLayout`, `rotateFootprintLocal`) | `apps/web/src/components/lounge/roomDefs.test.ts` |
 | Office agent Spine asset mapping, fallback overlay rules, and bubble anchor resolver | `apps/web/src/components/lounge/spineAgents.test.ts` |
 | Dialogue scheduler | `apps/web/src/game/dialogue/dialogueScheduler.test.ts` |
 
@@ -173,3 +173,21 @@ Notes:
 - 006M fix: `useEffect` dependency array changed from `[runId]` to `[runId, enabled]`.
 
 ## C-OFFICE-RUN-EXECUTION-FRONTEND-RUNTIME-006K (Previous)
+
+## Lounge Rotation, Extracted Hooks, and Planner Abort Tests
+
+| Area | File |
+|---|---|
+| Rotated furniture bodies match their footprint (`drawFurnitureObject`, rotation-aware `isoBox`) | `apps/web/src/components/lounge/pixiRoom.rotation.test.ts` |
+| Station interaction points turn with rotated furniture | `apps/web/src/game/scene/loungeStations.test.ts` |
+| Zabuton variant palettes + legacy aliases | `apps/web/src/components/lounge/furnitureCatalog.test.ts` |
+| Lounge persistence / dorm tick / furniture drag (incl. rotated clamp) / dialogue scheduler hooks | `apps/web/src/hooks/use{LoungePersistence,DormTickLoop,FurnitureDrag,DialogueScheduler}.test.ts` |
+| Planner request abort + parse-error handling | `apps/web/src/game/dialogue/dialogueAdapter.test.ts` |
+
+```bash
+pnpm --filter @squad/web exec vitest run src/components/lounge src/game/scene src/hooks src/game/dialogue --passWithNoTests; echo "EXIT:$?"
+pnpm typecheck; echo "EXIT:$?"
+```
+
+`pnpm typecheck` builds `@squad/core` first (api/web resolve it from `packages/core/dist`), then runs `tsc --noEmit` in every workspace.
+

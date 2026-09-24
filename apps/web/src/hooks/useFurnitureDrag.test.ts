@@ -100,9 +100,9 @@ describe('useFurnitureDrag', () => {
 
     const finalCall = scene.updateItem.mock.calls[scene.updateItem.mock.calls.length - 1]!;
     const [, finalX, finalY] = finalCall;
-    expect(checkCollision([makeObject({ wx: finalX, wy: finalY }), blocker], 1, finalX, finalY)).toBe(
-      false,
-    );
+    expect(
+      checkCollision([makeObject({ wx: finalX, wy: finalY }), blocker], 1, finalX, finalY),
+    ).toBe(false);
     const committed = setObjects.mock.calls[0]![0] as RoomObject[];
     expect(committed.find((o) => o.id === 1)).toMatchObject({ wx: finalX, wy: finalY });
   });
@@ -151,5 +151,14 @@ describe('useFurnitureDrag', () => {
     expect(setObjects).toHaveBeenCalledTimes(1);
     result.current.endDrag();
     expect(setObjects).toHaveBeenCalledTimes(1);
+  });
+  it('clamps a rotated object to the room using its rotated footprint', () => {
+    // low_table is 3x2; a quarter-turn makes it 2x3, so the far corner is (10-2, 10-3).
+    const { result, scene } = renderDrag([
+      makeObject({ furnitureType: 'low_table', wx: 2, wy: 2, rotation: 1 }),
+    ]);
+    result.current.onDragStart(1, 100, 100);
+    result.current.onPointerMove({ global: { x: 2100, y: -1900 } });
+    expect(scene.updateItem).toHaveBeenLastCalledWith(1, 8, 7, 0);
   });
 });

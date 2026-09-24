@@ -176,8 +176,16 @@ describe('planLoungeGridRoute', () => {
     const movedObjects = roomObjects.map((object) =>
       object.furnitureType === 'computer_desk' ? { ...object, wx: 1, wy: 4 } : object,
     );
+    // (2,6) is blocked only by the quarter-turned zabuton; (2,5) and (2,7) are also covered by
+    // the moved desk and the bookcase, so they would not prove anything about the zabuton.
     const blocked = buildLoungeBlockedCells(movedObjects, roomWidth, roomHeight).map(cellKey);
-    expect(blocked).toEqual(expect.arrayContaining(['2,5', '2,6', '2,7']));
+    expect(blocked).toContain('2,6');
+    const unrotated = movedObjects.map((object) =>
+      object.id === ROTATED_ZABUTON_ID ? { ...object, rotation: 0 as const } : object,
+    );
+    expect(buildLoungeBlockedCells(unrotated, roomWidth, roomHeight).map(cellKey)).not.toContain(
+      '2,6',
+    );
 
     const route = planLoungeGridRoute({
       objects: movedObjects,

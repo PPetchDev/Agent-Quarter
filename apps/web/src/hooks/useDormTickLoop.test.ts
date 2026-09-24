@@ -25,7 +25,9 @@ function renderTickLoop(
   const comfortRef = { current: overrides.comfort ?? 0 };
   const view = renderHook(
     (props: { roomReady: boolean }) => {
-      const [dorm, setDorm] = useState<DormState>(() => createDormState([...AGENT_IDS], Date.now()));
+      const [dorm, setDorm] = useState<DormState>(() =>
+        createDormState([...AGENT_IDS], Date.now()),
+      );
       // Wraps the real setState so tests can assert call counts while still
       // exercising real React state updates (no re-implementing tickDorm's math here).
       const setDormSpy = useRef<Dispatch<SetStateAction<DormState>>>(vi.fn(setDorm)).current;

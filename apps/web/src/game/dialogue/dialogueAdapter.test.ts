@@ -183,6 +183,17 @@ describe('generateOfficeDialogue', () => {
     await expect(generateOfficeDialogue({ fromAgentId: 'agent-3' })).resolves.toBeNull();
   });
 
+  it('resolves null when the response body fails to parse', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue({ ok: true, json: () => Promise.reject(new SyntaxError('bad json')) }),
+    );
+
+    await expect(generateOfficeDialogue({ fromAgentId: 'agent-3' })).resolves.toBeNull();
+  });
+
   it('handles invalid-agent fallback response with errorSummary', async () => {
     vi.stubGlobal(
       'fetch',

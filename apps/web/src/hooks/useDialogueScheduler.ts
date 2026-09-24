@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { pickAgentDialogue, type AgentSnapshot } from '@/game/dialogue/dialogueScheduler';
 import { generateOfficeDialogue } from '@/game/dialogue/dialogueAdapter';
-import type { OfficeAgentId, OfficeChatMessage, OfficeWorkflowStatus } from '@/game/agents/officeWorkflow';
+import type {
+  OfficeAgentId,
+  OfficeChatMessage,
+  OfficeWorkflowStatus,
+} from '@/game/agents/officeWorkflow';
 
 const LLM_REQUEST_COOLDOWN_MS = 90_000;
 

@@ -67,4 +67,23 @@ describe('drawFurnitureObject rotation', () => {
     drawFurnitureObject(recorder().g, zabuton(1));
     expect(proj(1, 1, 0)).toEqual(before);
   });
+  it('draws a three-quarter-turned zabuton over its rotated 1x3 footprint', () => {
+    const { g, polygons } = recorder();
+    drawFurnitureObject(g, zabuton(3));
+    expect(polygons).toEqual(drawnBox(1, 3));
+  });
+
+  it('restores the shared projection even when drawing throws', () => {
+    const before = proj(1, 1, 0);
+    const throwing: any = new Proxy(
+      {},
+      {
+        get: () => () => {
+          throw new Error('draw failed');
+        },
+      },
+    );
+    expect(() => drawFurnitureObject(throwing as PIXI.Graphics, zabuton(1))).toThrow('draw failed');
+    expect(proj(1, 1, 0)).toEqual(before);
+  });
 });

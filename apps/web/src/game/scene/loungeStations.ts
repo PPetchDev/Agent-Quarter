@@ -15,6 +15,7 @@
  */
 
 import type { IsoPoint } from '../isometric/isoProjection';
+import { FURNITURE_TILES, rotateFootprintLocal } from '../../components/lounge/roomDefs';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -51,6 +52,8 @@ export type LoungeStationFurniture = {
   wx: number;
   wy: number;
   wz: number;
+  /** Quarter-turn of the furniture; the interaction offset turns with it. */
+  rotation?: number;
   interactionSlot?: {
     fuzzy: boolean;
     anim: string;
@@ -154,7 +157,15 @@ export function resolveLoungeStation(
 
   if (!stationObject) return station;
 
-  const offset = station.interactionOffset;
+  const tiles = FURNITURE_TILES[stationObject.furnitureType] ?? { w: 1, d: 1 };
+  const [offsetX, offsetY] = rotateFootprintLocal(
+    station.interactionOffset.x,
+    station.interactionOffset.y,
+    tiles.w,
+    tiles.d,
+    stationObject.rotation ?? 0,
+  );
+  const offset = { ...station.interactionOffset, x: offsetX, y: offsetY };
   return {
     id: station.id,
     label: station.label,

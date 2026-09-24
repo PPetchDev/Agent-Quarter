@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import type { RoomObject, Rotation } from './roomDefs';
-import { FURNITURE_DIMS, FURNITURE_TILES, footprintFor } from './roomDefs';
+import { FURNITURE_DIMS, FURNITURE_TILES, footprintFor, rotateFootprintLocal } from './roomDefs';
 import { zabutonPalette } from './furnitureCatalog';
 import { applyStationAmbient, getStationDim, type AmbientDrawContext } from './stationAmbients';
 
@@ -69,13 +69,10 @@ function endFurnitureRotation() {
   _rotQ = 0;
 }
 
-/** Maps a footprint-local world point through the active rotation (only call when _rotQ !== 0). */
+/** Maps a world point inside the active furniture footprint through the active rotation. */
 function rotateLocal(wx: number, wy: number): [number, number] {
-  const lx = wx - _rotAx;
-  const ly = wy - _rotAy;
-  if (_rotQ === 1) return [_rotAx + _rotD - ly, _rotAy + lx];
-  if (_rotQ === 2) return [_rotAx + _rotW - lx, _rotAy + _rotD - ly];
-  return [_rotAx + ly, _rotAy + _rotW - lx];
+  const [x, y] = rotateFootprintLocal(wx - _rotAx, wy - _rotAy, _rotW, _rotD, _rotQ);
+  return [_rotAx + x, _rotAy + y];
 }
 
 export function proj(wx: number, wy: number, wz: number): [number, number] {

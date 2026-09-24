@@ -207,3 +207,23 @@ _Updated: C-DORM-AZUR-001_
 | `generateOfficeDialogue` (frontend) | function | Fetch adapter — POSTs to `/api/dialogue/office`, returns `DialogueResponse` or null on failure |
 | `GenerateOfficeDialogueRequest` | type | Frontend request shape: fromAgentId, toAgentId?, officeStatus?, recentDialogue?, now?, maxChars? |
 | `DialogueResponse` (frontend) | type | Frontend response shape: fromAgentId, toAgentId?, text, source:'llm'\|'deterministic', fallbackUsed, model?, errorSummary? |
+
+## Furniture Rotation (`apps/web/src/components/lounge/`)
+
+| Symbol | Kind | Description |
+|---|---|---|
+| `allowedRotations` / `normalizeRotation` / `normalizeVariant` / `nextRotation` | functions | Catalog-driven allowed quarter-turns; coerce untrusted rotation/variant input (`roomDefs.ts`) |
+| `rotateInLayout` | function | Next allowed rotation for one object, min-corner pivot + nudge into room; null on collision/no fit (`roomDefs.ts`) |
+| `rotateFootprintLocal` | function | Shared quarter-turn mapping for footprint-local points, used by the renderer and station placement (`roomDefs.ts`) |
+| `drawFurnitureObject` | function | Draws one furniture body with its rotation applied, restoring the projection in `finally` (`pixiRoom.ts`) |
+| `ZABUTON_PALETTES` / `zabutonPalette` | const/fn | Zabuton variant colours with `red`→`rose`, `default`→`green` aliases (`furnitureCatalog.ts`) |
+| `CatalogItem.rotations` | field | Allowed quarter-turns for a rotatable item (bookcase `[0, 1]`) |
+
+## Extracted Lounge Hooks (`apps/web/src/hooks/`)
+
+| Symbol | Kind | Description |
+|---|---|---|
+| `useDormTickLoop` | hook | Dorm tick interval (reads agent ids via ref) |
+| `useFurnitureDrag` | hook | Move-mode drag: rotated-footprint clamp, collision highlight, snap-back, history snapshot |
+| `useDialogueScheduler` | hook | Idle agent-to-agent dialogue bubbles (refs for agents/random so the interval does not reset each render) |
+

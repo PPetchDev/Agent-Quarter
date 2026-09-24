@@ -7,6 +7,7 @@ import {
   nextRotation,
   normalizeRotation,
   normalizeVariant,
+  rotateFootprintLocal,
   rotateInLayout,
   type RoomObject,
 } from './roomDefs';
@@ -63,6 +64,8 @@ describe('rotation helpers', () => {
     expect(normalizeRotation('low_table', '1')).toBe(0);
     expect(normalizeRotation('bed', 1)).toBe(0);
     expect(normalizeRotation('bookcase', 2)).toBe(0);
+    // A disallowed turn keeps its footprint orientation when the opposite turn is allowed.
+    expect(normalizeRotation('bookcase', 3)).toBe(1);
   });
 
   it('keeps only non-empty string variants', () => {
@@ -107,5 +110,15 @@ describe('rotateInLayout', () => {
 
   it('refuses furniture that cannot rotate', () => {
     expect(rotateInLayout([obj({ id: 1, furnitureType: 'bed' })], 1, 10, 8)).toBeNull();
+  });
+});
+
+describe('rotateFootprintLocal', () => {
+  // A 3x1 footprint (w=3, d=1): the local corner (3, 0) must land on the rotated footprint's edge.
+  it('maps footprint-local points for each quarter-turn', () => {
+    expect(rotateFootprintLocal(3, 0, 3, 1, 0)).toEqual([3, 0]);
+    expect(rotateFootprintLocal(3, 0, 3, 1, 1)).toEqual([1, 3]);
+    expect(rotateFootprintLocal(3, 0, 3, 1, 2)).toEqual([0, 1]);
+    expect(rotateFootprintLocal(3, 0, 3, 1, 3)).toEqual([0, 0]);
   });
 });

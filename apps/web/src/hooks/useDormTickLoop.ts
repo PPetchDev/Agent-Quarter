@@ -1,4 +1,10 @@
-import { useEffect, useRef, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
+import {
+  useEffect,
+  useRef,
+  type Dispatch,
+  type MutableRefObject,
+  type SetStateAction,
+} from 'react';
 import { tickDorm, type DormState } from '@/game/dorm/dormEngine';
 import type { AgentState } from '@/game/agents/agentTypes';
 

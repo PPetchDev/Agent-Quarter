@@ -127,7 +127,11 @@ export function allowedRotations(type: string): readonly Rotation[] {
 export function normalizeRotation(type: string, value: unknown): Rotation {
   if (typeof value !== 'number' || !Number.isInteger(value)) return 0;
   const quarter = (((value % 4) + 4) % 4) as Rotation;
-  return allowedRotations(type).includes(quarter) ? quarter : 0;
+  const allowed = allowedRotations(type);
+  if (allowed.includes(quarter)) return quarter;
+  // Prefer the opposite turn so the footprint keeps its orientation (bookcase 270° -> 90°).
+  const opposite = ((quarter + 2) % 4) as Rotation;
+  return allowed.includes(opposite) ? opposite : 0;
 }
 
 /** Keeps only non-empty string variants. */
@@ -167,4 +171,27 @@ export function rotateInLayout(
   };
   const next = objects.map((o) => (o.id === id ? rotated : o));
   return checkCollision(next, id, rotated.wx, rotated.wy) ? null : next;
+}
+
+/**
+ * Maps a footprint-local point (relative to the object's min corner) through a
+ * quarter-turn of a w×d footprint. Shared by the renderer and station placement.
+ */
+export function rotateFootprintLocal(
+  lx: number,
+  ly: number,
+  w: number,
+  d: number,
+  quarter: number,
+): [number, number] {
+  switch (quarter & 3) {
+    case 1:
+      return [d - ly, lx];
+    case 2:
+      return [w - lx, d - ly];
+    case 3:
+      return [ly, w - lx];
+    default:
+      return [lx, ly];
+  }
 }
