@@ -14,6 +14,7 @@ import { RunsService } from './runs.service';
 import { RunsGateway } from './runs.gateway';
 import { RunExecutionService } from './run-execution.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { assertTestDatabase } from '../prisma/test-database';
 
 describe('ProjectsController', () => {
   let prisma: PrismaService;
@@ -110,6 +111,7 @@ describe('ProjectsController', () => {
 });
 
 async function resetProjectTables(prisma: PrismaService) {
+  assertTestDatabase();
   await prisma.relay.deleteMany();
   await prisma.stageMessage.deleteMany();
   await prisma.projectStage.deleteMany();
