@@ -6,8 +6,8 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["next", "dev"],
       "cwd": "/Users/titiwat/Downloads/AnimeAgentSquad/apps/web",
-      "port": 3001,
-      "autoPort": true
+      "port": 3000,
+      "autoPort": false
     }
   ]
 }

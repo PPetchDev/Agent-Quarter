@@ -7,6 +7,7 @@ _Updated: backlog hardening (2026-09-25)_
 - Input validation: global `ValidationPipe` (`whitelist`, `forbidNonWhitelisted`, `transform`) from `apps/api/src/common/validation.ts`; DTOs in `projects/dto.ts`, `dialogue/dto.ts`, `claude/dto.ts`. Socket payloads use a per-`@MessageBody` pipe (gateway pipes would also hit `@ConnectedSocket`).
 - Bind address: `HOST` env, default `127.0.0.1` (`apps/api/src/main.ts`). No auth — single-user local app.
 - `POST /api/runs/:id/execute` also requires a loopback caller (`common/loopback.guard.ts`).
+- Request source check (`common/request-origin.ts`): Origin, when present, must equal `WEB_ORIGIN`; Origin-less browser requests are allowed only with `Sec-Fetch-Site` same-origin/none (or none sent: curl, Node, Next SSR); while the resolved bind address is loopback the Host must be localhost/127.0.0.1/[::1] (DNS rebinding). Wired in `common/configure-app.ts` (used by `main.ts` and its integration test): `app.use` middleware before CORS, socket.io via `OriginCheckedIoAdapter` (`allowRequest` + normalized CORS origin) — engine.io traffic never reaches HTTP middleware.
 
 ## REST — NestJS
 
