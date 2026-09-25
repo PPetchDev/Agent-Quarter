@@ -9,7 +9,9 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.useGlobalPipes(createHttpValidationPipe());
   const port = process.env.PORT ?? 3001;
-  await app.listen(port);
-  console.log(`API running on http://localhost:${port}`);
+  // Loopback by default: the API has no auth. Set HOST (e.g. 0.0.0.0) to expose it on purpose.
+  const host = process.env.HOST ?? '127.0.0.1';
+  await app.listen(port, host);
+  console.log(`API running on http://${host}:${port}`);
 }
 bootstrap();

@@ -10,11 +10,13 @@ import {
   ServiceUnavailableException,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { RunsService } from './runs.service';
 import { RunsGateway } from './runs.gateway';
 import { RunExecutionService } from './run-execution.service';
 import { ExecuteRunDto } from './dto';
+import { LoopbackOnlyGuard } from '../common/loopback.guard';
 
 @Controller('runs')
 export class RunsController {
@@ -52,6 +54,7 @@ export class RunsController {
 
   @Post(':id/execute')
   @HttpCode(HttpStatus.ACCEPTED)
+  @UseGuards(LoopbackOnlyGuard)
   executeRun(@Param('id') id: string, @Body() body: ExecuteRunDto) {
     // Safety gates
     if (process.env.NODE_ENV === 'production') {
