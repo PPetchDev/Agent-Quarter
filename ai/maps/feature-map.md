@@ -19,7 +19,7 @@ _Updated: C-DORM-AZUR-001_
 | Active initial role-aligned furniture layout | `apps/web/public/maps/maple_hideout.json` |
 | Furniture dimensions and tile footprints | `apps/web/src/components/lounge/roomDefs.ts` |
 | Furniture catalog / shop metadata | `apps/web/src/components/lounge/furnitureCatalog.ts` |
-| PixiJS scene construction, depth sorting, active-station pulse layer | `apps/web/src/components/lounge/roomLoader.ts` |
+| PixiJS scene construction, depth sorting, active-station pulse layer | `apps/web/src/components/lounge/roomLoader.ts`, `apps/web/src/components/lounge/furnitureDepth.ts` (draw-order constraints) |
 | Active station pulse highlight (gold floor ring + per-station body ambient during work) | `apps/web/src/components/lounge/pixiRoom.ts` (`drawActiveStationHighlight`, `drawStationAmbient`), `apps/web/src/components/lounge/stationAmbients.ts` (`STATION_AMBIENTS` data table), `apps/web/src/components/lounge/LoungeCanvas.tsx` (RAF pulse loop) |
 | Lounge canvas, compact HUD, route debug overlay, Spine agent rendering, and non-occluding status overlay | `apps/web/src/components/lounge/LoungeCanvas.tsx`, `apps/web/src/components/lounge/spineAgents.ts` |
 | Pure layout/share helpers | `apps/web/src/components/lounge/loungeHelpers.ts` |

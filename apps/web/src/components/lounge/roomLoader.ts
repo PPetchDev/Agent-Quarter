@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import type { RoomObject, Rotation, TiledMap } from './roomDefs';
 import { parseTiledMap, validateTiledMap, FURNITURE_TILES, footprintFor } from './roomDefs';
+import { resolveFurnitureZ } from './furnitureDepth';
 import {
   proj,
   drawFurnitureObject,
@@ -77,18 +78,23 @@ export { validateTiledMap as isValidTiledJson } from './roomDefs';
 
 // ─── Build interactive PixiJS scene ──────────────────────────────────────────
 
+/**
+ * Base depth key: screen Y of the back edge (closer = higher zIndex = on top), with an x
+ * term to break ties right-over-left. Agents in the same layer use their feet Y, so this
+ * scale must stay; resolveFurnitureZ only lifts items that must cover a neighbour.
+ */
+function baseDepth(obj: RoomObject): number {
+  const fp = footprintFor(obj.furnitureType, obj.rotation);
+  const [, backY] = proj(obj.wx + fp.w / 2, obj.wy + fp.d, obj.wz);
+  return backY + obj.wx * 4 + obj.wz * 25;
+}
+
 function createFurnitureItem(obj: RoomObject, handlers: FurnitureHandlers): FurnitureItem {
   const container = new PIXI.Container();
   const graphics = new PIXI.Graphics();
   container.addChild(graphics);
 
   drawFurnitureObject(graphics, obj);
-
-  // Depth sort: screen Y of back edge (closer = higher zIndex = on top).
-  // wx term breaks ties horizontally (right-over-left), wz lifts wall items.
-  const fp = footprintFor(obj.furnitureType, obj.rotation);
-  const [, backY] = proj(obj.wx + fp.w / 2, obj.wy + fp.d, obj.wz);
-  container.zIndex = backY + obj.wx * 4 + obj.wz * 25;
 
   // Hit area: floor footprint
   container.hitArea = furnitureHitPolygon(obj.furnitureType, obj.wx, obj.wy, obj.wz, obj.rotation);
@@ -176,6 +182,18 @@ export function buildRoomScene(
       furnitureLayer.addChild(item.container);
       items.set(obj.id, item);
     }
+    resortFurniture();
+  }
+
+  // Every move can add or remove lifts on other items, so depth is re-resolved scene-wide.
+  function resortFurniture() {
+    const z = resolveFurnitureZ(
+      [...items.values()].map((i) => i.obj),
+      baseDepth,
+    );
+    for (const item of items.values()) {
+      item.container.zIndex = z.get(item.id) ?? baseDepth(item.obj);
+    }
   }
 
   populateFurniture(objects);
@@ -191,12 +209,8 @@ export function buildRoomScene(
     item.graphics.clear();
     drawFurnitureObject(item.graphics, item.obj);
 
-    // Depth sort: screen Y of back edge (closer = higher zIndex = on top).
-    // wx term breaks ties horizontally (right-over-left), wz lifts wall items.
-    const fp2 = footprintFor(item.obj.furnitureType, item.obj.rotation);
-    const [, backY2] = proj(wx + fp2.w / 2, wy + fp2.d, wz);
-    item.container.zIndex = backY2 + wx * 4 + wz * 25;
     item.container.hitArea = furnitureHitPolygon(item.obj.furnitureType, wx, wy, wz, item.obj.rotation);
+    resortFurniture();
   }
 
   function setSelected(id: number | null) {
@@ -219,6 +233,7 @@ export function buildRoomScene(
     const item = createFurnitureItem(obj, handlers);
     furnitureLayer.addChild(item.container);
     items.set(obj.id, item);
+    resortFurniture();
   }
 
   function removeItem(id: number) {
@@ -227,6 +242,7 @@ export function buildRoomScene(
     furnitureLayer.removeChild(item.container);
     item.container.destroy({ children: true });
     items.delete(id);
+    resortFurniture();
     highlightGraphics.clear();
     activeStationGraphics.clear();
   }
