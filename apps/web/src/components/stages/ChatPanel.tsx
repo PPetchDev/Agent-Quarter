@@ -4,7 +4,7 @@ import { useStageSocket } from '@/hooks/useStageSocket';
 import { getHistory } from '@/lib/api';
 import { CharacterAvatar } from './CharacterAvatar';
 import { MessageBubble } from './MessageBubble';
-import { CHARACTER_TEMPLATES } from '@squad/core';
+import { CHARACTER_TEMPLATES, MAX_CHAT_MESSAGE_LENGTH } from '@squad/core';
 
 type HistMsg = { id: string; role: string; content: string; mood?: string };
 
@@ -138,6 +138,7 @@ export function ChatPanel({ characterId }: { characterId: string }) {
       <div className="flex items-end gap-2 px-4 py-3 border-t border-white/7">
         <textarea
           value={input}
+          maxLength={MAX_CHAT_MESSAGE_LENGTH}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {

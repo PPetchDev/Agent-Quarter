@@ -170,6 +170,8 @@ export function useDialogueScheduler({
   }, [officeStatus, roomReady, appendOfficeChat, enableLlmDialogue]);
 
   useEffect(() => {
+    // Re-arm on every mount: StrictMode's simulated unmount would otherwise leave it false.
+    dialogueMountedRef.current = true;
     return () => {
       dialogueMountedRef.current = false;
       if (dialogueBubbleTimeoutRef.current) {

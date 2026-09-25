@@ -91,7 +91,7 @@ import type {
   OfficeWorkflowStatus,
   OfficeWorkflowStep,
 } from '@/game/agents/officeWorkflow';
-import { startOfficeRun, completeOfficeRun } from '@/game/agents/officeRunAdapter';
+import { startOfficeRun, finishOfficeRun } from '@/game/agents/officeRunAdapter';
 import { useRunSocket } from '@/hooks/useRunSocket';
 import { loungeStations, type LoungeStationId, resolveLoungeStation } from '@/game/scene/loungeStations';
 import { buildLoungeRouteGrid } from '@/game/scene/loungePathGrid';
@@ -512,7 +512,6 @@ export function LoungeCanvas() {
   const historyRef = useRef<RoomObject[][]>([]);
   const redoRef = useRef<RoomObject[][]>([]);
   const nextIdRef = useRef<number>(1000);
-  const scaleRef = useRef<number>(1);
   const modeRef = useRef<Mode>('visit');
 
   const router = useRouter();
@@ -1050,9 +1049,6 @@ export function LoungeCanvas() {
     objectsRef.current = objects;
   }, [objects]);
   useEffect(() => {
-    scaleRef.current = scale;
-  }, [scale]);
-  useEffect(() => {
     modeRef.current = mode;
   }, [mode]);
   useEffect(() => {
@@ -1435,7 +1431,6 @@ export function LoungeCanvas() {
       setPanX((p) => e.clientX - rect.left - (e.clientX - rect.left - p) * r);
       setPanY((p) => e.clientY - rect.top - (e.clientY - rect.top - p) * r);
       setScale(ns);
-      scaleRef.current = ns;
     },
     [scale],
   );
@@ -1755,10 +1750,10 @@ export function LoungeCanvas() {
       setTokens((t) => t + WORKFLOW_DONE_TOKENS);
       showToast(`Office workflow done · +${WORKFLOW_DONE_TOKENS} 🎀`);
     }
-    // Fire-and-forget: call backend run complete with in-flight run ID
+    // Fire-and-forget: complete the in-flight run and put the canonical task back to todo
     const runId = officeInFlightRunIdRef.current;
     if (runId) {
-      completeOfficeRun(runId)
+      finishOfficeRun(runId, OFFICE_CANONICAL_TASK_ID)
         .then((result) => {
           if (result)
             appendOfficeChat({
@@ -1937,7 +1932,6 @@ export function LoungeCanvas() {
     objectsRef,
     roomWRef,
     roomHRef,
-    scaleRef,
     modeRef,
     sceneRef,
     setObjects,

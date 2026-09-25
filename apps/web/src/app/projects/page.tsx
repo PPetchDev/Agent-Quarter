@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   CHARACTER_TEMPLATES,
+  MAX_TITLE_LENGTH,
   type Project,
   type ProjectStatus,
   type Run,
@@ -296,6 +297,7 @@ export default function ProjectsPage() {
                       >
                         <input
                           value={taskDrafts[project.id] ?? ''}
+                          maxLength={MAX_TITLE_LENGTH}
                           onChange={(e) =>
                             setTaskDrafts((current) => ({
                               ...current,

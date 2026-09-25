@@ -80,10 +80,13 @@ export function proj(wx: number, wy: number, wz: number): [number, number] {
   return projAt(wx, wy, wz, _S, _OX, _OY);
 }
 
+/** Inverse of projAt for a ground-plane (dz = 0) screen delta. */
+export function worldDeltaAt(dx: number, dy: number, S: number): [number, number] {
+  return [(dx + dy) / S, -dy / (S * 0.65)];
+}
+
 export function worldDeltaFromScreen(dx: number, dy: number): [number, number] {
-  const dwy = -dy / (_S * 0.65);
-  const dwx = dx / _S - dy / _S;
-  return [dwx, dwy];
+  return worldDeltaAt(dx, dy, _S);
 }
 
 // ─── Primitive helpers ────────────────────────────────────────────────────────

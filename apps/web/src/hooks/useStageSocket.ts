@@ -66,11 +66,23 @@ export function useStageSocket(characterId: string) {
       setLastError(data.error);
     };
 
+    // Validation failures arrive as Nest's 'exception' event on the shared socket; only
+    // this character's rejected send_message is ours to show.
+    const onException = (data: {
+      message?: string;
+      cause?: { pattern?: string; data?: { characterId?: string } };
+    }) => {
+      if (data.cause?.pattern !== 'send_message') return;
+      if (data.cause.data?.characterId !== characterId) return;
+      setLastError(data.message ?? 'Message was rejected');
+    };
+
     socket.on('stage_state', onStageState);
     socket.on('message_chunk', onChunk);
     socket.on('mood_override', onMoodOverride);
     socket.on('message_done', onDone);
     socket.on('message_error', onError);
+    socket.on('exception', onException);
 
     return () => {
       socket.off('stage_state', onStageState);
@@ -78,6 +90,7 @@ export function useStageSocket(characterId: string) {
       socket.off('mood_override', onMoodOverride);
       socket.off('message_done', onDone);
       socket.off('message_error', onError);
+      socket.off('exception', onException);
     };
   }, [socket, characterId]);
 

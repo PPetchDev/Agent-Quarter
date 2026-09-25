@@ -1,7 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { CHARACTER_TEMPLATES, type Project, type ProjectStatus } from '@squad/core';
+import {
+  CHARACTER_TEMPLATES,
+  MAX_TEXT_LENGTH,
+  MAX_TITLE_LENGTH,
+  type Project,
+  type ProjectStatus,
+} from '@squad/core';
 import { createProject, updateProject } from '@/lib/api';
 
 type Props = {
@@ -76,6 +82,7 @@ export function CreateProjectModal({ project, onClose, onSuccess }: Props) {
             <input
               type="text"
               value={title}
+              maxLength={MAX_TITLE_LENGTH}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-[13px] text-[#e2d9f3] focus:outline-none focus:border-white/30"
               placeholder="e.g., API Refactor"
@@ -87,6 +94,7 @@ export function CreateProjectModal({ project, onClose, onSuccess }: Props) {
             <label className="block text-[11px] text-white/60 mb-1">Summary</label>
             <textarea
               value={summary}
+              maxLength={MAX_TEXT_LENGTH}
               onChange={(e) => setSummary(e.target.value)}
               className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-[13px] text-[#e2d9f3] focus:outline-none focus:border-white/30 resize-none"
               rows={3}
@@ -112,6 +120,7 @@ export function CreateProjectModal({ project, onClose, onSuccess }: Props) {
             <input
               type="text"
               value={nextAction}
+              maxLength={MAX_TEXT_LENGTH}
               onChange={(e) => setNextAction(e.target.value)}
               className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-[13px] text-[#e2d9f3] focus:outline-none focus:border-white/30"
               placeholder="e.g., Implement endpoint"

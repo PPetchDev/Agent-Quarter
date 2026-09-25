@@ -7,9 +7,10 @@ import {
   Param,
   Body,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
-import type { Project, Task } from '@squad/core';
+import { CreateProjectDto, CreateTaskDto, UpdateProjectDto, UpdateTaskDto } from './dto';
 
 @Controller('projects')
 export class ProjectsController {
@@ -28,12 +29,12 @@ export class ProjectsController {
   }
 
   @Post()
-  async create(@Body() input: Omit<Project, 'id'>) {
+  async create(@Body() input: CreateProjectDto) {
     return this.projectsService.createProject(input);
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() updates: Partial<Omit<Project, 'id'>>) {
+  async update(@Param('id') id: string, @Body() updates: UpdateProjectDto) {
     const project = await this.projectsService.updateProject(id, updates);
     if (!project) throw new NotFoundException(`Project '${id}' not found`);
     return project;
@@ -54,14 +55,21 @@ export class ProjectsController {
   }
 
   @Post(':id/tasks')
-  async createTask(@Param('id') id: string, @Body() input: Omit<Task, 'id' | 'projectId'>) {
+  async createTask(@Param('id') id: string, @Body() input: CreateTaskDto) {
     const project = await this.projectsService.findProjectById(id);
     if (!project) throw new NotFoundException(`Project '${id}' not found`);
     return this.projectsService.createTask({ ...input, projectId: id });
   }
 
   @Patch('tasks/:taskId')
-  async updateTask(@Param('taskId') taskId: string, @Body() updates: Partial<Omit<Task, 'id'>>) {
+  async updateTask(@Param('taskId') taskId: string, @Body() updates: UpdateTaskDto) {
+    // Checked up front so an unknown project is a 400, not a Prisma foreign-key 500.
+    if (
+      updates.projectId !== undefined &&
+      !(await this.projectsService.findProjectById(updates.projectId))
+    ) {
+      throw new BadRequestException(`Project '${updates.projectId}' not found`);
+    }
     const task = await this.projectsService.updateTask(taskId, updates);
     if (!task) throw new NotFoundException(`Task '${taskId}' not found`);
     return task;

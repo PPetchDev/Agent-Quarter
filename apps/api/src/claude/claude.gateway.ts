@@ -11,11 +11,11 @@ import { ClaudeService } from './claude.service';
 import { toPriorTurns } from './chat-history';
 import { ConversationsService } from '../conversations/conversations.service';
 import { StageTracker, readCharacterMood, type IdleTier } from '@squad/core';
+import { createWsValidationPipe } from '../common/validation';
+import { JoinStageDto, SendMessageDto } from './dto';
 
-type SendMessagePayload = {
-  characterId: string;
-  content: string;
-};
+// Gateway pipes also run on @ConnectedSocket params, so validation is bound to each payload only.
+const validPayload = createWsValidationPipe();
 
 @WebSocketGateway({ cors: { origin: process.env.WEB_ORIGIN ?? 'http://localhost:3000' } })
 export class ClaudeGateway implements OnGatewayInit {
@@ -73,7 +73,10 @@ export class ClaudeGateway implements OnGatewayInit {
   }
 
   @SubscribeMessage('join_stage')
-  handleJoinStage(@MessageBody() data: { characterId: string }, @ConnectedSocket() client: Socket) {
+  handleJoinStage(
+    @MessageBody(validPayload) data: JoinStageDto,
+    @ConnectedSocket() client: Socket,
+  ) {
     client.join(`stage:${data.characterId}`);
     const tracker = this.getTracker(data.characterId);
     const mood = readCharacterMood(data.characterId, {
@@ -87,7 +90,7 @@ export class ClaudeGateway implements OnGatewayInit {
   }
 
   @SubscribeMessage('send_message')
-  async handleSendMessage(@MessageBody() payload: SendMessagePayload) {
+  async handleSendMessage(@MessageBody(validPayload) payload: SendMessageDto) {
     const { characterId, content } = payload;
     const tracker = this.getTracker(characterId);
 

@@ -3,7 +3,6 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { checkCollision, type RoomObject } from '@/components/lounge/roomDefs';
-import { worldDeltaFromScreen } from '@/components/lounge/pixiRoom';
 import { useFurnitureDrag, type DragScene } from './useFurnitureDrag';
 
 function makeObject(overrides: Partial<RoomObject> = {}): RoomObject {
@@ -21,18 +20,10 @@ function makeObject(overrides: Partial<RoomObject> = {}): RoomObject {
   };
 }
 
-function expectedNextPos(startWx: number, startWy: number, dScreenX: number, dScreenY: number) {
-  const [dwx, dwy] = worldDeltaFromScreen(dScreenX, dScreenY);
-  const nx = Math.round(Math.max(0, Math.min(10 - 1, Math.round(startWx) + dwx)));
-  const ny = Math.round(Math.max(0, Math.min(10 - 1, Math.round(startWy) + dwy)));
-  return { nx, ny };
-}
-
 function renderDrag(initialObjects: RoomObject[]) {
   const objectsRef = { current: initialObjects };
   const roomWRef = { current: 10 };
   const roomHRef = { current: 10 };
-  const scaleRef = { current: 1 };
   const modeRef: { current: 'visit' | 'move' } = { current: 'move' };
   const scene = {
     updateItem: vi.fn(),
@@ -47,7 +38,6 @@ function renderDrag(initialObjects: RoomObject[]) {
       objectsRef,
       roomWRef,
       roomHRef,
-      scaleRef,
       modeRef,
       sceneRef,
       setObjects,
@@ -75,9 +65,17 @@ describe('useFurnitureDrag', () => {
     result.current.onDragStart(1, 100, 100);
     result.current.onPointerMove({ global: { x: 130, y: 100 } });
 
-    const { nx, ny } = expectedNextPos(2, 2, 30, 0);
-    expect(scene.updateItem).toHaveBeenCalledWith(1, nx, ny, 0);
-    expect(objectsRef.current.find((o) => o.id === 1)).toMatchObject({ wx: nx, wy: ny });
+    // 30px at the default S=56 is ~0.54 tiles, which rounds to one tile right.
+    expect(scene.updateItem).toHaveBeenCalledWith(1, 3, 2, 0);
+    expect(objectsRef.current.find((o) => o.id === 1)).toMatchObject({ wx: 3, wy: 2 });
+  });
+
+  it('follows a vertical pointer move without drifting sideways', () => {
+    const { result, scene } = renderDrag([makeObject({ wx: 2, wy: 2 })]);
+    result.current.onDragStart(1, 100, 100);
+    // Screen delta of world (+1, +2) at S=56: x = 56 + 2*56*0.65, y = -2*56*0.65.
+    result.current.onPointerMove({ global: { x: 228.8, y: 27.2 } });
+    expect(scene.updateItem).toHaveBeenLastCalledWith(1, 3, 4, 0);
   });
 
   it('still moves the object visually into a colliding position, but flags the highlight', () => {
@@ -158,7 +156,7 @@ describe('useFurnitureDrag', () => {
       makeObject({ furnitureType: 'low_table', wx: 2, wy: 2, rotation: 1 }),
     ]);
     result.current.onDragStart(1, 100, 100);
-    result.current.onPointerMove({ global: { x: 2100, y: -1900 } });
+    result.current.onPointerMove({ global: { x: 4100, y: -1900 } });
     expect(scene.updateItem).toHaveBeenLastCalledWith(1, 8, 7, 0);
   });
 });

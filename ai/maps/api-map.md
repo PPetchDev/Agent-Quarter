@@ -1,11 +1,13 @@
 # API Map
 
-_Updated: C-FURNITURE-GRID-001_
+_Updated: backlog hardening (2026-09-25)_
 
-## API Change Scope
+## Cross-cutting
 
-- No backend API changes were made by C-FURNITURE-GRID-001.
-- This contract is frontend lounge furniture rendering/layout only.
+- Input validation: global `ValidationPipe` (`whitelist`, `forbidNonWhitelisted`, `transform`) from `apps/api/src/common/validation.ts`; DTOs in `projects/dto.ts`, `dialogue/dto.ts`, `claude/dto.ts`. Socket payloads use a per-`@MessageBody` pipe (gateway pipes would also hit `@ConnectedSocket`).
+- Bind address: `HOST` env, default `127.0.0.1` (`apps/api/src/main.ts`). No auth — single-user local app.
+- `POST /api/runs/:id/execute` also requires a loopback caller (`common/loopback.guard.ts`).
+- Request source check (`common/request-origin.ts`): Origin, when present, must equal `WEB_ORIGIN`; Origin-less browser requests are allowed only with `Sec-Fetch-Site` same-origin/none (or none sent: curl, Node, Next SSR); while the resolved bind address is loopback the Host must be localhost/127.0.0.1/[::1] (DNS rebinding). Wired in `common/configure-app.ts` (used by `main.ts` and its integration test): `app.use` middleware before CORS, socket.io via `OriginCheckedIoAdapter` (`allowRequest` + normalized CORS origin) — engine.io traffic never reaches HTTP middleware.
 
 ## REST — NestJS
 
@@ -18,12 +20,17 @@ _Updated: C-FURNITURE-GRID-001_
 | GET | `/api/projects` | `projects` |
 | GET | `/api/projects/:id` | `projects` |
 | GET | `/api/projects/:id/tasks` | `projects` |
+| POST/PATCH/DELETE | `/api/projects`, `/api/projects/:id` | `projects` |
+| POST | `/api/projects/:id/tasks` | `projects` |
+| PATCH/DELETE | `/api/projects/tasks/:taskId` | `projects` |
 | GET | `/api/tasks/:id/runs` | `tasks` |
-| POST | `/api/tasks/:id/start` | `tasks` (returns `Run`) |
+| POST | `/api/tasks/:id/start` | `tasks` (DB lookup; atomically todo → in_progress; returns `Run`) |
+| POST | `/api/tasks/:id/release` | `tasks` (atomically in_progress → todo only; office demo releases `t-008` after each step) |
 | PATCH | `/api/runs/:id/complete` | `runs` |
 | PATCH | `/api/runs/:id/fail` | `runs` |
 | PATCH | `/api/runs/:id/cancel` | `runs` |
 | POST | `/api/dialogue/office` | `dialogue` (Claude-capable with deterministic fallback, no persistence) |
+| POST | `/api/dialogue/plan-workflow` | `dialogue` (LLM planner, `commandText` ≤ 2000 chars) |
 | POST | `/api/runs/:id/execute` | `runs` (dev-only, env-gated) |
 
 ## Socket Events

@@ -107,6 +107,23 @@ export class ProjectsService {
     }
   }
 
+  /**
+   * Atomically move a task from `from` to `to`. Returns false when the task is missing or
+   * no longer in `from`, so two concurrent callers cannot both claim the same transition.
+   */
+  public async transitionTaskStatus(
+    id: string,
+    from: TaskStatus,
+    to: TaskStatus,
+  ): Promise<boolean> {
+    await this.ensureSeedData();
+    const { count } = await this.prisma.task.updateMany({
+      where: { id, status: from },
+      data: { status: to },
+    });
+    return count === 1;
+  }
+
   public async deleteTask(id: string): Promise<boolean> {
     await this.ensureSeedData();
     try {

@@ -70,7 +70,8 @@ const AGENTS: Record<OfficeAgentId, OfficeDialogueAgent> = {
   },
 };
 
-const VALID_IDS = new Set(Object.keys(AGENTS)) as Set<OfficeAgentId>;
+export const OFFICE_AGENT_IDS = Object.keys(AGENTS) as OfficeAgentId[];
+const VALID_IDS = new Set(OFFICE_AGENT_IDS);
 
 // ─── Fallback dialogue pool ───────────────────────────────────────────────────
 
