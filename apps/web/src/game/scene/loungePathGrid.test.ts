@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import mapJson from '../../../public/maps/maple_hideout.json';
-import { parseTiledMap, type RoomObject, type TiledMap } from '../../components/lounge/roomDefs';
+import {
+  checkCollision,
+  parseTiledMap,
+  type RoomObject,
+  type TiledMap,
+} from '../../components/lounge/roomDefs';
 import { resolveAgentTask } from '../agents/taskResolver';
 import type { AgentTaskType } from '../agents/agentTypes';
 import { cellKey, isoToGridCell } from '../movement/gridPath';
@@ -14,10 +19,18 @@ const roomWidth = 10;
 const roomHeight = 8;
 const defaultStart = { wx: 3.0, wy: 0.65, wz: 0.2 };
 const roomObjects = parseTiledMap(mapJson as TiledMap);
-/** Zabuton at (2,5) that the default map rotates a quarter-turn (1x3 footprint). */
+/** Zabuton at (1,4), beside the meeting table, that the default map quarter-turns (1x3 footprint). */
 const ROTATED_ZABUTON_ID = 11;
 
 describe('role-aligned lounge map', () => {
+  it('ships without overlapping floor footprints', () => {
+    const colliding = roomObjects
+      .filter((object) => object.wz < 1.5)
+      .filter((object) => checkCollision(roomObjects, object.id, object.wx, object.wy))
+      .map((object) => object.id);
+    expect(colliding).toEqual([]);
+  });
+
   it('uses semantic furniture for agent task stations', () => {
     const furnitureTypes = roomObjects.map((object) => object.furnitureType);
 
@@ -139,13 +152,9 @@ describe('planLoungeGridRoute', () => {
   });
 
   it('routes near the moved computer desk instead of the default desk target', () => {
-    // Zabuton 11 at (2,5) with rotation 1 seals the pocket around this target (pinned by the
-    // next test), so it is turned back to 0 here to test only that the route follows the desk.
-    const movedObjects = roomObjects.map((object) => {
-      if (object.furnitureType === 'computer_desk') return { ...object, wx: 1, wy: 4 };
-      if (object.id === ROTATED_ZABUTON_ID) return { ...object, rotation: 0 as const };
-      return object;
-    });
+    const movedObjects = roomObjects.map((object) =>
+      object.furnitureType === 'computer_desk' ? { ...object, wx: 1, wy: 4 } : object,
+    );
     const defaultResolved = resolveAgentTask('code', roomObjects);
     const resolved = resolveAgentTask('code', movedObjects);
     const route = planLoungeGridRoute({
@@ -169,31 +178,19 @@ describe('planLoungeGridRoute', () => {
       Math.abs(finalCell.x - targetCell.x) + Math.abs(finalCell.y - targetCell.y),
     ).toBeLessThanOrEqual(1);
   });
-  it('seals the pocket around the moved-desk target while zabuton 11 is quarter-turned', () => {
-    const zabuton = roomObjects.find((object) => object.id === ROTATED_ZABUTON_ID);
-    expect(zabuton).toMatchObject({ furnitureType: 'zabuton', wx: 2, wy: 5, rotation: 1 });
 
-    const movedObjects = roomObjects.map((object) =>
-      object.furnitureType === 'computer_desk' ? { ...object, wx: 1, wy: 4 } : object,
-    );
-    // (2,6) is blocked only by the quarter-turned zabuton; (2,5) and (2,7) are also covered by
-    // the moved desk and the bookcase, so they would not prove anything about the zabuton.
-    const blocked = buildLoungeBlockedCells(movedObjects, roomWidth, roomHeight).map(cellKey);
-    expect(blocked).toContain('2,6');
-    const unrotated = movedObjects.map((object) =>
+  it('keeps zabuton 11 quarter-turned beside the meeting table', () => {
+    const zabuton = roomObjects.find((object) => object.id === ROTATED_ZABUTON_ID);
+    expect(zabuton).toMatchObject({ furnitureType: 'zabuton', wx: 1, wy: 4, rotation: 1 });
+
+    // (1,6) is covered only by the rotated 1x3 footprint, not by the unrotated 3x1 one.
+    const blocked = buildLoungeBlockedCells(roomObjects, roomWidth, roomHeight).map(cellKey);
+    expect(blocked).toContain('1,6');
+    const unrotated = roomObjects.map((object) =>
       object.id === ROTATED_ZABUTON_ID ? { ...object, rotation: 0 as const } : object,
     );
     expect(buildLoungeBlockedCells(unrotated, roomWidth, roomHeight).map(cellKey)).not.toContain(
-      '2,6',
+      '1,6',
     );
-
-    const route = planLoungeGridRoute({
-      objects: movedObjects,
-      roomWidth,
-      roomHeight,
-      start: defaultStart,
-      target: resolveAgentTask('code', movedObjects).targetIsoPoint,
-    });
-    expect(route).toBeNull();
   });
 });
