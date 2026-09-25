@@ -91,7 +91,7 @@ import type {
   OfficeWorkflowStatus,
   OfficeWorkflowStep,
 } from '@/game/agents/officeWorkflow';
-import { startOfficeRun, completeOfficeRun } from '@/game/agents/officeRunAdapter';
+import { startOfficeRun, finishOfficeRun } from '@/game/agents/officeRunAdapter';
 import { useRunSocket } from '@/hooks/useRunSocket';
 import { loungeStations, type LoungeStationId, resolveLoungeStation } from '@/game/scene/loungeStations';
 import { buildLoungeRouteGrid } from '@/game/scene/loungePathGrid';
@@ -1750,10 +1750,10 @@ export function LoungeCanvas() {
       setTokens((t) => t + WORKFLOW_DONE_TOKENS);
       showToast(`Office workflow done · +${WORKFLOW_DONE_TOKENS} 🎀`);
     }
-    // Fire-and-forget: call backend run complete with in-flight run ID
+    // Fire-and-forget: complete the in-flight run and put the canonical task back to todo
     const runId = officeInFlightRunIdRef.current;
     if (runId) {
-      completeOfficeRun(runId)
+      finishOfficeRun(runId, OFFICE_CANONICAL_TASK_ID)
         .then((result) => {
           if (result)
             appendOfficeChat({

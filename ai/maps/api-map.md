@@ -1,11 +1,6 @@
 # API Map
 
-_Updated: C-FURNITURE-GRID-001_
-
-## API Change Scope
-
-- No backend API changes were made by C-FURNITURE-GRID-001.
-- This contract is frontend lounge furniture rendering/layout only.
+_Updated: backlog hardening (2026-09-25)_
 
 ## REST — NestJS
 
@@ -18,8 +13,12 @@ _Updated: C-FURNITURE-GRID-001_
 | GET | `/api/projects` | `projects` |
 | GET | `/api/projects/:id` | `projects` |
 | GET | `/api/projects/:id/tasks` | `projects` |
+| POST/PATCH/DELETE | `/api/projects`, `/api/projects/:id` | `projects` |
+| POST | `/api/projects/:id/tasks` | `projects` |
+| PATCH/DELETE | `/api/projects/tasks/:taskId` | `projects` |
 | GET | `/api/tasks/:id/runs` | `tasks` |
-| POST | `/api/tasks/:id/start` | `tasks` (returns `Run`) |
+| POST | `/api/tasks/:id/start` | `tasks` (DB lookup; atomically todo → in_progress; returns `Run`) |
+| POST | `/api/tasks/:id/release` | `tasks` (atomically in_progress → todo only; office demo releases `t-008` after each step) |
 | PATCH | `/api/runs/:id/complete` | `runs` |
 | PATCH | `/api/runs/:id/fail` | `runs` |
 | PATCH | `/api/runs/:id/cancel` | `runs` |

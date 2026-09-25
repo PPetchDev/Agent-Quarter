@@ -121,39 +121,118 @@ async function resetProjectTables(prisma: PrismaService) {
 }
 
 describe('TasksController', () => {
-  const runsService = new RunsService();
-  const runsGateway = new RunsGateway();
-  const controller = new TasksController(runsService, runsGateway);
+  let prisma: PrismaService;
+  let projectsService: ProjectsService;
+  let controller: TasksController;
 
-  it('returns runs for an existing task', () => {
-    expect(controller.findRuns('t-001')).toEqual(RUNS.filter((run) => run.taskId === 't-001'));
+  beforeAll(async () => {
+    prisma = new PrismaService();
+    await prisma.$connect();
   });
 
-  it('throws the existing not found message for missing task runs', () => {
-    expect(() => controller.findRuns('missing')).toThrow(NotFoundException);
-    expect(() => controller.findRuns('missing')).toThrow("Task 'missing' not found");
+  beforeEach(async () => {
+    await resetProjectTables(prisma);
+    projectsService = new ProjectsService(prisma);
+    controller = new TasksController(new RunsService(), new RunsGateway(), projectsService);
   });
 
-  it('starts a todo task and returns a running run', () => {
-    const result = controller.start('t-008');
+  afterAll(async () => {
+    await resetProjectTables(prisma);
+    await prisma.$disconnect();
+  });
+
+  it('returns runs for an existing task', async () => {
+    await expect(controller.findRuns('t-001')).resolves.toEqual(
+      RUNS.filter((run) => run.taskId === 't-001'),
+    );
+  });
+
+  it('throws the existing not found message for missing task runs', async () => {
+    await expect(controller.findRuns('missing')).rejects.toThrow(NotFoundException);
+    await expect(controller.findRuns('missing')).rejects.toThrow("Task 'missing' not found");
+  });
+
+  it('starts a todo task, moves it to in_progress in the database, and returns a running run', async () => {
+    const result = await controller.start('t-008');
     expect(result.taskId).toBe('t-008');
     expect(result.projectId).toBe('p-004');
     expect(result.status).toBe('running');
     expect(typeof result.id).toBe('string');
     expect(typeof result.startedAt).toBe('string');
+    await expect(projectsService.findTaskById('t-008')).resolves.toMatchObject({
+      status: 'in_progress',
+    });
     expect(TASKS.find((task) => task.id === 't-008')?.status).toBe('todo');
   });
 
-  it('rejects a non-todo task with the existing message', () => {
-    expect(() => controller.start('t-002')).toThrow(BadRequestException);
-    expect(() => controller.start('t-002')).toThrow(
+  it('refuses to start the same task twice', async () => {
+    await controller.start('t-008');
+    await expect(controller.start('t-008')).rejects.toThrow(
+      "Task 't-008' cannot be started (status: in_progress)",
+    );
+  });
+
+  it('lets exactly one of two concurrent starts win', async () => {
+    const results = await Promise.allSettled([
+      controller.start('t-008'),
+      controller.start('t-008'),
+    ]);
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((r) => r.status === 'rejected')).toHaveLength(1);
+  });
+
+  it('starts and lists runs for a task that only exists in the database', async () => {
+    const task = await projectsService.createTask({
+      projectId: 'p-001',
+      title: 'Created through the API',
+      status: 'todo',
+      assignedCharacterId: 'aki',
+    });
+
+    const run = await controller.start(task.id);
+    expect(run).toMatchObject({ taskId: task.id, projectId: 'p-001', status: 'running' });
+    await expect(controller.findRuns(task.id)).resolves.toEqual([run]);
+  });
+
+  it('reads the start guard from the database, not the seed', async () => {
+    await projectsService.updateTask('t-008', { status: 'done' });
+    await expect(controller.start('t-008')).rejects.toThrow(BadRequestException);
+    await expect(controller.start('t-008')).rejects.toThrow(
+      "Task 't-008' cannot be started (status: done)",
+    );
+  });
+
+  it('rejects a non-todo task with the existing message', async () => {
+    await expect(controller.start('t-002')).rejects.toThrow(BadRequestException);
+    await expect(controller.start('t-002')).rejects.toThrow(
       "Task 't-002' cannot be started (status: in_progress)",
     );
   });
 
-  it('throws the existing not found message for a missing task start', () => {
-    expect(() => controller.start('missing')).toThrow(NotFoundException);
-    expect(() => controller.start('missing')).toThrow("Task 'missing' not found");
+  it('releases a started task back to todo so it can be started again', async () => {
+    await controller.start('t-008');
+    await expect(controller.release('t-008')).resolves.toMatchObject({
+      id: 't-008',
+      status: 'todo',
+    });
+    await expect(controller.start('t-008')).resolves.toMatchObject({ status: 'running' });
+  });
+
+  it('never releases a task someone finished or blocked', async () => {
+    await projectsService.updateTask('t-008', { status: 'done' });
+    await expect(controller.release('t-008')).rejects.toThrow(
+      "Task 't-008' cannot be released (status: done)",
+    );
+    await expect(projectsService.findTaskById('t-008')).resolves.toMatchObject({ status: 'done' });
+  });
+
+  it('throws the existing not found message for a missing task release', async () => {
+    await expect(controller.release('missing')).rejects.toThrow("Task 'missing' not found");
+  });
+
+  it('throws the existing not found message for a missing task start', async () => {
+    await expect(controller.start('missing')).rejects.toThrow(NotFoundException);
+    await expect(controller.start('missing')).rejects.toThrow("Task 'missing' not found");
   });
 });
 
