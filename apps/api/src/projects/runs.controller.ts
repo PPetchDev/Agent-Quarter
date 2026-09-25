@@ -14,6 +14,7 @@ import {
 import { RunsService } from './runs.service';
 import { RunsGateway } from './runs.gateway';
 import { RunExecutionService } from './run-execution.service';
+import { ExecuteRunDto } from './dto';
 
 @Controller('runs')
 export class RunsController {
@@ -51,10 +52,7 @@ export class RunsController {
 
   @Post(':id/execute')
   @HttpCode(HttpStatus.ACCEPTED)
-  executeRun(
-    @Param('id') id: string,
-    @Body() body: { prompt?: string; mode?: 'read-only' | 'workspace-write' },
-  ) {
+  executeRun(@Param('id') id: string, @Body() body: ExecuteRunDto) {
     // Safety gates
     if (process.env.NODE_ENV === 'production') {
       throw new ForbiddenException('Not available in production');

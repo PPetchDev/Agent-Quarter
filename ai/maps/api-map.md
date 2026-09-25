@@ -2,6 +2,10 @@
 
 _Updated: backlog hardening (2026-09-25)_
 
+## Cross-cutting
+
+- Input validation: global `ValidationPipe` (`whitelist`, `forbidNonWhitelisted`, `transform`) from `apps/api/src/common/validation.ts`; DTOs in `projects/dto.ts`, `dialogue/dto.ts`, `claude/dto.ts`. Socket payloads use a per-`@MessageBody` pipe (gateway pipes would also hit `@ConnectedSocket`).
+
 ## REST — NestJS
 
 | Method | Path | Area |
@@ -23,6 +27,7 @@ _Updated: backlog hardening (2026-09-25)_
 | PATCH | `/api/runs/:id/fail` | `runs` |
 | PATCH | `/api/runs/:id/cancel` | `runs` |
 | POST | `/api/dialogue/office` | `dialogue` (Claude-capable with deterministic fallback, no persistence) |
+| POST | `/api/dialogue/plan-workflow` | `dialogue` (LLM planner, `commandText` ≤ 2000 chars) |
 | POST | `/api/runs/:id/execute` | `runs` (dev-only, env-gated) |
 
 ## Socket Events

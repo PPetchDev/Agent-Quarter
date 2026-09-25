@@ -95,6 +95,15 @@ describe('ProjectsController', () => {
     });
   });
 
+  it('rejects moving a task to a project that does not exist', async () => {
+    await expect(controller.updateTask('t-001', { projectId: 'missing' })).rejects.toThrow(
+      BadRequestException,
+    );
+    await expect(controller.updateTask('t-001', { projectId: 'missing' })).rejects.toThrow(
+      "Project 'missing' not found",
+    );
+  });
+
   it('cascade-deletes tasks when a project is deleted', async () => {
     await expect(controller.findTasks('p-001')).resolves.toHaveLength(2);
 
