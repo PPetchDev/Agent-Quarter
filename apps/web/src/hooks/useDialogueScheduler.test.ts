@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { StrictMode } from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { pickAgentDialogue, type AgentSnapshot } from '@/game/dialogue/dialogueScheduler';
@@ -330,5 +331,107 @@ describe('useDialogueScheduler', () => {
     });
 
     expect(appendOfficeChat).toHaveBeenCalledOnce();
+  });
+});
+
+// Next.js App Router runs dev builds under React StrictMode, which mounts,
+// simulates an unmount, and mounts again.
+describe('useDialogueScheduler under StrictMode', () => {
+  function renderStrict(enableLlmDialogue: boolean) {
+    const appendOfficeChat = vi.fn();
+    const view = renderHook(
+      () =>
+        useDialogueScheduler({
+          officeStatus: 'idle',
+          roomReady: true,
+          agents: AGENTS,
+          appendOfficeChat,
+          enableLlmDialogue,
+          random: () => 0,
+        }),
+      { wrapper: StrictMode },
+    );
+    return { ...view, appendOfficeChat };
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(FIXED_NOW);
+    vi.mocked(generateOfficeDialogue).mockReset();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('appends the LLM line after the simulated remount', async () => {
+    vi.mocked(generateOfficeDialogue).mockResolvedValue({
+      fromAgentId: 'agent-3',
+      toAgentId: 'agent-4',
+      text: 'LLM-generated line',
+      source: 'llm',
+      createdAt: FIXED_NOW,
+      fallbackUsed: false,
+    });
+    const { appendOfficeChat, result } = renderStrict(true);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4_000);
+    });
+
+    expect(appendOfficeChat).toHaveBeenCalledWith({
+      agentId: 'agent-3',
+      toAgentId: 'agent-4',
+      kind: 'dialogue',
+      text: 'LLM-generated line',
+    });
+    expect(result.current.activeDialogueBubble).toEqual({
+      agentId: 'agent-3',
+      text: 'LLM-generated line',
+    });
+  });
+
+  it('appends the deterministic fallback when the LLM request fails', async () => {
+    vi.mocked(generateOfficeDialogue).mockRejectedValue(new Error('network down'));
+    const { appendOfficeChat } = renderStrict(true);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4_000);
+    });
+
+    expect(appendOfficeChat).toHaveBeenCalledWith({
+      agentId: EXPECTED_FIRST_MESSAGE.fromAgentId,
+      toAgentId: EXPECTED_FIRST_MESSAGE.toAgentId,
+      kind: 'dialogue',
+      text: EXPECTED_FIRST_MESSAGE.text,
+    });
+  });
+
+  it('still drops a late LLM line after a real unmount', async () => {
+    let resolveLlm!: (value: Awaited<ReturnType<typeof generateOfficeDialogue>>) => void;
+    vi.mocked(generateOfficeDialogue).mockReturnValue(
+      new Promise((resolve) => {
+        resolveLlm = resolve;
+      }),
+    );
+    const { appendOfficeChat, unmount } = renderStrict(true);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4_000);
+    });
+    unmount();
+    await act(async () => {
+      resolveLlm({
+        fromAgentId: 'agent-3',
+        toAgentId: 'agent-4',
+        text: 'late',
+        source: 'llm',
+        createdAt: FIXED_NOW,
+        fallbackUsed: false,
+      });
+      await Promise.resolve();
+    });
+
+    expect(appendOfficeChat).not.toHaveBeenCalled();
   });
 });
