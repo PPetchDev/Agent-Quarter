@@ -25,7 +25,6 @@ export interface UseFurnitureDragParams {
   objectsRef: MutableRefObject<RoomObject[]>;
   roomWRef: MutableRefObject<number>;
   roomHRef: MutableRefObject<number>;
-  scaleRef: MutableRefObject<number>;
   modeRef: MutableRefObject<'visit' | 'move'>;
   sceneRef: MutableRefObject<DragScene | null>;
   setObjects: Dispatch<SetStateAction<RoomObject[]>>;
@@ -41,14 +40,13 @@ export interface UseFurnitureDragResult {
 /**
  * Owns the furniture drag state machine: pixel accumulation, room-bounds
  * clamping, collision-flagged visual movement, and snap-back-to-last-valid
- * on release. Reads objects/room/scale/mode fresh via refs so it never
+ * on release. Reads objects/room/mode fresh via refs so it never
  * needs to re-subscribe when those values change mid-drag.
  */
 export function useFurnitureDrag({
   objectsRef,
   roomWRef,
   roomHRef,
-  scaleRef,
   modeRef,
   sceneRef,
   setObjects,
@@ -80,8 +78,10 @@ export function useFurnitureDrag({
     if (!drag) return;
     const scene = sceneRef.current;
     if (!scene) return;
-    const dx = (e.global.x - drag.screenX) / scaleRef.current;
-    const dy = (e.global.y - drag.screenY) / scaleRef.current;
+    // e.global is already in canvas pixels: Pixi maps client coords through the
+    // element's CSS-scaled bounding rect, so the lounge zoom must not be divided out again.
+    const dx = e.global.x - drag.screenX;
+    const dy = e.global.y - drag.screenY;
     drag.screenX = e.global.x;
     drag.screenY = e.global.y;
     const [dwx, dwy] = worldDeltaFromScreen(dx, dy);

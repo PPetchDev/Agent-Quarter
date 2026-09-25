@@ -512,7 +512,6 @@ export function LoungeCanvas() {
   const historyRef = useRef<RoomObject[][]>([]);
   const redoRef = useRef<RoomObject[][]>([]);
   const nextIdRef = useRef<number>(1000);
-  const scaleRef = useRef<number>(1);
   const modeRef = useRef<Mode>('visit');
 
   const router = useRouter();
@@ -1050,9 +1049,6 @@ export function LoungeCanvas() {
     objectsRef.current = objects;
   }, [objects]);
   useEffect(() => {
-    scaleRef.current = scale;
-  }, [scale]);
-  useEffect(() => {
     modeRef.current = mode;
   }, [mode]);
   useEffect(() => {
@@ -1435,7 +1431,6 @@ export function LoungeCanvas() {
       setPanX((p) => e.clientX - rect.left - (e.clientX - rect.left - p) * r);
       setPanY((p) => e.clientY - rect.top - (e.clientY - rect.top - p) * r);
       setScale(ns);
-      scaleRef.current = ns;
     },
     [scale],
   );
@@ -1937,7 +1932,6 @@ export function LoungeCanvas() {
     objectsRef,
     roomWRef,
     roomHRef,
-    scaleRef,
     modeRef,
     sceneRef,
     setObjects,
