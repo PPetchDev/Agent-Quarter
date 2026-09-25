@@ -22,7 +22,7 @@ _Updated: C-DORM-AZUR-001_
 | PixiJS scene construction, depth sorting, active-station pulse layer | `apps/web/src/components/lounge/roomLoader.ts`, `apps/web/src/components/lounge/furnitureDepth.ts` (draw-order constraints) |
 | Active station pulse highlight (gold floor ring + per-station body ambient during work) | `apps/web/src/components/lounge/pixiRoom.ts` (`drawActiveStationHighlight`, `drawStationAmbient`), `apps/web/src/components/lounge/stationAmbients.ts` (`STATION_AMBIENTS` data table), `apps/web/src/components/lounge/LoungeCanvas.tsx` (RAF pulse loop) |
 | Lounge canvas, compact HUD, route debug overlay, Spine agent rendering, and non-occluding status overlay | `apps/web/src/components/lounge/LoungeCanvas.tsx`, `apps/web/src/components/lounge/spineAgents.ts` |
-| Pure layout/share helpers | `apps/web/src/components/lounge/loungeHelpers.ts` |
+| Layout/share helpers (snap, clone, auto-arrange, share URL parse) | `apps/web/src/components/lounge/LoungeCanvas.tsx` (module-private functions) |
 | Countdown timer hook (meal/supplies timers) | `apps/web/src/hooks/useCountdown.ts` |
 | Agent task-to-station resolution + per-task work duration | `apps/web/src/game/agents/taskResolver.ts` |
 | Agent work timer lifecycle (walk → work → auto-idle) and progress fields | `apps/web/src/hooks/useAgentWalk.ts`, `apps/web/src/game/agents/agentTypes.ts` |
