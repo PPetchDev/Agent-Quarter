@@ -1,0 +1,34 @@
+name: Bug report
+description: Report reproducible behavior that differs from expectation.
+title: 'bug: '
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: 'Thanks for reporting a bug. Do not include API keys, private data, or security vulnerabilities.'
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe expected and actual behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Start with ...
+        2. Open ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Commit, branch, or version
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Node.js version, browser, and whether API is local.
